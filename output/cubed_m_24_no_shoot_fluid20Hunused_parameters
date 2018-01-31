@@ -1,0 +1,4 @@
+# List of input/precision parameters passed
+# but not used (just for info)
+#
+write warnings = y
