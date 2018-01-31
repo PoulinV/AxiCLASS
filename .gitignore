@@ -1,0 +1,15 @@
+
+output/
+*~
+build/
+class
+*.prof
+*.ini
+libclass.a
+*out
+python/classy.c
+python/*.pyc
+python/build/
+
+
+

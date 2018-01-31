@@ -348,8 +348,10 @@ int background_functions(
     pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
-    pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
-    pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
+    pvecback[pba->index_bg_rho_scf] = (phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
+    pvecback[pba->index_bg_p_scf] =(phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
+    // pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
+    // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
     pvecback_B[pba->index_bi_rho_scf] = pvecback[pba->index_bg_rho_scf];
     rho_tot += pvecback[pba->index_bg_rho_scf];
@@ -1797,7 +1799,7 @@ int background_solve(
       }
       if(pba->scf_potential ==axion){
       printf("Additional scf parameters used: \n");
-      printf("m_a = %g eV, f_a/mpl = %g\n",(pba->scf_parameters[0]/1.5638e29),pba->scf_parameters[1]);
+      printf("n = %g m_a = %g eV, f_a/mpl = %g\n",pba->scf_parameters[0],(pba->scf_parameters[1]/1.5638e29),pba->scf_parameters[2]);
       }
       if(pba->scf_potential == ax_cos_cubed){
       printf("Additional scf parameters used: \n");
@@ -2250,7 +2252,8 @@ int background_derivs(
     dy[pba->index_bi_phi_scf] = y[pba->index_bi_phi_prime_scf];
     dy[pba->index_bi_phi_prime_scf] = - y[pba->index_bi_a]*
       (2*pvecback[pba->index_bg_H]*y[pba->index_bi_phi_prime_scf]
-       + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])/(pow(pba->scf_parameters[1],2))) ;
+       + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])) ;
+       // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])/(pow(pba->scf_parameters[1],2))) ;
     dy[pba->index_bi_rho_scf] = 0; //Update the scf density until the fluid equation starts.
     //y[pba->index_bi_rho_scf] = y[pba->index_bg_rho_scf];
     //printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
@@ -2404,32 +2407,7 @@ double ddV_double_exp_scf(
     return pow(pba->scf_parameters[0],2)*pow(pba->scf_parameters[2],4)*exp(-pba->scf_parameters[0]*phi)+pow(pba->scf_parameters[1],2)*pow(pba->scf_parameters[3],4)*exp(-pba->scf_parameters[1]*phi);
 
 }
-/** parameters and functions for the axion potential
- * \f$ V_axion = m_a*m_a*f_a*f_a*(1 - cos(phi/f_a))
- */
-double V_axion_scf(
-                  struct background *pba,
-                  double phi){
-    return pow(pba->scf_parameters[0],2)*pow(pba->scf_parameters[1],2)*(1 - cos((phi/pba->scf_parameters[1])*_PI_/180));
 
-}
-
-double dV_axion_scf(
-                  struct background *pba,
-                  double phi){
-
-    return pow(pba->scf_parameters[0],2)*pba->scf_parameters[1]*sin((phi/pba->scf_parameters[1])*_PI_/180);
-
-}
-
-double ddV_axion_scf(
-                  struct background *pba,
-                  double phi){
-
-    // printf("1 %e 2 %e \n", exp(-pba->scf_parameters[0]*phi),pow(pba->scf_parameters[0],4));
-    return pow(pba->scf_parameters[0],2)*cos((phi/pba->scf_parameters[1])*_PI_/180);
-
-}
 /** parameters and functions for the axion (1-cos^3) potential
  * \f$ V_axion = m_a*m_a*f_a*f_a*(1 - cos(phi/f_a))^3
  */
@@ -2455,7 +2433,39 @@ double ddV_ax_cos_cubed_scf(
     // printf("1 %e 2 %e \n", exp(-pba->scf_parameters[0]*phi),pow(pba->scf_parameters[0],4));
     return 12*pow(pba->scf_parameters[0],2)*pow(pba->scf_parameters[1],2)*(2 + 3*cos((phi/pba->scf_parameters[1])*_PI_/180))*(pow((sin((phi/(2*pba->scf_parameters[1]))*_PI_/180)),4));
 }
+/** parameters and functions for the axion potential
+ * \f$ V_axion = m_a*m_a*f_a*f_a*(1 - cos(phi/f_a))
+ */
+double V_axion_scf(
+                  struct background *pba,
+                  double phi){
+      // printf("phi %e theta %e V %e \n",phi,(phi/pba->scf_parameters[2])*_PI_/180,pow(pba->scf_parameters[1],2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2])*_PI_/180)),pba->scf_parameters[0]));
+    return pow(pba->scf_parameters[1],2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2])*_PI_/180)),pba->scf_parameters[0]);
 
+}
+
+double dV_axion_scf(
+                  struct background *pba,
+                  double phi){
+    // printf("phi %e dV %e \n",phi,pba->scf_parameters[0]*pow(pba->scf_parameters[1],2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),1-pba->scf_parameters[0])*sin((phi/pba->scf_parameters[2])*_PI_/180));
+    return pba->scf_parameters[0]*pow(pba->scf_parameters[1],2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-1)*sin((phi/pba->scf_parameters[2])*_PI_/180);
+
+}
+
+double ddV_axion_scf(
+                  struct background *pba,
+                  double phi){
+
+    // printf("phi %e ddV %e \n",phi,pba->scf_parameters[0]*pow(pba->scf_parameters[1],2)*pba->scf_parameters[2]*
+    // ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_/180),2)
+    // +pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),1-pba->scf_parameters[0])/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_/180)));
+    // printf("1 %e 2 %e \n", exp(-pba->scf_parameters[0]*phi),pow(pba->scf_parameters[0],4));
+    return pba->scf_parameters[0]*pow(pba->scf_parameters[1],2)*pba->scf_parameters[2]*
+    ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_/180),2)
+    +pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-1)/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_/180));
+    // return pow(pba->scf_parameters[0],2)*cos((phi/pba->scf_parameters[1])*_PI_/180);
+
+}
 /** parameters and functions for the axion quadratic potential
  * \f$ V_axion = m_a*m_a*phi*phi/2
  */
@@ -2505,7 +2515,7 @@ double V_scf(
   else if(pba->scf_potential == ax_cos_cubed){
     result = V_ax_cos_cubed_scf(pba,phi);
   }
-  //printf("result Vf %e\n", result);
+  // printf("result Vf %e\n", result);
 
   return result;
 }
@@ -2530,7 +2540,7 @@ double dV_scf(
   else if(pba->scf_potential == ax_cos_cubed){
     result = dV_ax_cos_cubed_scf(pba,phi);
   }
-  //printf("result dVf %e\n", result);
+  // printf("result dVf %e\n", result);
 
   return result;
 
@@ -2558,7 +2568,7 @@ double ddV_scf(
   else if(pba->scf_potential == ax_cos_cubed){
     result = ddV_ax_cos_cubed_scf(pba,phi);
   }
-  //printf("result ddVf %e\n", result);
+  // printf("result ddVf %e\n", result);
   return result;
 
 }

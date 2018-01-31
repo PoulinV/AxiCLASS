@@ -4142,11 +4142,9 @@ int perturb_initial_conditions(struct precision * ppr,
     }
     if (ppt->perturbations_verbose>10)
       fprintf(stdout,"Add rho_scf to rho_m. \n");
-    printf("pba->scf_evolve_as_fluid == _TRUE_ %f",pba->scf_evolve_as_fluid);
-    if (pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_) { //VP 
-      printf("test");
+    // printf("pba->scf_evolve_as_fluid == _TRUE_ %f",pba->scf_evolve_as_fluid);
+    if (pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_) { //VP
       rho_m += ppw->pvecback[pba->index_bg_rho_scf];
-      printf("test2");
     }
     if (pba->has_dcdm == _TRUE_) {
       rho_m += ppw->pvecback[pba->index_bg_rho_dcdm];
@@ -4299,7 +4297,7 @@ int perturb_initial_conditions(struct precision * ppr,
         // if(pba->scf_potential == axionquad)printf("Initial Conditions for scalar perts in synchronous gauge: %e, %e \n",ppw->pv->y[ppw->pv->index_pt_phi_scf],ppw->pv->y[ppw->pv->index_pt_phi_prime_scf]);
         // if(pba->scf_potential == axionquad)printf("IC for fluid scalar pert in synchronous gauge: %e \n",ppw->pv->y[ppw->pv->index_pt_delta_scf]);
 
-        //CO 22.01.18 If we intend to use fluid eqs, we need delta and theta. Technically only theta because here we are in the synchronous gauge, but both for ease. Always need phi and phi prime. 
+        //CO 22.01.18 If we intend to use fluid eqs, we need delta and theta. Technically only theta because here we are in the synchronous gauge, but both for ease. Always need phi and phi prime.
       }
 
       /* all relativistic relics: ur, early ncdm, dr */
@@ -4484,7 +4482,7 @@ int perturb_initial_conditions(struct precision * ppr,
         delta_cdm = ppw->pv->y[ppw->pv->index_pt_delta_cdm];
       else if (pba->has_dcdm == _TRUE_)
         delta_cdm = ppw->pv->y[ppw->pv->index_pt_delta_dcdm];
-      else if (pba->has_scf == _TRUE_ && pba->has_cdm == _FALSE_) //VP: scf is cdm //CO what if we have both and scf is only fraction of cdm? 
+      else if (pba->has_scf == _TRUE_ && pba->has_cdm == _FALSE_) //VP: scf is cdm //CO what if we have both and scf is only fraction of cdm?
         delta_cdm = ppw->pv->y[ppw->pv->index_pt_delta_scf];
       else
         delta_cdm=0.;
@@ -5611,12 +5609,12 @@ int perturb_total_stress_energy(
        from rho_plus_p_shear. So the contribution from the scalar field must be below all
        species with non-zero shear.
     */
-    if (ppt->perturbations_verbose>10) 
+    if (ppt->perturbations_verbose>10)
     fprintf(stdout,"scf section next. pba->scf_has_perturbations = %f. \n", pba->scf_has_perturbations);
 
     if (pba->has_scf == _TRUE_&& pba->scf_has_perturbations == _TRUE_) {
 
-      if (ppt->perturbations_verbose>10) 
+      if (ppt->perturbations_verbose>10)
         fprintf(stdout,"Inside scf if statement. pba->scf_has_perturbations = %f. \n", pba->scf_has_perturbations);
 
       if (ppt->gauge == synchronous){
@@ -5654,7 +5652,7 @@ int perturb_total_stress_energy(
               delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to _CDM above
               delta_p_scf = 0;
               // printf("delta_rho_scf FL %e\n", delta_rho_scf);
-              y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf]; //CO 23.01.18 keep evolving phi even though using fluid eqs 
+              y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf]; //CO 23.01.18 keep evolving phi even though using fluid eqs
         }
       }
 
@@ -5668,7 +5666,7 @@ int perturb_total_stress_energy(
       rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
       }
       else { //evolving via fluid mimicking CDM
-        rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]; 
+        rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf];
         //rho_plus_p_theta only needed for Newtonian
         if (ppt->gauge == newtonian){
           ppw->rho_plus_p_theta = ppw->rho_plus_p_theta + ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_theta_scf];
@@ -6674,7 +6672,7 @@ int perturb_print_variables(double tau,
 
 
     if (pba->has_scf == _TRUE_&& pba->scf_has_perturbations == _TRUE_){
-      if (ppt->scf_fluid_flag_perts == _FALSE_){ 
+      if (ppt->scf_fluid_flag_perts == _FALSE_){
       //If we are following KG:
         if (ppt->gauge == synchronous){
             delta_rho_scf =  1./3.*
@@ -7071,7 +7069,7 @@ int perturb_derivs(double tau,
                                pvecback),
              pba->error_message,
              error_message);
-  
+
   //printf("Background has been called inside perturb_derivs. The value of pba->scf_fluid is %d \n Calling thermodynamics_at_z. \n", pba->scf_fluid);
 
   class_call(thermodynamics_at_z(pba,
@@ -7103,7 +7101,7 @@ int perturb_derivs(double tau,
     }
   }
   // if(pba->scf_has_perturbations == _FALSE_ ){
-  //   if (ppt->perturbations_verbose>10) 
+  //   if (ppt->perturbations_verbose>10)
   //     fprintf(stdout,"Setting fluid_flag_perts to false. \n");
   //   ppt->scf_fluid_flag_perts = _FALSE_ ;
   // }
@@ -7515,13 +7513,13 @@ int perturb_derivs(double tau,
       }
 
     }
-    if (ppt->perturbations_verbose>10) 
+    if (ppt->perturbations_verbose>10)
       fprintf(stdout,"Starting scf evolution in perturb_derivs. \n");
 
     /** - ---> scalar field (scf) */
     if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) {
       if (ppt->scf_fluid_flag_perts == _FALSE_) {
-        if (ppt->perturbations_verbose>10){ 
+        if (ppt->perturbations_verbose>10){
           fprintf(stdout,"Evolving as KG.\n");
         }
         /** - ----> field value */
@@ -7553,7 +7551,7 @@ int perturb_derivs(double tau,
         }
         if (ppt->gauge == synchronous){
           dy[pv->index_pt_delta_scf] = -metric_continuity; /* scf density */
-        } 
+        }
       }
       if(ppt->perturbations_verbose>10){
         fprintf(stdout,"Scf completed.\n ");
