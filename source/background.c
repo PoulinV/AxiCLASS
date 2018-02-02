@@ -615,17 +615,7 @@ int background_init(
     }
   }
 
-  if(pba->has_scf ==_TRUE_ && (pba->scf_potential == axionquad || pba->scf_potential == axion)){
-    if(pba->scf_potential == axionquad){
-      pba->m_scf = pba->scf_parameters[0]*pba->H0;
-      pba->w_scf = 0;
-    }
-    else if(pba->scf_potential == axion){
-      pba->m_scf = pba->scf_parameters[1]*pba->H0;
-      pba->w_scf = (pba->scf_parameters[0]-1)/(pba->scf_parameters[0]+1);
-    }
-    printf("m_scf is %e pba->H0 %e\n", pba->m_scf,pba->H0);
-  }
+  
 
 
 

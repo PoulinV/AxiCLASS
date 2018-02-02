@@ -5637,7 +5637,7 @@ int perturb_total_stress_energy(
           else if(pba->scf_potential == axion){
             pba->cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
           }
-        delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to _CDM above
+        delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to fld above
         delta_p_scf = pba->cs2_scf * delta_rho_scf;
         // printf("delta_rho_scf FL %e\n", delta_rho_scf);
         y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf]; //CO 23.01.18 keep evolving phi even though using fluid eqs        }
@@ -5667,7 +5667,7 @@ int perturb_total_stress_energy(
                 else if(pba->scf_potential == axion){
                   pba->cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
                 }
-              delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to _CDM above
+              delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to fld above
               delta_p_scf = pba->cs2_scf * delta_rho_scf;
               // printf("delta_rho_scf FL %e\n", delta_rho_scf);
               y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf]; //CO 23.01.18 keep evolving phi even though using fluid eqs
@@ -5683,7 +5683,7 @@ int perturb_total_stress_energy(
         k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
       rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
       }
-      else { //evolving via fluid mimicking CDM
+      else { //evolving via fluid mimicking fld
         rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
         //rho_plus_p_theta only needed for Newtonian
         if (ppt->gauge == newtonian){
@@ -6712,21 +6712,16 @@ int perturb_print_variables(double tau,
           delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
           theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
 
-        if(pba->scf_evolve_as_fluid == _TRUE_){ // CO 22.01.18 what's happening here? CO 23.01.18 If we are evolving as KG, we need to ensure that delta/theta_scf are assigned a value until the point when they are updated via the fluid equations. Only needs to happen if they will be updated in the future though, so use flag not potential name.
-            y[ppw->pv->index_pt_delta_scf] = delta_scf;
-            y[ppw->pv->index_pt_theta_scf] = theta_scf;
-          }
+        // if(pba->scf_evolve_as_fluid == _TRUE_){ // CO 22.01.18 what's happening here? CO 23.01.18 If we are evolving as KG, we need to ensure that delta/theta_scf are assigned a value until the point when they are updated via the fluid equations. Only needs to happen if they will be updated in the future though, so use flag not potential name.
+        //     y[ppw->pv->index_pt_delta_scf] = delta_scf;
+        //     y[ppw->pv->index_pt_theta_scf] = theta_scf;
+        //   }
         }
 
-      //If we are behaving as a fluid, mimicking CDM:
+      //If we are behaving as a fluid, mimicking fld:
       else {
         delta_scf = y[ppw->pv->index_pt_delta_scf];
-        if (ppt->gauge == synchronous) {
-          theta_scf = 0.;
-        }
-        else {
-          theta_scf = y[ppw->pv->index_pt_theta_scf];
-        }
+        theta_scf = y[ppw->pv->index_pt_theta_scf];
       }
     }
 
@@ -7048,7 +7043,7 @@ int perturb_derivs(double tau,
   int index_q,n_ncdm,idx;
   double q,epsilon,dlnf0_dlnq,qk_div_epsilon;
   double rho_ncdm_bg,p_ncdm_bg,pseudo_p_ncdm,w_ncdm,ca2_ncdm,ceff2_ncdm=0.,cvis2_ncdm=0.;
-
+  double delta_rho_scf,delta_scf,rho_plus_p_theta_scf,theta_scf;
   /* for use with curvature */
   double cotKgen, sqrt_absK;
   double s2_squared, ssqrt3;
@@ -7105,20 +7100,35 @@ int perturb_derivs(double tau,
   //printf("Finished calling thermodynamics_at_z. \n");
 
   if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+      if(pba->scf_potential == axionquad){
+        pba->m_scf = pba->scf_parameters[0]*pba->H0;
+        pba->w_scf = 0;
+      }
+      else if(pba->scf_potential == axion){
+        pba->m_scf = pba->scf_parameters[1]*pba->H0;
+        pba->w_scf = (pba->scf_parameters[0]-1)/(pba->scf_parameters[0]+1);
+      }
+      else{
+        pba->m_scf = 0;
+        pba->w_scf = 0; //default to 0 but never used in that case
+      }
+      // printf("m_scf is %e pba->H0 %e\n", pba->m_scf,pba->H0);
+
+
    if(pba->scf_evolve_as_fluid == _TRUE_ && pba->m_scf >= 3*pvecback[pba->index_bg_H]){
        ppt->scf_fluid_flag_perts = _TRUE_;
       } //CO 22.01.18 scf_evolve_as_fluid == _TRUE_ means user wants to use fluid equation. scf_parameters[0]>3H means this mode is in the regime where fluid eqs apply.
       // && pba->scf_parameters[0] >= 3*pvecback[pba->index_bg_H]
 
-    if (ppt->perturbations_verbose>10) {
-    fprintf(stdout,"Inside perturb derivs, if conditions are true, setting scf_fluid_flag_perts = true. The value is: %d \n ", ppt->scf_fluid_flag_perts);
-    fprintf(stdout,"The value of pba->scf_evolve_as_fluid is %f \n", pba->scf_evolve_as_fluid);
-    fprintf(stdout,"The value of pba->scf_potential is %f \n", pba->scf_potential);
-    fprintf(stdout,"The value of pba->scf_has_scf is %f \n", pba->has_scf);
-    fprintf(stdout,"The value of pba->scf_has_perturbations is %f \n", pba->scf_has_perturbations);
-    fprintf(stdout,"The value of 3*pvecback[pba->index_bg_H] is %f \n", 3*pvecback[pba->index_bg_H]);
-    fprintf(stdout,"The value of m is %ff \n", pba->scf_parameters[0]);
-    }
+    // if (ppt->perturbations_verbose>10) {
+    // fprintf(stdout,"Inside perturb derivs, if conditions are true, setting scf_fluid_flag_perts = true. The value is: %d \n ", ppt->scf_fluid_flag_perts);
+    // fprintf(stdout,"The value of pba->scf_evolve_as_fluid is %f \n", pba->scf_evolve_as_fluid);
+    // fprintf(stdout,"The value of pba->scf_potential is %f \n", pba->scf_potential);
+    // fprintf(stdout,"The value of pba->scf_has_scf is %f \n", pba->has_scf);
+    // fprintf(stdout,"The value of pba->scf_has_perturbations is %f \n", pba->scf_has_perturbations);
+    // fprintf(stdout,"The value of 3*pvecback[pba->index_bg_H] is %f \n", 3*pvecback[pba->index_bg_H]);
+    // fprintf(stdout,"The value of m is %f Mpc^-2 \n", pba->m_scf);
+    // }
   }
   // if(pba->scf_has_perturbations == _FALSE_ ){
   //   if (ppt->perturbations_verbose>10)
@@ -7556,6 +7566,31 @@ int perturb_derivs(double tau,
         // if(ppt->perturbations_verbose>11){
           // fprintf(stdout,"Passed 'KG calc' \n ");
         // }
+
+        if(pba->scf_evolve_as_fluid == _TRUE_){
+          //If we are following KG:
+          if (ppt->gauge == synchronous){
+              delta_rho_scf =  1./3.*
+                (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
+                 + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
+            }
+          else{
+            delta_rho_scf =  1./3.*
+              (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
+                + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]
+                - 1./a2*pow(ppw->pvecback[pba->index_bg_phi_prime_scf],2)*ppw->pvecmetric[ppw->index_mt_psi]);
+            }
+
+          rho_plus_p_theta_scf =  1./3.*
+            k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
+
+          delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
+          theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
+
+         // If we are evolving as KG, we need to ensure that delta/theta_scf are assigned a value until the point when they are updated via the fluid equations. Only needs to happen if they will be updated in the future though, so use flag not potential name.
+            y[ppw->pv->index_pt_delta_scf] = delta_scf;
+            y[ppw->pv->index_pt_theta_scf] = theta_scf;
+          }
       }
       // else {
 
