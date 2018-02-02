@@ -615,7 +615,7 @@ int background_init(
     }
   }
 
-  
+
 
 
 
@@ -886,6 +886,7 @@ int background_indices(
   class_define_index(pba->index_bg_rho_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_p_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_w_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_dw_scf,pba->has_scf,index_bg,1);
 
   /* - index for Lambda */
   class_define_index(pba->index_bg_rho_lambda,pba->has_lambda,index_bg,1);
@@ -1765,6 +1766,35 @@ int background_solve(
              pba->error_message,
              pba->error_message);
 
+   /** - if needed, compute dw_over_dtau_scf */
+   if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid==_TRUE_){
+
+     /** - ---> second derivative with respect to tau of cb2 */
+     class_call(array_spline_table_line_to_line(pba->tau_table,
+                                               pba->bt_size,
+                                               pba->background_table,
+                                               pba->bg_size,
+                                               pba->index_bg_w_scf,
+                                               pba->index_bg_ddw_scf,
+                                               _SPLINE_EST_DERIV_,
+                                               pba->error_message),
+                pba->error_message,
+                pba->error_message);
+
+     class_call(array_derive_spline_table_line_to_line(pba->tau_table,
+                                                       pba->bt_size,
+                                                       pba->background_table,
+                                                       pba->bg_size,
+                                                       pba->index_bg_w_scf,
+                                                       pba->index_bg_ddw_scf,
+                                                       pba->index_bg_dw_scf,
+                                                       pba->error_message),
+                pba->error_message,
+                pba->error_message);
+
+
+   }
+
   /** - compute remaining "related parameters"
    *     - so-called "effective neutrino number", computed at earliest
       time in interpolation table. This should be seen as a
@@ -2143,6 +2173,7 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_rho_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_w_scf],pba->has_scf,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_dw_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_phi_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_phi_prime_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_V_scf],pba->has_scf,storeidx);

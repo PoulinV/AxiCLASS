@@ -4901,52 +4901,52 @@ int input_find_root(double *xzero,
   // dx = f1*dxdy;
   dx = 0.5;
   // printf("pfzw->scf_potential = %s \n",pfzw->scf_potential);
-  printf("dx = %e %e %e\n", dx,dxdy,f1);
+  // printf("dx = %e %e %e\n", dx,dxdy,f1);
   /** - Do linear hunt for boundaries */
     for (iter=1; iter<=100; iter++){
       //x2 = x1 + search_dir*dx;
-      printf("Root finding iteration: %d \n",iter);
+      // printf("Root finding iteration: %d \n",iter);
       if (x1 > 0 || x2 > 0){
-      	printf("x1 is positive: %e\n",x1);
+      	// printf("x1 is positive: %e\n",x1);
       	if((f1 > 0 || f2>0) && x1-dx > 0){
-      		printf("f1 was too high, x1-dx is still positive: %e\n",x1-dx);
+      		// printf("f1 was too high, x1-dx is still positive: %e\n",x1-dx);
       		x2 = (x1 - dx);
-      		printf("x2 = x1 - dx = %e\n",x2);
+      		// printf("x2 = x1 - dx = %e\n",x2);
         }
         else if ((f1 > 0 || f2 >0 ) && x1-dx < 0){
-          printf("f1 was slightly too high but x2 = x1 - dx goes negative, using x2 = x1 - (dx/n) with n such that x2 is positive\n");
+          // printf("f1 was slightly too high but x2 = x1 - dx goes negative, using x2 = x1 - (dx/n) with n such that x2 is positive\n");
           x2=x1-dx;
-          printf("initially x2 %e\n", x2);
+          // printf("initially x2 %e\n", x2);
           while(x2<0){
              dx/=2;
              x2=x1-dx;
-             printf("x2 %e\n", x2);
+             // printf("x2 %e\n", x2);
            }
-           printf("x2 is then %e \n", x2);
+           // printf("x2 is then %e \n", x2);
         }
         else if (f1 < 0 || f2 < 0){
-          printf("f1 was too low, using x1+x1/2: %e\n",x1+x1/2);
+          // printf("f1 was too low, using x1+x1/2: %e\n",x1+x1/2);
           x2 = (x1 + x1/2);
-          printf("x2 = x1 + x1/2 = %e\n",x2);
+          // printf("x2 = x1 + x1/2 = %e\n",x2);
         }
       }
       if (x1 < 0 ){
-        printf("x1 is negative: %e\n",x1);
+        // printf("x1 is negative: %e\n",x1);
         if(x1+dx < 0){
-          printf("x1+dx is negative: %e\n",x1+dx);
+          // printf("x1+dx is negative: %e\n",x1+dx);
           x2 = (x1 + dx);
-        printf("x2 = %e\n",x2);
+        // printf("x2 = %e\n",x2);
         }
         else if (x1+dx > 0){
-          printf("f1 was slightly too high but x2 = x1 - dx goes positive, using x2 = x1 - (dx/n) with n such that x2 is negative\n");
+          // printf("f1 was slightly too high but x2 = x1 - dx goes positive, using x2 = x1 - (dx/n) with n such that x2 is negative\n");
           x2=x1+dx;
-          printf("initially x2 %e\n", x2);
+          // printf("initially x2 %e\n", x2);
           while(x2>0){
              dx/=2;
              x2=x1+dx;
-             printf("x2 %e\n", x2);
+             // printf("x2 %e\n", x2);
            }
-           printf("x2 is then %e \n", x2);
+           // printf("x2 is then %e \n", x2);
         }
       }
       for (iter2=1; iter2 <= 3; iter2++) {

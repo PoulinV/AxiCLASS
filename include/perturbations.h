@@ -104,6 +104,7 @@ struct perturbs
   short has_perturbations; /**< do we need to compute perturbations at all ? */
 
   short scf_fluid_flag_perts; /** how do we evolve scalar perts? */
+  short scf_KG_switch_to_fluid; 
   short has_cls; /**< do we need any harmonic space spectrum \f$ C_l \f$ (and hence Bessel functions, transfer functions, ...)? */
 
   short has_scalars; /**< do we need scalars? */
