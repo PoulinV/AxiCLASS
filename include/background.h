@@ -91,6 +91,9 @@ struct background
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
+  double m_scf;
+  double w_scf;
+  double cs2_scf;
   //double scf_lambda; /**< \f$ \lambda \f$ : scalar field exponential potential slope */
   //double scf_alpha;  /**< \f$ \alpha \f$ : Albrecht-Skordis polynomial slope */
   //double scf_B; /**< \f$ \alpha \f$ : Albrecht-Skordis field shift */

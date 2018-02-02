@@ -161,6 +161,8 @@ struct fzerofun_workspace {
   short scf_fluid;
   short scf_evolve_as_fluid; /** Should we evolve as a fluid or use KG eqs all the way through? */
   short do_shooting;        /**< Should we use shooting method to determine phi_init */
+  double m_scf;
+  double w_scf;
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */

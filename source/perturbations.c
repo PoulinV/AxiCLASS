@@ -4144,7 +4144,8 @@ int perturb_initial_conditions(struct precision * ppr,
       fprintf(stdout,"Add rho_scf to rho_m. \n");
     // printf("pba->scf_evolve_as_fluid == _TRUE_ %f",pba->scf_evolve_as_fluid);
     if (pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_) { //VP
-      rho_m += ppw->pvecback[pba->index_bg_rho_scf];
+      rho_r += 3.* ppw->pvecback[pba->index_bg_p_scf];
+      rho_m += ppw->pvecback[pba->index_bg_rho_scf]- 3.* ppw->pvecback[pba->index_bg_p_scf];
     }
     if (pba->has_dcdm == _TRUE_) {
       rho_m += ppw->pvecback[pba->index_bg_rho_dcdm];
@@ -4279,12 +4280,15 @@ int perturb_initial_conditions(struct precision * ppr,
         // CO 23.01.18 Initialised to zero if will be used at a later point in the code, so needs the evolve as fluid flag not the potential.
         if(pba->scf_evolve_as_fluid == _TRUE_
         /*pba->scf_potential == axionquad || pba->scf_potential == axion || pba->scf_potential == ax_cos_cubed*/){
-          ppw->pv->y[ppw->pv->index_pt_delta_scf] = 0.;
-        }
-        //3./4.*ppw->pv->y[ppw->pv->index_pt_delta_scf]; /* scf density */
-        if(pba->scf_evolve_as_fluid == _TRUE_
-        /*pba->scf_potential == axionquad || pba->scf_potential == axion || pba->scf_potential == ax_cos_cubed*/){
-        ppw->pv->y[ppw->pv->index_pt_theta_scf] = 0.;
+              if(pba->scf_potential == axionquad){
+                pba->cs2_scf = k*k/(4*pba->m_scf*pba->m_scf*a*a)/(1+k*k/(4*pba->m_scf*pba->m_scf*a*a));
+              }
+              else if(pba->scf_potential == axion){
+                pba->cs2_scf = k*k/(4*pba->m_scf*pba->m_scf*a*a)/(1+k*k/(4*pba->m_scf*pba->m_scf*a*a));//To be eventually modified
+              }
+          ppw->pv->y[ppw->pv->index_pt_delta_scf] = - ktau_two/4.*(1.+pba->w_scf)*(4.-3.*pba->cs2_scf)/(4.-6.*pba->w_scf+3.*pba->cs2_scf) * ppr->curvature_ini * s2_squared; /* from 1004.5509 */ //TBC: curvature
+
+          ppw->pv->y[ppw->pv->index_pt_theta_scf] = - k*ktau_three/4.*pba->cs2_scf/(4.-6.*pba->w_scf+3.*pba->cs2_scf) * ppr->curvature_ini * s2_squared; /* from 1004.5509 */ //TBC:curvature
         }
         //3./4.*ppw->pv->y[ppw->pv->index_pt_delta_scf]; /* scf density */
         /* scf as cdm velocity vanishes in the synchronous gauge */
@@ -4535,8 +4539,8 @@ int perturb_initial_conditions(struct precision * ppr,
 
           if(ppt->scf_fluid_flag_perts == _TRUE_
           /*(CO 22.01.18 - pba->scf_potential == axionquad || pba->scf_potential == axion || pba->scf_potential == ax_cos_cubed) && ppt->scf_fluid_flag_perts == _TRUE_*/){
-            ppw->pv->y[ppw->pv->index_pt_delta_scf] -= 3.*a_prime_over_a*alpha;
-            ppw->pv->y[ppw->pv->index_pt_theta_scf] = k*k*alpha;
+            ppw->pv->y[ppw->pv->index_pt_delta_scf] -= 3.*(1+pba->w_scf)*a_prime_over_a*alpha;
+            ppw->pv->y[ppw->pv->index_pt_theta_scf] += k*k*alpha;
           }
       }
 
@@ -5627,13 +5631,21 @@ int perturb_total_stress_energy(
            - ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
         }
         else {
-          printf("scf_fluid_flag_perts == TRUE but we are in the synchronous gauge! Please switch to Newtonian gauge.\n");
-        }
+          if(pba->scf_potential == axionquad){
+            pba->cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
+          }
+          else if(pba->scf_potential == axion){
+            pba->cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
+          }
+        delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to _CDM above
+        delta_p_scf = pba->cs2_scf * delta_rho_scf;
+        // printf("delta_rho_scf FL %e\n", delta_rho_scf);
+        y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf]; //CO 23.01.18 keep evolving phi even though using fluid eqs        }
         // if(ppt->scf_fluid_flag_perts == _TRUE_){
         //     y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf];
         // }
       }
-
+    }
       else{ //if newtonian gauge, equation for psi */
         if (ppt->scf_fluid_flag_perts == _FALSE_){ //evolving via KG
           psi = y[ppw->pv->index_pt_phi] - 4.5 * (a2/k/k) * ppw->rho_plus_p_shear;
@@ -5649,8 +5661,14 @@ int perturb_total_stress_energy(
              // printf("delta_rho_scf KG %e\n", delta_rho_scf);
         }
         else{ //evolving as fluid
+                if(pba->scf_potential == axionquad){
+                  pba->cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
+                }
+                else if(pba->scf_potential == axion){
+                  pba->cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
+                }
               delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to _CDM above
-              delta_p_scf = 0;
+              delta_p_scf = pba->cs2_scf * delta_rho_scf;
               // printf("delta_rho_scf FL %e\n", delta_rho_scf);
               y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf]; //CO 23.01.18 keep evolving phi even though using fluid eqs
         }
@@ -5666,10 +5684,10 @@ int perturb_total_stress_energy(
       rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
       }
       else { //evolving via fluid mimicking CDM
-        rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf];
+        rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
         //rho_plus_p_theta only needed for Newtonian
         if (ppt->gauge == newtonian){
-          ppw->rho_plus_p_theta = ppw->rho_plus_p_theta + ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_theta_scf];
+          ppw->rho_plus_p_theta = ppw->rho_plus_p_theta + (1.+pba->w_scf)*ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_theta_scf];
         }
       }
     }
@@ -5735,6 +5753,8 @@ int perturb_total_stress_energy(
         rho_m += ppw->pvecback[pba->index_bg_rho_dcdm];
       }
 
+
+
       /* include any other species non-relativistic today (like ncdm species) */
 
       if (pba->has_ncdm == _TRUE_) {
@@ -5749,8 +5769,8 @@ int perturb_total_stress_energy(
       fprintf(stdout,"Might segmentation fault here when scf perts. \n");
 
       if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_ && ppt->scf_fluid_flag_perts == _TRUE_){ //include _SCF when evolving as a fluid and mimicking CDM
-        delta_rho_m += ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf];
-        rho_m += ppw->pvecback[pba->index_bg_rho_scf];//VP
+        delta_rho_m += ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf];//TBC
+        rho_m += ppw->pvecback[pba->index_bg_rho_scf]- 3.* ppw->pvecback[pba->index_bg_p_scf]; //VP
       } //without hte flag for scf_perturbations, throws a segmentation fault here when running with scf_perturbations off. CO-18.01.18
 
       /* infer delta_m */
@@ -7085,7 +7105,7 @@ int perturb_derivs(double tau,
   //printf("Finished calling thermodynamics_at_z. \n");
 
   if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
-   if(pba->scf_evolve_as_fluid == _TRUE_ && pba->scf_parameters[0] >= 3*pvecback[pba->index_bg_H]){
+   if(pba->scf_evolve_as_fluid == _TRUE_ && pba->m_scf >= 3*pvecback[pba->index_bg_H]){
        ppt->scf_fluid_flag_perts = _TRUE_;
       } //CO 22.01.18 scf_evolve_as_fluid == _TRUE_ means user wants to use fluid equation. scf_parameters[0]>3H means this mode is in the regime where fluid eqs apply.
       // && pba->scf_parameters[0] >= 3*pvecback[pba->index_bg_H]
@@ -7531,27 +7551,46 @@ int perturb_derivs(double tau,
         dy[pv->index_pt_phi_prime_scf] =  - 2.*a_prime_over_a*y[pv->index_pt_phi_prime_scf]
         - metric_continuity*pvecback[pba->index_bg_phi_prime_scf] //  metric_continuity = h'/2
         - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]; //checked
-        if(ppt->perturbations_verbose>11){
-          fprintf(stdout,"Passed 'KG calc' \n ");
-        }
+
+        // printf("%e %e %e %e\n",k,a, dy[pv->index_pt_phi_scf],dy[pv->index_pt_phi_prime_scf]);
+        // if(ppt->perturbations_verbose>11){
+          // fprintf(stdout,"Passed 'KG calc' \n ");
+        // }
       }
       // else {
 
       // }
-      if (ppt->scf_fluid_flag_perts == _TRUE_){
-        //printf("KG results set to zero.\n");
-        //printf("Evolving as fluid.\n");
+      else if (ppt->scf_fluid_flag_perts == _TRUE_){
+        printf("KG results set to zero.\n");
+        printf("Evolving as fluid.\n");
         dy[pv->index_pt_phi_scf] = 0.;
         dy[pv->index_pt_phi_prime_scf] = 0.;
-        if (ppt->gauge == newtonian){
-          /** - ----> scf density */
-          dy[pv->index_pt_delta_scf] = -(y[pv->index_pt_theta_scf]+metric_continuity);
-          /** - ----> scf velocity */
-          dy[pv->index_pt_theta_scf] = - a_prime_over_a*y[pv->index_pt_theta_scf] + metric_euler;
-        }
-        if (ppt->gauge == synchronous){
-          dy[pv->index_pt_delta_scf] = -metric_continuity; /* scf density */
-        }
+
+
+          if(pba->scf_potential == axionquad){
+            cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
+            ca2 = 0;
+          }
+          else if(pba->scf_potential == axion){
+            cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
+            ca2 = 0;
+          }
+          /** - ----> fluid density */
+          printf("cs2 %e \n", cs2);
+          dy[pv->index_pt_delta_scf] =
+            -(1+pba->w_scf)*(y[pv->index_pt_theta_scf]+metric_continuity)
+            -3.*(cs2-pba->w_scf)*a_prime_over_a*y[pv->index_pt_delta_scf]
+            -9.*(1+pba->w_scf)*(cs2-ca2)*a_prime_over_a*a_prime_over_a*y[pv->index_pt_theta_scf]/k2;
+
+          /** - ----> fluid velocity */
+
+          dy[pv->index_pt_theta_scf] = /* fluid velocity */
+            -(1.-3.*cs2)*a_prime_over_a*y[pv->index_pt_theta_scf]
+            +cs2*k2/(1.+pba->w_scf)*y[pv->index_pt_delta_scf]
+            +metric_euler;
+
+
+
       }
       if(ppt->perturbations_verbose>10){
         fprintf(stdout,"Scf completed.\n ");
