@@ -7111,8 +7111,8 @@ int perturb_derivs(double tau,
       }
       // printf("m_scf is %e pba->H0 %e\n", pba->m_scf,pba->H0);
 
-
-   if(pba->scf_evolve_as_fluid == _TRUE_ && pba->m_scf >= 3*pvecback[pba->index_bg_H]){
+      // printf("pba->threshold_scf_fluid_m_over_H %e\n", pba->threshold_scf_fluid_m_over_H);
+   if(pba->scf_evolve_as_fluid == _TRUE_ && pba->m_scf >= pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H]){
        ppt->scf_fluid_flag_perts = _TRUE_;
       } //CO 22.01.18 scf_evolve_as_fluid == _TRUE_ means user wants to use fluid equation. scf_parameters[0]>3H means this mode is in the regime where fluid eqs apply.
       // && pba->scf_parameters[0] >= 3*pvecback[pba->index_bg_H]

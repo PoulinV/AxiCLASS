@@ -327,7 +327,7 @@ int background_functions(
     p_tot += (1./3.)*pvecback[pba->index_bg_rho_dr];
     rho_r += pvecback[pba->index_bg_rho_dr];
   }
-  if(pba->has_scf == _TRUE_ && pvecback[pba->index_bg_H] != 0 && pba->scf_parameters[0]*pba->H0 >= 3*pvecback[pba->index_bg_H] && pba->fluid_scf_wanted == _TRUE_){ //We switch for fluid equations
+  if(pba->has_scf == _TRUE_ && pvecback[pba->index_bg_H] != 0 && pba->scf_parameters[0]*pba->H0 >= pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H] && pba->fluid_scf_wanted == _TRUE_){ //We switch for fluid equations
     pba->scf_fluid = _TRUE_;
     pba->scf_kg_eq = _FALSE_;
   }
@@ -615,7 +615,7 @@ int background_init(
     }
   }
 
-  
+
 
 
 

@@ -163,6 +163,7 @@ struct fzerofun_workspace {
   short do_shooting;        /**< Should we use shooting method to determine phi_init */
   double m_scf;
   double w_scf;
+  double threshold_scf_fluid_m_over_H;
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
