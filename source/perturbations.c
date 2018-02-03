@@ -3120,7 +3120,7 @@ int perturb_vector_init(
     if(pba->scf_evolve_as_fluid == _TRUE_
       /*pba->scf_potential == axionquad || pba->scf_potential == axion || pba->scf_potential == ax_cos_cubed */){
       class_define_index(ppv->index_pt_delta_scf,pba->has_scf,index_pt,1); /* scf density (velocity zero in synchronous gauge)*/ //COpertchange
-      class_define_index(ppv->index_pt_theta_scf,pba->has_scf && (ppt->gauge == newtonian),index_pt,1); /* scf velocity */
+      class_define_index(ppv->index_pt_theta_scf,pba->has_scf,index_pt,1); /* scf velocity */
     }
     }
     /* perturbed recombination: the indices are defined once tca is off. */
@@ -3545,10 +3545,9 @@ int perturb_vector_init(
             ppv->y[ppv->index_pt_delta_scf] =
           ppw->pv->y[ppw->pv->index_pt_delta_scf];
 
-            if (ppt->gauge == newtonian) {
           ppv->y[ppv->index_pt_theta_scf] =
             ppw->pv->y[ppw->pv->index_pt_theta_scf];
-            }
+
           }
       }
 
@@ -5814,10 +5813,8 @@ int perturb_total_stress_energy(
       }
 
       if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_ && ppt->scf_fluid_flag_perts == _TRUE_){ //CO 22.01.18 - have added this, is this correct?
-        if (ppt->gauge == newtonian){
           rho_plus_p_theta_m += ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_theta_scf];
           rho_plus_p_m += ppw->pvecback[pba->index_bg_rho_scf];
-        }
       }
 
       /* infer theta_m */
@@ -7562,7 +7559,6 @@ int perturb_derivs(double tau,
         - metric_continuity*pvecback[pba->index_bg_phi_prime_scf] //  metric_continuity = h'/2
         - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]; //checked
 
-        // printf("%e %e %e %e\n",k,a, dy[pv->index_pt_phi_scf],dy[pv->index_pt_phi_prime_scf]);
         // if(ppt->perturbations_verbose>11){
           // fprintf(stdout,"Passed 'KG calc' \n ");
         // }
@@ -7571,38 +7567,66 @@ int perturb_derivs(double tau,
           //If we are following KG:
           if (ppt->gauge == synchronous){
               delta_rho_scf =  1./3.*
-                (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
-                 + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
+                (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_phi_prime_scf]
+                 + pvecback[pba->index_bg_dV_scf]*y[pv->index_pt_phi_scf]);
             }
           else{
             delta_rho_scf =  1./3.*
-              (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
-                + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]
-                - 1./a2*pow(ppw->pvecback[pba->index_bg_phi_prime_scf],2)*ppw->pvecmetric[ppw->index_mt_psi]);
+              (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_phi_prime_scf]
+                + pvecback[pba->index_bg_dV_scf]*y[pv->index_pt_phi_scf]
+                - 1./a2*pow(pvecback[pba->index_bg_phi_prime_scf],2)*ppw->pvecmetric[ppw->index_mt_psi]);
             }
 
           rho_plus_p_theta_scf =  1./3.*
-            k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
+            k*k/a2*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_phi_scf];
 
           delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
-          theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
-
+          if(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]!=0)theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
+          else theta_scf = 0;
+          delta_scf -= 3.*(1+pba->w_scf)*a_prime_over_a*pvecmetric[ppw->index_mt_alpha];
+          theta_scf += k*k*pvecmetric[ppw->index_mt_alpha];
          // If we are evolving as KG, we need to ensure that delta/theta_scf are assigned a value until the point when they are updated via the fluid equations. Only needs to happen if they will be updated in the future though, so use flag not potential name.
-            y[ppw->pv->index_pt_delta_scf] = delta_scf;
-            y[ppw->pv->index_pt_theta_scf] = theta_scf;
+            y[pv->index_pt_delta_scf] = delta_scf;
+            y[pv->index_pt_theta_scf] = theta_scf;
+
+            // printf("%e %e %e %e\n",k,a, delta_scf,theta_scf);
+
+            if(pba->scf_potential == axionquad){
+              // cs2 = 0;
+              cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
+              ca2 = 0;
+            }
+            else if(pba->scf_potential == axion){
+              cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
+              ca2 = 0;
+            }
+
+            // printf("cs2 %e pba->w_scf %e \n", cs2,pba->w_scf);
+            dy[pv->index_pt_delta_scf] =
+              -(1+pba->w_scf)*(y[pv->index_pt_theta_scf]+metric_continuity)
+              -3.*(cs2-pba->w_scf)*a_prime_over_a*y[pv->index_pt_delta_scf]
+              -9.*(1+pba->w_scf)*(cs2-ca2)*a_prime_over_a*a_prime_over_a*y[pv->index_pt_theta_scf]/k2;
+
+            /** - ----> fluid velocity */
+
+            dy[pv->index_pt_theta_scf] = /* fluid velocity */
+              -(1.-3.*cs2)*a_prime_over_a*y[pv->index_pt_theta_scf]
+              +cs2*k2/(1.+pba->w_scf)*y[pv->index_pt_delta_scf]
+              +metric_euler;
           }
       }
       // else {
 
       // }
       else if (ppt->scf_fluid_flag_perts == _TRUE_){
-        printf("KG results set to zero.\n");
-        printf("Evolving as fluid.\n");
+        // printf("KG results set to zero.\n");
+        // printf("Evolving as fluid.\n");
         dy[pv->index_pt_phi_scf] = 0.;
         dy[pv->index_pt_phi_prime_scf] = 0.;
 
 
           if(pba->scf_potential == axionquad){
+            // cs2 = 0;
             cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
             ca2 = 0;
           }
@@ -7611,7 +7635,7 @@ int perturb_derivs(double tau,
             ca2 = 0;
           }
           /** - ----> fluid density */
-          printf("cs2 %e \n", cs2);
+          // printf("cs2 %e pba->w_scf %e \n", cs2,pba->w_scf);
           dy[pv->index_pt_delta_scf] =
             -(1+pba->w_scf)*(y[pv->index_pt_theta_scf]+metric_continuity)
             -3.*(cs2-pba->w_scf)*a_prime_over_a*y[pv->index_pt_delta_scf]
@@ -7624,36 +7648,13 @@ int perturb_derivs(double tau,
             +cs2*k2/(1.+pba->w_scf)*y[pv->index_pt_delta_scf]
             +metric_euler;
 
-
+          // printf("k  %e a %e ddelta %e dtheta %e metric_continuity %e\n",k, a, dy[pv->index_pt_delta_scf],dy[pv->index_pt_theta_scf],metric_continuity);
 
       }
       if(ppt->perturbations_verbose>10){
         fprintf(stdout,"Scf completed.\n ");
         }
     }
-
-/* CO 22.01.18 Extracted old SCF changes:
-      // if (ppt->scf_fluid_flag_perts == _FALSE_){
-        // printf("Evolving as KG, 3H = %e, m = %e. \n",3*ppw->pvecback[pba->index_bg_H],pba->scf_parameters[0]);
-              // printf("y[pv->index_pt_phi_prime_scf] %e\n", y[pv->index_pt_phi_prime_scf]);
-          // printf("Evolving as fluid, 3H = %e, m = %e. \n",3*ppw->pvecback[pba->index_bg_H],pba->scf_parameters[0]); //print_trigger
-      // }
-      // else if (ppt->scf_fluid_flag_perts == _TRUE_){ //COpertchange
-      //   /** In synchronous gauge, only need density, velocity set to zero **/
-      //   /** - ----> newtonian gauge: cdm density and velocity */
-      //   if (ppt->gauge == newtonian) {
-      //     // printf("Evolving as fluid, 3H = %e, m = %e. \n",3*ppw->pvecback[pba->index_bg_H],pba->scf_parameters[0]); //print_trigger
-      //     dy[pv->index_pt_delta_scf] = -(y[pv->index_pt_theta_scf]+metric_continuity); /* cdm density */
-      //
-      //     dy[pv->index_pt_theta_scf] = - a_prime_over_a*y[pv->index_pt_theta_scf] + metric_euler; /* cdm velocity */
-      //   }
-      //
-      // /** - ----> synchronous gauge: cdm density only (velocity set to zero by definition of the gauge) */
-      //
-      //   if (ppt->gauge == synchronous) {
-      //     dy[pv->index_pt_delta_scf] = -metric_continuity; /* cdm density */
-      //   }
-      // }
 
 
     /** - ---> ultra-relativistic neutrino/relics (ur) */
