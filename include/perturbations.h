@@ -104,7 +104,7 @@ struct perturbs
   short has_perturbations; /**< do we need to compute perturbations at all ? */
 
   short scf_fluid_flag_perts; /** how do we evolve scalar perts? */
-  short scf_KG_switch_to_fluid; 
+  short scf_KG_switch_to_fluid;
   short has_cls; /**< do we need any harmonic space spectrum \f$ C_l \f$ (and hence Bessel functions, transfer functions, ...)? */
 
   short has_scalars; /**< do we need scalars? */
@@ -312,6 +312,9 @@ struct perturbs
 
   //@}
 
+  short use_big_theta_scf;
+
+
   /** @name - list of k values for each mode */
 
   //@{
@@ -412,6 +415,7 @@ struct perturb_vector
   int index_pt_phi_prime_scf;  /**< scalar field velocity */
   int index_pt_delta_scf; /**< scf density for fluid */
   int index_pt_theta_scf; /**< scf velocity */
+  int index_pt_big_theta_scf;  /**< dark energy velocity divided by (1+w_fld) in true fluid case */
   int index_pt_delta_ur; /**< density of ultra-relativistic neutrinos/relics */
   int index_pt_theta_ur; /**< velocity of ultra-relativistic neutrinos/relics */
   int index_pt_shear_ur; /**< shear of ultra-relativistic neutrinos/relics */

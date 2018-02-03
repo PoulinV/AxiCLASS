@@ -327,12 +327,10 @@ int background_functions(
     p_tot += (1./3.)*pvecback[pba->index_bg_rho_dr];
     rho_r += pvecback[pba->index_bg_rho_dr];
   }
-  if(pba->has_scf == _TRUE_ && pvecback[pba->index_bg_H] != 0 && pba->scf_parameters[0]*pba->H0 >= 3*pvecback[pba->index_bg_H] && pba->fluid_scf_wanted == _TRUE_){ //We switch for fluid equations
-    pba->scf_fluid = _TRUE_;
+  if(pba->has_scf == _TRUE_ && pba->scf_parameters[0]*pba->H0 >= 3*pvecback[pba->index_bg_H] && pba->fluid_scf == _TRUE_){ //We switch for fluid equations
     pba->scf_kg_eq = _FALSE_;
   }
   else{
-    pba->scf_fluid = _FALSE_;
     pba->scf_kg_eq = _TRUE_;
   }
   //printf("Scalar field? %f \n", pba->has_scf);//print_trigger
@@ -363,7 +361,7 @@ int background_functions(
     //printf("3H = %e \n", 3*pvecback[pba->index_bg_H]);
     //printf("KE = %e, V = %e \n", (phi_prime*phi_prime/(2*a*a) , V_scf(pba,phi)));
   }
-  else if(pba->has_scf == _TRUE_ &&  pba->scf_fluid == _TRUE_ && pba->fluid_scf_wanted == _TRUE_){ //Assume axion has w = 0;
+  else if(pba->has_scf == _TRUE_ &&  pba->scf_kg_eq == _FALSE_){
     phi = pvecback[pba->index_bg_phi_scf]; //phi is frozen to its last value.
     //pvecback[pba->index_bg_rho_scf] = pba->Omega0_scf * pow(pba->H0,2) / pow(a_rel,3);
     pvecback[pba->index_bg_rho_scf] = pvecback_B[pba->index_bi_rho_scf];
@@ -374,7 +372,7 @@ int background_functions(
     rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
     rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
     // printf("now fluid equation %e rho %e \n",3*pvecback[pba->index_bg_H],pvecback[pba->index_bg_rho_scf]);
-    //printf("phi is %e\n rho_scf is %e \n", phi, pvecback[pba->index_bg_rho_scf]);
+    // printf("phi is %e\n rho_scf is %e \n", phi, pvecback[pba->index_bg_rho_scf]);
 
   }
   //printf("Scalar field? %f \n", pba->has_scf); //print_trigger
@@ -803,8 +801,6 @@ int background_indices(
   pba->has_ur = _FALSE_;
   pba->has_curvature = _FALSE_;
   pba->scf_kg_eq = _FALSE_;
-  pba->scf_fluid = _FALSE_;
-  pba->fluid_scf_wanted = _FALSE_;
   /*COComment this probably isn't the best place to initialise this */
 
   if (pba->Omega0_cdm != 0.)
@@ -826,10 +822,6 @@ int background_indices(
     pba->scf_kg_eq = _TRUE_; //Initially, we solve the KG equation.
   }
 
-  if (pba->fluid_scf != 0.){
-    pba->fluid_scf_wanted = _TRUE_;
-    printf("You have chosen to use fluid equations to evolve scalar field where possible. If not, change 'fluid_scf' to 0.\n");
-  }
   if (pba->Omega0_lambda != 0.)
     pba->has_lambda = _TRUE_;
 
@@ -887,6 +879,7 @@ int background_indices(
   class_define_index(pba->index_bg_p_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_w_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_dw_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_ddw_scf,pba->has_scf,index_bg,1);
 
   /* - index for Lambda */
   class_define_index(pba->index_bg_rho_lambda,pba->has_lambda,index_bg,1);
@@ -1615,6 +1608,23 @@ int background_solve(
                pba->error_message);
     pba->bt_size++;
     //printf("Calling generic_integrator.\n");//print_trigger
+
+    if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_){
+          if(pba->scf_potential == axionquad){
+            pba->m_scf = pba->scf_parameters[0]*pba->H0;
+            pba->w_scf = 0;
+          }
+          else if(pba->scf_potential == axion){
+            pba->m_scf = pba->scf_parameters[1]*pba->H0;
+            pba->w_scf = (pba->scf_parameters[0]-1)/(pba->scf_parameters[0]+1);
+          }
+          else{
+            pba->m_scf = 0;
+            pba->w_scf = 0; //default to 0 but never used in that case
+          }
+          // printf("m_scf is %e pba->w_scf %e\n", pba->m_scf,pba->w_scf);
+       }
+
     /* -> perform one step */
     class_call(generic_integrator(background_derivs,
                                   tau_start,
@@ -1854,7 +1864,6 @@ int background_solve(
 
   free(pvecback);
   free(pvecback_integration);
-  pba->scf_fluid = _FALSE_;
   pba->scf_kg_eq = _TRUE_; // COpertchange
   printf("Finished background computation, resetting scf flags to KG.\n"); //print_trigger
   return _SUCCESS_;
@@ -2293,17 +2302,15 @@ int background_derivs(
     dy[pba->index_bi_rho_scf] = 0; //Update the scf density until the fluid equation starts.
     //y[pba->index_bi_rho_scf] = y[pba->index_bg_rho_scf];
     //printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
-
-  }
-    else if (pba->scf_fluid == _TRUE_) {
+    }
+    else if(pba->scf_kg_eq == _FALSE_) {
 
       /*COComment - treat as a perfect fluid with w = 0 */
     //dy[pba->index_bi_rho_scf] = -3.*y[pba->index_bi_a]*pvecback[pba->index_bg_H]*y[pba->index_bi_rho_scf];
     dy[pba->index_bi_rho_scf] = -3.*y[pba->index_bi_a]*pvecback[pba->index_bg_H]*y[pba->index_bi_rho_scf]*(1+pba->w_scf);
     // printf("Evolving scalar field using fluid equation.\n");
     }
-
-    else if (pba->scf_fluid == _FALSE_ && pba->scf_kg_eq == _FALSE_) {
+    else if (pba->fluid_scf == _FALSE_ && pba->scf_kg_eq == _FALSE_) {
       /*COComment Throw an error code if neither KG nor fluid equations apply - this should never happen */
       printf("We are not evolving scalar field as KG nor fluid eq, something has gone wrong!\n");
     }

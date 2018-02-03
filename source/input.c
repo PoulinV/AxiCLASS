@@ -272,7 +272,7 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
              errmsg);
 
     if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
-    fzw.scf_fluid = _TRUE_;
+    fzw.fluid_scf = _TRUE_;
     fzw.scf_evolve_as_fluid = _TRUE_;
     if(fzw.scf_potential == axionquad){
       fzw.m_scf = fzw.scf_parameters[0];
@@ -288,6 +288,7 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
     }
     }
     else {
+      fzw.fluid_scf = _FALSE_;
       fzw.scf_evolve_as_fluid = _FALSE_;
     }
 // printf("Inside input.c. Reading fluid_scf and setting string. %d \n",fzw.scf_evolve_as_fluid);
@@ -1266,6 +1267,7 @@ int input_read_parameters(
         pba->scf_evolve_as_fluid = _TRUE_;
       }
       else {
+        pba->fluid_scf = _FALSE_;
         pba->scf_evolve_as_fluid = _FALSE_;
       }
     }
@@ -1273,6 +1275,22 @@ int input_read_parameters(
       pba->scf_evolve_as_fluid = _FALSE_;
     }
 
+    class_call(parser_read_string(pfc,
+                                  "use_big_theta_scf",
+                                  &string1,
+                                  &flag1,
+                                  errmsg),
+                errmsg,
+                errmsg);
+
+    if (flag1 == _TRUE_){
+      if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+        ppt->use_big_theta_scf = _TRUE_;
+      }
+      else {
+        ppt->use_big_theta_scf = _FALSE_;
+      }
+    }
 
 
 
@@ -3639,6 +3657,7 @@ int input_default_params(
   //MZ: initial conditions are as multiplicative factors of the radiation attractor values
   pba->phi_ini_scf = 1;
   pba->phi_prime_ini_scf = 1;
+  ppt->use_big_theta_scf = _FALSE_;
 
   pba->Omega0_k = 0.;
   pba->K = 0.;
@@ -4800,7 +4819,7 @@ int input_find_root(double *xzero,
   // Can we edit the method so it's more of a bisection on the final density?
   // if result 2 > result 1, x - dx.
   // if result 2 < result 1, x + dx
-  if(pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion){
+  if(pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion || pfzw->scf_potential==axionquad){
     if(pfzw->scf_potential == ax_cos_cubed)f_a = pfzw->scf_parameters[1];
     else if(pfzw->scf_potential == axion)f_a = pfzw->scf_parameters[2];
     if(pfzw->do_shooting == _TRUE_){
@@ -4835,7 +4854,7 @@ int input_find_root(double *xzero,
             printf("f1 was way too low, x2 = 2x1: %e\n", (x1*2));
             x2 = (x1*2);
           }
-          else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<180)){
+          else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<180) && (pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion)){
             printf("f1 was slightly too low, x2 = x1 + dx does not go above pi, using this: %e\n", x1 + dx);
              x2 = (x1 + dx);
           }
@@ -4897,93 +4916,7 @@ int input_find_root(double *xzero,
       printf("Skipping ridders method. phi_init is %e \n",xzero);
     }
   }
-  else if(pfzw->scf_potential==axionquad){
-  // dx = f1*dxdy;
-  dx = 0.5;
-  // printf("pfzw->scf_potential = %s \n",pfzw->scf_potential);
-  // printf("dx = %e %e %e\n", dx,dxdy,f1);
-  /** - Do linear hunt for boundaries */
-    for (iter=1; iter<=100; iter++){
-      //x2 = x1 + search_dir*dx;
-      // printf("Root finding iteration: %d \n",iter);
-      if (x1 > 0 || x2 > 0){
-      	// printf("x1 is positive: %e\n",x1);
-      	if((f1 > 0 || f2>0) && x1-dx > 0){
-      		// printf("f1 was too high, x1-dx is still positive: %e\n",x1-dx);
-      		x2 = (x1 - dx);
-      		// printf("x2 = x1 - dx = %e\n",x2);
-        }
-        else if ((f1 > 0 || f2 >0 ) && x1-dx < 0){
-          // printf("f1 was slightly too high but x2 = x1 - dx goes negative, using x2 = x1 - (dx/n) with n such that x2 is positive\n");
-          x2=x1-dx;
-          // printf("initially x2 %e\n", x2);
-          while(x2<0){
-             dx/=2;
-             x2=x1-dx;
-             // printf("x2 %e\n", x2);
-           }
-           // printf("x2 is then %e \n", x2);
-        }
-        else if (f1 < 0 || f2 < 0){
-          // printf("f1 was too low, using x1+x1/2: %e\n",x1+x1/2);
-          x2 = (x1 + x1/2);
-          // printf("x2 = x1 + x1/2 = %e\n",x2);
-        }
-      }
-      if (x1 < 0 ){
-        // printf("x1 is negative: %e\n",x1);
-        if(x1+dx < 0){
-          // printf("x1+dx is negative: %e\n",x1+dx);
-          x2 = (x1 + dx);
-        // printf("x2 = %e\n",x2);
-        }
-        else if (x1+dx > 0){
-          // printf("f1 was slightly too high but x2 = x1 - dx goes positive, using x2 = x1 - (dx/n) with n such that x2 is negative\n");
-          x2=x1+dx;
-          // printf("initially x2 %e\n", x2);
-          while(x2>0){
-             dx/=2;
-             x2=x1+dx;
-             // printf("x2 %e\n", x2);
-           }
-           // printf("x2 is then %e \n", x2);
-        }
-      }
-      for (iter2=1; iter2 <= 3; iter2++) {
-        return_function = input_fzerofun_1d(x2,pfzw,&f2,errmsg);
-        (*fevals)++;
-        printf("x2= %g, f2= %g\n",x2,f2);
-        if (return_function ==_SUCCESS_) {
-          printf("Breaking because successful\n");
-          printf("f1 = %e, f2 = %e\n",f1,f2);
-          printf("f1+f2 = %e\n", f1+f2);
-          break;
-        }
-        else if (iter2 < 3) {
-          dx*=0.5;
-          x2 = x1-dx;
-        }
-        else {
-          //fprintf(stderr,"get here\n");
-          class_stop(errmsg,errmsg);
-        }
-      }
-
-      //if (f1*f2<0.0){
-      // if (f1+f2<0.01){
-      if (f1+f2<0.00000005 && f1+f1>-0.00000005){
-      // if (f1+f2<0.05){
-        /** - root has been bracketed */
-        if (0==0){
-          printf("Root has been bracketed after %d iterations: [%g, %g].\n",iter,x1,x2);
-        }
-        break;
-      }
-
-      x1 = x2;
-      f1 = f2;
-    }
-  }
+  
   else {
   dx = f1*dxdy;
   // printf("pfzw->scf_potential = %s \n",pfzw->scf_potential);
