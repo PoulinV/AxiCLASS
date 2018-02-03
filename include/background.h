@@ -94,6 +94,7 @@ struct background
   double m_scf;
   double w_scf;
   double cs2_scf;
+  double threshold_scf_fld_m_over_H;
   //double scf_lambda; /**< \f$ \lambda \f$ : scalar field exponential potential slope */
   //double scf_alpha;  /**< \f$ \alpha \f$ : Albrecht-Skordis polynomial slope */
   //double scf_B; /**< \f$ \alpha \f$ : Albrecht-Skordis field shift */

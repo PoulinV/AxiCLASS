@@ -274,6 +274,7 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
     if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
     fzw.fluid_scf = _TRUE_;
     fzw.scf_evolve_as_fluid = _TRUE_;
+    class_read_double("threshold_scf_fld_m_over_H",fzw.threshold_scf_fld_m_over_H);
     if(fzw.scf_potential == axionquad){
       fzw.m_scf = fzw.scf_parameters[0];
       fzw.w_scf = 0;
@@ -1265,6 +1266,7 @@ int input_read_parameters(
       if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
         pba->fluid_scf = _TRUE_;
         pba->scf_evolve_as_fluid = _TRUE_;
+        class_read_double("threshold_scf_fld_m_over_H",pba->threshold_scf_fld_m_over_H);
       }
       else {
         pba->fluid_scf = _FALSE_;
@@ -3670,6 +3672,7 @@ int input_default_params(
   pba->cs2_fld=1.;
   pba->use_ppf = _TRUE_;
   pba->c_gamma_over_c_fld = 0.4;
+  pba->threshold_scf_fld_m_over_H = 3;
 
   pba->shooting_failed = _FALSE_;
 
@@ -4916,7 +4919,7 @@ int input_find_root(double *xzero,
       printf("Skipping ridders method. phi_init is %e \n",xzero);
     }
   }
-  
+
   else {
   dx = f1*dxdy;
   // printf("pfzw->scf_potential = %s \n",pfzw->scf_potential);
