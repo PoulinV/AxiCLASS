@@ -7690,6 +7690,85 @@ int perturb_derivs(double tau,
       }
       if(pba->scf_evolve_as_fluid == _TRUE_) {
 
+        if (pba->scf_kg_eq == _TRUE_) {
+        //If we are following KG we compute delta_rho and theta from the field directly
+        if (ppt->gauge == synchronous){
+            delta_rho_scf =  1./3.*
+              (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_phi_prime_scf]
+               + pvecback[pba->index_bg_dV_scf]*y[pv->index_pt_phi_scf]);
+          }
+        else{
+          delta_rho_scf =  1./3.*
+            (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_phi_prime_scf]
+              + pvecback[pba->index_bg_dV_scf]*y[pv->index_pt_phi_scf]
+              - 1./a2*pow(pvecback[pba->index_bg_phi_prime_scf],2)*ppw->pvecmetric[ppw->index_mt_psi]);
+          }
+
+        rho_plus_p_theta_scf =  1./3.*
+          k*k/a2*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_phi_scf];
+
+          // If we are evolving as KG, we need to ensure that delta/theta_scf are assigned a value until the point when they are updated via the fluid equations. Only needs to happen if they will be updated in the future though, so use flag not potential name.
+
+        delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
+        delta_scf -= 3.*(1+pvecback[pba->index_bg_w_scf])*a_prime_over_a*pvecmetric[ppw->index_mt_alpha];
+        y[pv->index_pt_delta_scf] = delta_scf;
+        if(ppt->use_big_theta_scf == _TRUE_){
+          y[pv->index_pt_big_theta_scf] = rho_plus_p_theta_scf/pvecback[pba->index_bg_rho_scf];
+          y[pv->index_pt_big_theta_scf] += (1.0+pvecback[pba->index_bg_w_scf])*k*k*pvecmetric[ppw->index_mt_alpha];
+        }
+        else {
+            if(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]!=0)theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
+            else theta_scf = 0;
+            theta_scf += k*k*pvecmetric[ppw->index_mt_alpha];
+            y[pv->index_pt_theta_scf] = theta_scf;
+        }
+
+
+
+
+            //VP: if we have declared these variables we follow their evolution eventhough we have switched to KG equations otherwise the code is blocked.
+            cs2 = 0;
+            ca2 = 0;
+            if(ppt->use_big_theta_scf == _TRUE_){
+              dy[pv->index_pt_delta_scf] =
+                -(y[pv->index_pt_big_theta_scf]+(1+0)*metric_continuity)
+                -3.*(cs2-0)*a_prime_over_a*y[pv->index_pt_delta_scf]
+                -9.*(cs2-ca2)*a_prime_over_a*a_prime_over_a*y[pv->index_pt_big_theta_scf]/k2;
+            }
+            else{
+              dy[pv->index_pt_delta_scf] =
+                -(1+0)*(y[pv->index_pt_theta_scf]+metric_continuity)
+                -3.*(cs2-0)*a_prime_over_a*y[pv->index_pt_delta_scf]
+                -9.*(1+0)*(cs2-ca2)*a_prime_over_a*a_prime_over_a*y[pv->index_pt_theta_scf]/k2;
+            }
+                  /** - ----> fluid velocity */
+
+
+              /** - ----> fluid velocity */
+            if(ppt->use_big_theta_scf == _TRUE_){
+              // printf("%e %e \n",a,w_prime_scf/(1+w_scf));
+              dy[pv->index_pt_big_theta_scf] = /* fluid velocity */
+                -(1.-3.*cs2)*a_prime_over_a*y[pv->index_pt_big_theta_scf]
+                +cs2*k2*y[pv->index_pt_delta_scf]
+                +(1+0)*metric_euler;
+                dy[pv->index_pt_big_theta_scf]+= 3*a_prime_over_a*(0-ca2)*y[pv->index_pt_big_theta_scf];
+              // dy[pv->index_pt_big_theta_scf]+= y[pv->index_pt_big_theta_scf]*pvecback[pba->index_bg_dw_scf]/(1+pba->w_scf);
+              // printf("fluid k %e a %e delta_scf %e ddelta %e big_theta_scf %e dtheta %e \n",k,a, y[pv->index_pt_delta_scf],dy[pv->index_pt_delta_scf],y[pv->index_pt_big_theta_scf],dy[pv->index_pt_big_theta_scf]);
+
+              }
+              // printf("here n %d dy[pv->index_pt_delta_fld+n] %e y[pv->index_pt_delta_fld+n] %e dy[pv->index_pt_big_theta_fld+n] %e y[pv->index_pt_big_theta_fld+n] %e \n", n,dy[pv->index_pt_delta_fld+n],y[pv->index_pt_delta_fld+n], dy[pv->index_pt_big_theta_fld+n],y[pv->index_pt_big_theta_fld+n]);
+            else {
+              dy[pv->index_pt_theta_scf] = /* fluid velocity */
+                -(1.-3.*cs2)*a_prime_over_a*y[pv->index_pt_theta_scf]
+                +cs2*k2/(1.+0)*y[pv->index_pt_delta_scf]
+                +metric_euler;
+                // printf("fluid k %e a %e delta_scf %e ddelta %e theta_scf %e dtheta %e \n",k,a, y[pv->index_pt_delta_scf],dy[pv->index_pt_delta_scf],y[pv->index_pt_theta_scf],dy[pv->index_pt_delta_scf]);
+
+              // printf("here n %d dy[pv->index_pt_delta_fld+n] %e y[pv->index_pt_delta_fld+n] %e dy[pv->index_pt_theta_fld+n] %e y[pv->index_pt_theta_fld+n] %e \n", n,dy[pv->index_pt_delta_fld+n],y[pv->index_pt_delta_fld+n], dy[pv->index_pt_theta_fld+n],y[pv->index_pt_theta_fld+n]);
+            }
+          printf("fluid is %e %e %e %e \n",dy[pv->index_pt_delta_scf],dy[pv->index_pt_big_theta_scf],y[pv->index_pt_delta_scf],y[pv->index_pt_big_theta_scf]);
+        }
+        else{
           if(pba->scf_potential == axionquad){
             tau_b = (pba->Omega0_cdm + pba->Omega0_b + pba->Omega0_scf)*pba->H0*tau/(4*sqrt(pba->Omega0_g+pba->Omega0_ur));
             if(pba->m_scf>=pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H]){
@@ -7699,18 +7778,9 @@ int perturb_derivs(double tau,
               // printf("fluid: a %e k %e pba->w_scf %e\n",a,k,pba->w_scf);
             }
             else{
-              if(pba->scf_evolve_like_axionCAMB == _TRUE_){
                 cs2 = 1;
                 ca2 = -7./3+10*(pba->Omega0_cdm+pba->Omega0_b)/(pba->Omega0_cdm+pba->Omega0_b+pba->Omega0_scf)/9*tau_b; //from 1410.2896 appendix B3
                 pba->w_scf = pvecback[pba->index_bg_w_scf];
-              }
-
-              else{
-                cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
-                ca2=0;
-                // pba->w_scf = 0;
-                pba->w_scf = 0;
-              }
             }
            //from 1410.2896 appendix B
             // pba->w_scf = pvecback[pba->index_bg_w_scf]+2./25*pba->m_scf*pba->m_scf*tau_b*tau_b*tau*tau+0.1; //from 1410.2896 appendix B
@@ -7761,7 +7831,7 @@ int perturb_derivs(double tau,
           }
 
           // printf("k  %e a %e ddelta %e dtheta %e metric_continuity %e\n",k, a, dy[pv->index_pt_delta_scf],dy[pv->index_pt_theta_scf],metric_continuity);
-
+        }
       }
       // else if(pba->scf_fluid_eq == _FALSE_ && pba->scf_evolve_like_axionCAMB == _FALSE_){
       //   //VP: if we have declared these variables we follow their evolution eventhough we have switched to KG equations otherwise the code is blocked.
