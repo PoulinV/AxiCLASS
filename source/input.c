@@ -267,32 +267,30 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
 
 
 
-   class_call(parser_read_string(pfc,"fluid_scf",&string1,&flag1,errmsg),
+   class_call(parser_read_string(pfc,"scf_evolve_as_fluid",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
 
     if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
-    fzw.fluid_scf = _TRUE_;
     fzw.scf_evolve_as_fluid = _TRUE_;
     class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
     if(fzw.scf_potential == axionquad){
       fzw.m_scf = fzw.scf_parameters[0];
       fzw.w_scf = 0;
-      printf("here m_scf is %e \n", fzw.m_scf);
+      class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
     }
     else if(fzw.scf_potential == axion){
       fzw.m_scf = fzw.scf_parameters[1];
       fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
+      class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
     }
     else{
-      class_stop("fluid approximation is not working for potential different than 'axion' and 'axionquad'!. Please switch fluid_scf to no.",errmsg);
+      class_stop("fluid approximation is not working for potential different than 'axion' and 'axionquad'!. Please switch scf_evolve_as_fluid to no.",errmsg);
     }
     }
     else {
-      fzw.fluid_scf = _FALSE_;
       fzw.scf_evolve_as_fluid = _FALSE_;
     }
-// printf("Inside input.c. Reading fluid_scf and setting string. %d \n",fzw.scf_evolve_as_fluid);
 
 class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
              errmsg,
@@ -1255,7 +1253,7 @@ int input_read_parameters(
 
 
     class_call(parser_read_string(pfc,
-                                  "fluid_scf",
+                                  "scf_evolve_as_fluid",
                                   &string1,
                                   &flag1,
                                   errmsg),
@@ -1264,12 +1262,10 @@ int input_read_parameters(
 
     if (flag1 == _TRUE_){
       if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
-        pba->fluid_scf = _TRUE_;
         pba->scf_evolve_as_fluid = _TRUE_;
         class_read_double("threshold_scf_fluid_m_over_H",pba->threshold_scf_fluid_m_over_H);
       }
       else {
-        pba->fluid_scf = _FALSE_;
         pba->scf_evolve_as_fluid = _FALSE_;
       }
     }
@@ -1292,6 +1288,25 @@ int input_read_parameters(
       else {
         ppt->use_big_theta_scf = _FALSE_;
       }
+    }
+    class_call(parser_read_string(pfc,
+                                  "scf_evolve_like_axionCAMB",
+                                  &string1,
+                                  &flag1,
+                                  errmsg),
+                errmsg,
+                errmsg);
+
+    if (flag1 == _TRUE_){
+      if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+        pba->scf_evolve_like_axionCAMB = _TRUE_;
+      }
+      else {
+        pba->scf_evolve_like_axionCAMB = _FALSE_;
+      }
+    }
+    else {
+      pba->scf_evolve_like_axionCAMB = _FALSE_;
     }
 
 
@@ -3656,11 +3671,13 @@ int input_default_params(
   pba->scf_tuning_index = 0;
   pba->scf_potential = pol_times_exp;
   pba->scf_has_perturbations = _FALSE_;
+  pba->threshold_scf_fluid_m_over_H = 3;
   //MZ: initial conditions are as multiplicative factors of the radiation attractor values
   pba->phi_ini_scf = 1;
   pba->phi_prime_ini_scf = 1;
   ppt->use_big_theta_scf = _FALSE_;
-
+  pba->scf_evolve_as_fluid = _FALSE_;
+  pba->scf_evolve_like_axionCAMB = _FALSE_;
   pba->Omega0_k = 0.;
   pba->K = 0.;
   pba->sgnK = 0;
@@ -4538,16 +4555,16 @@ int input_try_unknown_parameters(double * unknown_parameter,
     /*COComment This must be updated to use value of rho from fluid equation */
       output[i] = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0)
         -ba.Omega0_scf;
-        printf("output[i] for scalar field %e \n", output[i]);
+        // printf("output[i] for scalar field %e \n", output[i]);
         // COComment Old print statements for scalar field, not relevant now using fluid equations as phi no longer evolves to end
-        printf("Made up of minus : %e \n", -ba.Omega0_scf);
-        printf("background table [] %e where bt_size = %e, bg_size = %e and index_bg_rho_scf = %e \n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf],ba.bt_size,ba.bg_size,ba.index_bg_rho_scf);
-        printf("backgroundtable[] / H0^2 = %e \n ", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0));
+        // printf("Made up of minus : %e \n", -ba.Omega0_scf);
+        // printf("background table [] %e where bt_size = %e, bg_size = %e and index_bg_rho_scf = %e \n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf],ba.bt_size,ba.bg_size,ba.index_bg_rho_scf);
+        // printf("backgroundtable[] / H0^2 = %e \n ", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0));
         printf("Where does the code end up? \n");
-        printf("phi: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_scf]);
-        printf("phidot: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]);
-        printf("K.E (not divided by a, as a=1?): %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]*ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]/2);
-        printf("potential: %e\n",ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_V_scf]);
+        // printf("phi: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_scf]);
+        // printf("phidot: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]);
+        // printf("K.E (not divided by a, as a=1?): %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]*ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]/2);
+        // printf("potential: %e\n",ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_V_scf]);
         printf("rho_ax / rho_crit: %e\n",ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0));
         printf("distance away from target: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0) - ba.Omega0_scf);
       break;
@@ -4713,7 +4730,7 @@ int input_get_guess(double *xguess,
         // if (ba.scf_parameters[0] <= 1e18) {
         xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[0]),0.5)));//ba.scf_parameters[0] is the ratio m/H0
         // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
-        //xguess[index_guess] =1e-8;
+        // xguess[index_guess] =1e-8;
         dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
         printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
         printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
@@ -4729,7 +4746,8 @@ int input_get_guess(double *xguess,
       }
       else if (ba.scf_tuning_index == 3 && (ba.scf_potential == axion) ){
         // xguess[index_guess] = 160*ba.scf_parameters[2];//set IC based on f_a.
-        xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
+        // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
+        xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[0]),0.5)));
         //xguess[index_guess] =1e-8;
         dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
         printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
@@ -4822,7 +4840,7 @@ int input_find_root(double *xzero,
   // Can we edit the method so it's more of a bisection on the final density?
   // if result 2 > result 1, x - dx.
   // if result 2 < result 1, x + dx
-  if(pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion || pfzw->scf_potential==axionquad){
+  if(pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion || pfzw->scf_potential == axionquad){
     if(pfzw->scf_potential == ax_cos_cubed)f_a = pfzw->scf_parameters[1];
     else if(pfzw->scf_potential == axion)f_a = pfzw->scf_parameters[2];
     if(pfzw->do_shooting == _TRUE_){
@@ -4836,7 +4854,7 @@ int input_find_root(double *xzero,
           printf("x1 is positive: %e\n",x1);
           if(f1 > 100){
             printf("f1 was way too high, x2 = x1/2: %e\n",x1/2);
-            x2 = (x1/2);
+            x2 = (x1/20);
           }
           else if(f1 > 0 && f1 <= 100 && (x1-dx>0)){
             printf("f1 was slightly too high, x2 = x1 - dx is still positive, using this: %e\n", x1 - dx);
@@ -4892,6 +4910,13 @@ int input_find_root(double *xzero,
           else if (iter2 < 3) {
             dx*=0.5;
             x2 = x1-dx;
+            printf("initially x2 %e\n", x2);
+            while(x2<0){
+               dx/=2;
+               x2=x1-dx;
+               printf("x2 %e\n", x2);
+             }
+             printf("x2 is then %e \n", x2);
           }
           else {
             //fprintf(stderr,"get here\n");

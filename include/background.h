@@ -82,7 +82,6 @@ struct background
   double Omega_ini_dcdm;    /**< \f$ \Omega_{ini,dcdm} \f$: rescaled initial value for dcdm density (see 1407.2418 for definitions) */
 
   double Omega0_scf;        /**< \f$ \Omega_{0 scf} \f$: scalar field */
-  double fluid_scf_wanted;  /** set to 0 to only evolve KG equations, otherwise - switch to fluid when necessary*/
   double scf_evolve_as_fluid; /** set to 0 to only evolve KG equations, otherwise - switch to fluid when necessary. To be used in perturbation module*/
   short attractor_ic_scf;   /**< whether the scalar field has attractor initial conditions */
   double phi_ini_scf;       /**< \f$ \phi(t_0) \f$: scalar field initial value */
@@ -95,6 +94,11 @@ struct background
   double w_scf;
   double cs2_scf;
   double threshold_scf_fluid_m_over_H;
+  short scf_kg_eq;    /**< evolve scalar field with KG equations */
+  short scf_fluid_eq;    /**< evolve scalar field with KG equations */
+  short scf_evolve_like_axionCAMB; /**< evolve scalar field perturbations like axionCAMB */
+  short scf_has_perturbations; /** do scalar field perts
+
   //double scf_lambda; /**< \f$ \lambda \f$ : scalar field exponential potential slope */
   //double scf_alpha;  /**< \f$ \alpha \f$ : Albrecht-Skordis polynomial slope */
   //double scf_B; /**< \f$ \alpha \f$ : Albrecht-Skordis field shift */
@@ -289,10 +293,6 @@ struct background
   short has_fld;       /**< presence of fluid with constant w and cs2? */
   short has_ur;        /**< presence of ultra-relativistic neutrinos/relics? */
   short has_curvature; /**< presence of global spatial curvature? */
-  short scf_kg_eq;    /**< evolve scalar field with KG equations */
-  short scf_fluid;     /**< evolve scalar field with fluid equations */
-  short fluid_scf;
-  short scf_has_perturbations; /** do scalar field perts
 
   //@}
 

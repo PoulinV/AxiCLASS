@@ -158,12 +158,11 @@ struct fzerofun_workspace {
   int target_size;
   enum computation_stage required_computation_stage;
   enum scf_pot scf_potential; /**< List of currently implement potential for a scalar field */
-  short fluid_scf;
-  double threshold_scf_fluid_m_over_H;
   short scf_evolve_as_fluid; /** Should we evolve as a fluid or use KG eqs all the way through? */
   short do_shooting;        /**< Should we use shooting method to determine phi_init */
   double m_scf;
   double w_scf;
+  double threshold_scf_fluid_m_over_H;
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */

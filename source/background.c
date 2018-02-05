@@ -327,7 +327,7 @@ int background_functions(
     p_tot += (1./3.)*pvecback[pba->index_bg_rho_dr];
     rho_r += pvecback[pba->index_bg_rho_dr];
   }
-  if(pba->has_scf == _TRUE_ && pba->m_scf >= pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H] && pba->fluid_scf == _TRUE_){ //We switch for fluid equations
+  if(pba->has_scf == _TRUE_ && pba->m_scf >= pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H] && pba->scf_evolve_as_fluid == _TRUE_){ //We switch for fluid equations
     pba->scf_kg_eq = _FALSE_;
   }
   else{
@@ -2312,7 +2312,7 @@ int background_derivs(
     dy[pba->index_bi_phi_prime_scf] = 0;
     // printf("Evolving scalar field using fluid equation.\n");
     }
-    else if (pba->fluid_scf == _FALSE_ && pba->scf_kg_eq == _FALSE_) {
+    else if (pba->scf_evolve_as_fluid == _FALSE_ && pba->scf_kg_eq == _FALSE_) {
       /*COComment Throw an error code if neither KG nor fluid equations apply - this should never happen */
       printf("We are not evolving scalar field as KG nor fluid eq, something has gone wrong!\n");
     }
