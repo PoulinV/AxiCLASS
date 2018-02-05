@@ -137,7 +137,7 @@ int perturb_init(
 #endif
 
   /** - perform preliminary checks */
-  printf("Flag for fluid equations is %d\n",pba->scf_fluid); //print_trigger
+  // printf("Flag for fluid equations is %d\n",pba->scf_fluid); //print_trigger
 
   if (ppt->has_perturbations == _FALSE_) {
     if (ppt->perturbations_verbose > 0)
@@ -412,7 +412,7 @@ int perturb_init(
 #endif
 
       } /* end of parallel region */
-      printf("abort = true? %d",abort); //print_trigger
+      // printf("abort = true? %d",abort); //print_trigger
       if (abort == _TRUE_) return _FAILURE_;
 
     } /* end of loop over initial conditions */
@@ -2502,8 +2502,8 @@ int perturb_prepare_output(struct background * pba,
     /** Write titles for all perturbations that we would like to print/store. */
     if (ppt->has_scalars == _TRUE_){
 
-      class_store_columntitle(ppt->scalar_titles,"tau [Mpc]",_TRUE_);
       class_store_columntitle(ppt->scalar_titles,"a",_TRUE_);
+      class_store_columntitle(ppt->scalar_titles,"tau [Mpc]",_TRUE_);
       class_store_columntitle(ppt->scalar_titles,"delta_g",_TRUE_);
       class_store_columntitle(ppt->scalar_titles,"theta_g",_TRUE_);
       class_store_columntitle(ppt->scalar_titles,"shear_g",_TRUE_);
@@ -4322,6 +4322,7 @@ int perturb_initial_conditions(struct precision * ppr,
           ppw->pv->y[ppw->pv->index_pt_delta_scf] = - ktau_two/4.*(1.+pba->w_scf)*(4.-3.*pba->cs2_scf)/(4.-6.*pba->w_scf+3.*pba->cs2_scf) * ppr->curvature_ini * s2_squared; /* from 1004.5509 */ //TBC: curvature
 
           if(ppt->use_big_theta_scf == _TRUE_) {
+            // ppw->pv->y[ppw->pv->index_pt_big_theta_scf] = 0;
             ppw->pv->y[ppw->pv->index_pt_big_theta_scf] = -(1+pba->w_scf)*k*ktau_three/4.*pba->cs2_scf/(4.-6.*pba->w_scf+3.*pba->cs2_scf) * ppr->curvature_ini * s2_squared;
           }
           else {
@@ -5680,7 +5681,7 @@ int perturb_total_stress_energy(
           }
         delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to fld above
         delta_p_scf = pba->cs2_scf * delta_rho_scf;
-        // printf("delta_rho_scf FL %e\n", delta_rho_scf);
+        // printf("delta_rho_scf FL %e delta_p_scf %e\n", delta_rho_scf,delta_p_scf);
         // y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf]; //CO 23.01.18 keep evolving phi even though using fluid eqs        }
         // if(ppt->scf_fluid_flag_perts == _TRUE_){
         //     y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf];
@@ -5710,6 +5711,7 @@ int perturb_total_stress_energy(
                 }
               delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to fld above
               delta_p_scf = pba->cs2_scf * delta_rho_scf;
+              // printf("delta_rho_scf FL %e delta_p_scf %e\n", delta_rho_scf,delta_p_scf);
               // printf("delta_rho_scf FL %e\n", delta_rho_scf);
               // y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf]; //CO 23.01.18 keep evolving phi even though using fluid eqs
         }
@@ -6404,7 +6406,8 @@ int perturb_sources(
       //   (pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
       }
       else {
-        if(ppt->use_big_theta_scf){
+        if(ppt->use_big_theta_scf == _TRUE_){
+          // printf("here %e\n", y[ppw->pv->index_pt_big_theta_scf]/(1.+pba->w_scf));
           _set_source_(ppt->index_tp_theta_scf) = y[ppw->pv->index_pt_big_theta_scf]/(1.+pba->w_scf);
         }
         else {
@@ -6837,8 +6840,8 @@ int perturb_print_variables(double tau,
       ppt->size_scalar_perturbation_data[ppw->index_ikout];
     ppt->size_scalar_perturbation_data[ppw->index_ikout] += ppt->number_of_scalar_titles;
 
-    class_store_double(dataptr, tau, _TRUE_, storeidx);
     class_store_double(dataptr, pvecback[pba->index_bg_a], _TRUE_, storeidx);
+    class_store_double(dataptr, tau, _TRUE_, storeidx);
     class_store_double(dataptr, delta_g, _TRUE_, storeidx);
     class_store_double(dataptr, theta_g, _TRUE_, storeidx);
     class_store_double(dataptr, shear_g, _TRUE_, storeidx);
@@ -7618,12 +7621,16 @@ int perturb_derivs(double tau,
             if(pba->m_scf>=pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H]){
               cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
               ca2=0;
+              // pba->w_scf = 0;
               pba->w_scf = pvecback[pba->index_bg_w_scf];
+              // printf("fluid: a %e k %e pba->w_scf %e\n",a,k,pba->w_scf);
             }
             else{
               cs2 = 1;
               ca2 = -7./3+10*(pba->Omega0_cdm+pba->Omega0_b)/(pba->Omega0_cdm+pba->Omega0_b+pba->Omega0_scf)/9*tau_b; //from 1410.2896 appendix B3
               pba->w_scf = pvecback[pba->index_bg_w_scf];
+              // printf("still KG: a %e k %e pba->w_scf %e\n",a,k,pba->w_scf);//VP: When several cores are used there seems to be a bug occuring here when a->1. I dunno why yet but it is solved when: i) running with one core; ii) setting w = 0 all the time (even if several cores).
+              // pba->w_scf = 0;
             }
            //from 1410.2896 appendix B
             // pba->w_scf = pvecback[pba->index_bg_w_scf]+2./25*pba->m_scf*pba->m_scf*tau_b*tau_b*tau*tau+0.1; //from 1410.2896 appendix B
@@ -7634,7 +7641,7 @@ int perturb_derivs(double tau,
             ca2 = pba->w_scf - pvecback[pba->index_bg_dw_scf]/ 3. / (1.+pba->w_scf) / a_prime_over_a;
           }
           /** - ----> fluid density */
-          // printf("cs2 %e pba->w_scf %e ca2 %e 2./25*pba->m_scf*pba->m_scf*tau_b*tau_b*tau*tau %e \n", cs2,pba->w_scf,ca2,2./25*pba->m_scf*pba->m_scf*tau_b*tau_b*tau*tau);
+          // printf("tau %e pba->m_scf %e cs2 %e pba->w_scf %e ca2 %e ca2+7/3 %e \n",tau,pba->m_scf, cs2,pba->w_scf,ca2,ca2+7./3);
           if(ppt->use_big_theta_scf == _TRUE_){
             dy[pv->index_pt_delta_scf] =
               -(y[pv->index_pt_big_theta_scf]+(1+pba->w_scf)*metric_continuity)
@@ -7659,7 +7666,7 @@ int perturb_derivs(double tau,
               +(1+pba->w_scf)*metric_euler;
               dy[pv->index_pt_big_theta_scf]+= 3*a_prime_over_a*(pba->w_scf-ca2)*y[pv->index_pt_big_theta_scf];
             // dy[pv->index_pt_big_theta_scf]+= y[pv->index_pt_big_theta_scf]*pvecback[pba->index_bg_dw_scf]/(1+pba->w_scf);
-            // printf("fluid k %e a %e delta_scf %e ddelta %e big_theta_scf %e dtheta %e \n",k,a, y[pv->index_pt_delta_scf],dy[pv->index_pt_delta_scf],y[pv->index_pt_big_theta_scf],dy[pv->index_pt_delta_scf]);
+            // printf("fluid k %e a %e delta_scf %e ddelta %e big_theta_scf %e dtheta %e \n",k,a, y[pv->index_pt_delta_scf],dy[pv->index_pt_delta_scf],y[pv->index_pt_big_theta_scf],dy[pv->index_pt_big_theta_scf]);
 
             }
             // printf("here n %d dy[pv->index_pt_delta_fld+n] %e y[pv->index_pt_delta_fld+n] %e dy[pv->index_pt_big_theta_fld+n] %e y[pv->index_pt_big_theta_fld+n] %e \n", n,dy[pv->index_pt_delta_fld+n],y[pv->index_pt_delta_fld+n], dy[pv->index_pt_big_theta_fld+n],y[pv->index_pt_big_theta_fld+n]);

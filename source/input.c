@@ -4900,7 +4900,8 @@ int input_find_root(double *xzero,
         }
 
         //if (f1*f2<0.0){
-        if (f1+f2<0.00000005 && f1+f1>-0.00000005){
+        if (f1+f2<0.01){
+        // if (f1+f2<0.000005 && f1+f1>-0.000005){//VP: why f1+f1<-0.000005?
         // if (f1+f2<0.05){
           /** - root has been bracketed */
           printf("Root has been bracketed after %d iterations: [%g, %g].\n",iter,x1,x2);

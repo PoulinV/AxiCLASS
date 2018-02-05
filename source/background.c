@@ -327,7 +327,7 @@ int background_functions(
     p_tot += (1./3.)*pvecback[pba->index_bg_rho_dr];
     rho_r += pvecback[pba->index_bg_rho_dr];
   }
-  if(pba->has_scf == _TRUE_ && pba->scf_parameters[0]*pba->H0 >= pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H] && pba->fluid_scf == _TRUE_){ //We switch for fluid equations
+  if(pba->has_scf == _TRUE_ && pba->m_scf >= pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H] && pba->fluid_scf == _TRUE_){ //We switch for fluid equations
     pba->scf_kg_eq = _FALSE_;
   }
   else{
@@ -1777,33 +1777,33 @@ int background_solve(
              pba->error_message);
 
    /** - if needed, compute dw_over_dtau_scf */
-   if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid==_TRUE_){
-
-     /** - ---> second derivative with respect to tau of cb2 */
-     class_call(array_spline_table_line_to_line(pba->tau_table,
-                                               pba->bt_size,
-                                               pba->background_table,
-                                               pba->bg_size,
-                                               pba->index_bg_w_scf,
-                                               pba->index_bg_ddw_scf,
-                                               _SPLINE_EST_DERIV_,
-                                               pba->error_message),
-                pba->error_message,
-                pba->error_message);
-
-     class_call(array_derive_spline_table_line_to_line(pba->tau_table,
-                                                       pba->bt_size,
-                                                       pba->background_table,
-                                                       pba->bg_size,
-                                                       pba->index_bg_w_scf,
-                                                       pba->index_bg_ddw_scf,
-                                                       pba->index_bg_dw_scf,
-                                                       pba->error_message),
-                pba->error_message,
-                pba->error_message);
-
-
-   }
+   // if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid==_TRUE_){
+   //
+   //   /** - ---> second derivative with respect to tau of cb2 */
+   //   class_call(array_spline_table_line_to_line(pba->tau_table,
+   //                                             pba->bt_size,
+   //                                             pba->background_table,
+   //                                             pba->bg_size,
+   //                                             pba->index_bg_w_scf,
+   //                                             pba->index_bg_ddw_scf,
+   //                                             _SPLINE_EST_DERIV_,
+   //                                             pba->error_message),
+   //              pba->error_message,
+   //              pba->error_message);
+   //
+   //   class_call(array_derive_spline_table_line_to_line(pba->tau_table,
+   //                                                     pba->bt_size,
+   //                                                     pba->background_table,
+   //                                                     pba->bg_size,
+   //                                                     pba->index_bg_w_scf,
+   //                                                     pba->index_bg_ddw_scf,
+   //                                                     pba->index_bg_dw_scf,
+   //                                                     pba->error_message),
+   //              pba->error_message,
+   //              pba->error_message);
+   //
+   //
+   // }
 
   /** - compute remaining "related parameters"
    *     - so-called "effective neutrino number", computed at earliest
@@ -2308,6 +2308,8 @@ int background_derivs(
       /*COComment - treat as a perfect fluid with w = 0 */
     //dy[pba->index_bi_rho_scf] = -3.*y[pba->index_bi_a]*pvecback[pba->index_bg_H]*y[pba->index_bi_rho_scf];
     dy[pba->index_bi_rho_scf] = -3.*y[pba->index_bi_a]*pvecback[pba->index_bg_H]*y[pba->index_bi_rho_scf]*(1+pba->w_scf);
+    dy[pba->index_bi_phi_scf] = 0;
+    dy[pba->index_bi_phi_prime_scf] = 0;
     // printf("Evolving scalar field using fluid equation.\n");
     }
     else if (pba->fluid_scf == _FALSE_ && pba->scf_kg_eq == _FALSE_) {
