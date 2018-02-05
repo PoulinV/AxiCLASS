@@ -7618,7 +7618,7 @@ int perturb_derivs(double tau,
             if(pba->m_scf>=pba->threshold_scf_fld_m_over_H*pvecback[pba->index_bg_H]){
               cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
               ca2=0;
-              pba->w_scf = 0;
+              pba->w_scf = pvecback[pba->index_bg_w_scf];
             }
             else{
               cs2 = 1;
