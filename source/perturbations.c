@@ -4156,13 +4156,13 @@ int perturb_initial_conditions(struct precision * ppr,
     if (pba->has_cdm == _TRUE_) {
       rho_m += ppw->pvecback[pba->index_bg_rho_cdm];
     }
-    if (ppt->perturbations_verbose>10)
-      fprintf(stdout,"Add rho_scf to rho_m. \n");
-    // printf("pba->scf_evolve_as_fluid == _TRUE_ %f",pba->scf_evolve_as_fluid);
-    if (pba->has_scf == _TRUE_) { //VP
-      rho_r += 3.* ppw->pvecback[pba->index_bg_p_scf];
-      rho_m += ppw->pvecback[pba->index_bg_rho_scf]- 3.* ppw->pvecback[pba->index_bg_p_scf];
-    }
+    // if (ppt->perturbations_verbose>10)
+    //   fprintf(stdout,"Add rho_scf to rho_m. \n");
+    // // printf("pba->scf_evolve_as_fluid == _TRUE_ %f",pba->scf_evolve_as_fluid);
+    // if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) { //VP: At early time SCF behaves like DE so no need to add it in the IC.
+    //   rho_r += 3.* ppw->pvecback[pba->index_bg_p_scf];
+    //   rho_m += ppw->pvecback[pba->index_bg_rho_scf]- 3.* ppw->pvecback[pba->index_bg_p_scf];
+    // }
     if (pba->has_dcdm == _TRUE_) {
       rho_m += ppw->pvecback[pba->index_bg_rho_dcdm];
     }
@@ -4261,7 +4261,7 @@ int perturb_initial_conditions(struct precision * ppr,
         ppw->pv->y[ppw->pv->index_pt_delta_cdm] = 3./4.*ppw->pv->y[ppw->pv->index_pt_delta_g]; /* cdm density */
         /* cdm velocity vanishes in the synchronous gauge */
       }
-
+      // printf("IC: a %e delta_g %e theta_g %e delta_b %e theta_b %e \n",a,ppw->pv->y[ppw->pv->index_pt_delta_g],ppw->pv->y[ppw->pv->index_pt_theta_g],ppw->pv->y[ppw->pv->index_pt_delta_b],ppw->pv->y[ppw->pv->index_pt_theta_b]);
       if (pba->has_dcdm == _TRUE_) {
         ppw->pv->y[ppw->pv->index_pt_delta_dcdm] = 3./4.*ppw->pv->y[ppw->pv->index_pt_delta_g]; /* dcdm density */
         /* dcdm velocity velocity vanishes initially in the synchronous gauge */
@@ -4282,7 +4282,7 @@ int perturb_initial_conditions(struct precision * ppr,
         /* if use_ppf == _TRUE_, y[ppw->pv->index_pt_Gamma_fld] will be automatically set to zero, and this is what we want (although one could probably work out some small nonzero initial conditions: TODO) */
       }
 
-      if (pba->has_scf == _TRUE_&& pba->scf_has_perturbations == _TRUE_) {
+      if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) {
         /** - ---> Canonical field (solving for the perturbations):
          *  initial perturbations set to zero, they should reach the attractor soon enough.
          *  - --->  TODO: Incorporate the attractor IC from 1004.5509.
@@ -5813,11 +5813,13 @@ int perturb_total_stress_energy(
 
       delta_rho_m = ppw->pvecback[pba->index_bg_rho_b]*y[ppw->pv->index_pt_delta_b];
       rho_m = ppw->pvecback[pba->index_bg_rho_b];
+      // printf("baryons a %e ppw->delta_m %e rho_m %e delta_b %e\n",a,delta_rho_m,rho_m,y[ppw->pv->index_pt_delta_b]);
 
       if (pba->has_cdm == _TRUE_) {
         delta_rho_m += ppw->pvecback[pba->index_bg_rho_cdm]*y[ppw->pv->index_pt_delta_cdm];
         rho_m += ppw->pvecback[pba->index_bg_rho_cdm];
       }
+      // printf("cdm a %e ppw->delta_m %e rho_m %e delta_cdm %e\n",a,delta_rho_m,rho_m,y[ppw->pv->index_pt_delta_cdm]);
 
       /* include decaying cold dark matter */
 
@@ -5841,7 +5843,7 @@ int perturb_total_stress_energy(
       if (ppt->perturbations_verbose>10)
       fprintf(stdout,"Might segmentation fault here when scf perts. \n");
 
-      if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_){ //include _SCF when evolving as a fluid and mimicking CDM
+      if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_ /*&& pba->scf_evolve_as_fluid == _TRUE_*/){ //include _SCF when evolving as a fluid and mimicking CDM
         delta_rho_m += delta_rho_scf;//TBC
         // printf(" delta_rho_scf - delta_p_scf %e\n",  delta_rho_scf - delta_p_scf);
         rho_m += ppw->pvecback[pba->index_bg_rho_scf]- 3.* ppw->pvecback[pba->index_bg_p_scf]; //VP
@@ -7206,13 +7208,15 @@ int perturb_derivs(double tau,
 
   //printf("Finished calling thermodynamics_at_z. \n");
 
-    if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_){
+    if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+      //Here, we set a number of parameters that determines the way in which scf perturbations are computed.
       if(pba->scf_evolve_like_axionCAMB == _TRUE_){
           pba->scf_kg_eq = _FALSE_; //if we evolve like axionCAMB we never follow the KG equations
           pba->scf_fluid_eq = _TRUE_;
       }
       else{
         if(pba->scf_evolve_as_fluid == _FALSE_){
+          // printf("here\n");
           pba->scf_fluid_eq = _FALSE_; //that is the standard case, we never follow the fluid equations
           pba->scf_kg_eq = _TRUE_;
         }
@@ -7680,7 +7684,7 @@ int perturb_derivs(double tau,
 
 
 
-        printf("k %e a %e phi %e phi' %e metric_continuity %e\n",k,a, dy[pv->index_pt_phi_scf],dy[pv->index_pt_phi_prime_scf],metric_continuity);
+        // printf("k %e a %e phi %e phi' %e metric_continuity %e\n",k,a, dy[pv->index_pt_phi_scf],dy[pv->index_pt_phi_prime_scf],metric_continuity);
         // if(ppt->perturbations_verbose>11){
           // fprintf(stdout,"Passed 'KG calc' \n ");
         // }
