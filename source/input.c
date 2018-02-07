@@ -4817,7 +4817,7 @@ int input_find_root(double *xzero,
                     ErrorMsg errmsg){
 
   //struct background ba;       /* for cosmological background */
-  double x1, x2, f1, f2, dxdy, dx;
+  double x1, x2, f1, f2, dxdy, dx,dxtmp;
   double f_a;
   int iter, iter2;
   int return_function;
@@ -4862,11 +4862,12 @@ int input_find_root(double *xzero,
           }
           else if(f1 > 0 && f1 <= 100 && (x1-dx<=0)){
             printf("f1 was slightly too high but x2 = x1 - dx goes negative, using x2 = x1 - (dx/n) with n such that x2 is positive\n");
-            x2=x1-dx;
+            dxtmp=dx/2;
+            x2=x1-dxtmp;
             printf("initially x2 %e\n", x2);
             while(x2<0){
-               dx/=2;
-               x2=x1-dx;
+               dxtmp/=2;
+               x2=x1-dxtmp;
                printf("x2 %e\n", x2);
              }
              printf("x2 is then %e \n", x2);
@@ -4924,8 +4925,8 @@ int input_find_root(double *xzero,
           }
         }
 
-        //if (f1*f2<0.0){
-        if (f1+f2<0.01){
+        if (f1*f2<0.0){
+        // if (f1+f2<0.01){
         // if (f1+f2<0.000005 && f1+f1>-0.000005){//VP: why f1+f1<-0.000005?
         // if (f1+f2<0.05){
           /** - root has been bracketed */

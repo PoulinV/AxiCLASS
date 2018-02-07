@@ -1609,7 +1609,7 @@ int background_solve(
     pba->bt_size++;
     //printf("Calling generic_integrator.\n");//print_trigger
 
-    if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_){
+    if(pba->has_scf == _TRUE_){
           if(pba->scf_potential == axionquad){
             pba->m_scf = pba->scf_parameters[0]*pba->H0;
             pba->w_scf = 0;
@@ -2265,6 +2265,7 @@ int background_derivs(
   /** - calculate \f$ rs' = c_s \f$*/
   dy[pba->index_bi_rs] = 1./sqrt(3.*(1.+3.*pvecback[pba->index_bg_rho_b]/4./pvecback[pba->index_bg_rho_g]))*sqrt(1.-pba->K*y[pba->index_bi_rs]*y[pba->index_bi_rs]); // TBC: curvature correction
 
+
   /** - solve second order growth equation  \f$ [D''(\tau)=-aHD'(\tau)+3/2 a^2 \rho_M D(\tau) \f$ */
   rho_M = pvecback[pba->index_bg_rho_b];
   if (pba->has_cdm)
@@ -2485,16 +2486,21 @@ double ddV_ax_cos_cubed_scf(
 double V_axion_scf(
                   struct background *pba,
                   double phi){
+        // printf("cos(pi) %e cos(2pi) %e \n", cos(_PI_),cos(2*_PI_));
       // printf("phi %e theta %e V %e \n",phi,(phi/pba->scf_parameters[2])*_PI_/180,pow(pba->scf_parameters[1],2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2])*_PI_/180)),pba->scf_parameters[0]));
-    return pow(pba->scf_parameters[1]*pba->H0,2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2])*_PI_/180)),pba->scf_parameters[0]);//pba->scf_parameters[1] is given in units of H0 and then converted in input.c
+    return pow(pba->m_scf,2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2]))),pba->scf_parameters[0]);//pba->scf_parameters[1] is given in units of H0 and then converted in input.c
+    // return pow(pba->m_scf,2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2])*_PI_)),pba->scf_parameters[0]);//pba->scf_parameters[1] is given in units of H0 and then converted in input.c
+    // return pow(pba->m_scf,2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2])*_PI_/180)),pba->scf_parameters[0]);//pba->scf_parameters[1] is given in units of H0 and then converted in input.c
 
 }
 
 double dV_axion_scf(
                   struct background *pba,
                   double phi){
-    // printf("phi %e dV %e \n",phi,pba->scf_parameters[0]*pow(pba->scf_parameters[1]*pba->H0,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),1-pba->scf_parameters[0])*sin((phi/pba->scf_parameters[2])*_PI_/180));
-    return pba->scf_parameters[0]*pow(pba->scf_parameters[1]*pba->H0,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-1)*sin((phi/pba->scf_parameters[2])*_PI_/180);
+    // printf("phi %e dV %e \n",phi,pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),1-pba->scf_parameters[0])*sin((phi/pba->scf_parameters[2])*_PI_/180));
+    return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])),pba->scf_parameters[0]-1)*sin((phi/pba->scf_parameters[2]));
+    // return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_),pba->scf_parameters[0]-1)*sin((phi/pba->scf_parameters[2])*_PI_);
+    // return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-1)*sin((phi/pba->scf_parameters[2])*_PI_/180);
 
 }
 
@@ -2502,13 +2508,19 @@ double ddV_axion_scf(
                   struct background *pba,
                   double phi){
 
-    // printf("phi %e ddV %e \n",phi,pba->scf_parameters[0]*pow(pba->scf_parameters[1]*pba->H0,2)*pba->scf_parameters[2]*
+    // printf("phi %e ddV %e \n",phi,pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
     // ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_/180),2)
     // +pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),1-pba->scf_parameters[0])/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_/180)));
     // printf("1 %e 2 %e \n", exp(-pba->scf_parameters[0]*phi),pow(pba->scf_parameters[0],4));
-    return pba->scf_parameters[0]*pow(pba->scf_parameters[1]*pba->H0,2)*pba->scf_parameters[2]*
-    ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_/180),2)
-    +pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-1)/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_/180));
+    return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
+    ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])),2)
+    +pow(1-cos((phi/pba->scf_parameters[2])),pba->scf_parameters[0]-1)/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])));
+    // return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
+    // ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_),2)
+    // +pow(1-cos((phi/pba->scf_parameters[2])*_PI_),pba->scf_parameters[0]-1)/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_));
+    // return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
+    // ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_/180),2)
+    // +pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-1)/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_/180));
     // return pow(pba->scf_parameters[0],2)*cos((phi/pba->scf_parameters[1]*pba->H0)*_PI_/180);
 
 }

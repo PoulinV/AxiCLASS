@@ -5228,11 +5228,11 @@ int perturb_einstein(
   else dmu_gcdm = 0;
   dmu_gcdm = MIN(1.,dmu_gcdm);
   /** - sum up perturbations from all species */
-  //printf("Calling perturb_total_stress_energy.\n");
+  // printf("Calling perturb_total_stress_energy.\n");
   class_call(perturb_total_stress_energy(ppr,pba,pth,ppt,index_md,k,y,ppw),
              ppt->error_message,
              ppt->error_message);
-  //printf("Leaving perturb_total_stress_energy.\n");
+  // printf("Leaving perturb_total_stress_energy.\n");
 
   /** - for scalar modes: */
 
@@ -5253,7 +5253,7 @@ int perturb_einstein(
          more stable is we treat phi as a dynamical variable
          y[ppw->pv->index_pt_phi], which derivative is given by the
          second equation below (credits to Guido Walter Pettinari). */
-
+       // printf("here ok\n");
       /* equation for psi */
       ppw->pvecmetric[ppw->index_mt_psi] = y[ppw->pv->index_pt_phi] - 4.5 * (a2/k2) * ppw->rho_plus_p_shear;
 
@@ -5263,6 +5263,8 @@ int perturb_einstein(
       /* eventually, infer radiation streaming approximation for
          gamma and ur (this is exactly the right place to do it
          because the result depends on h_prime) */
+         // printf("psi %e phi %e\n",ppw->pvecmetric[ppw->index_mt_psi],y[ppw->pv->index_pt_phi]);
+         // printf("phi' %e rho+p theta %e ppw->rho_plus_p_shear %e\n",ppw->pvecmetric[ppw->index_mt_phi_prime],ppw->rho_plus_p_theta,ppw->rho_plus_p_shear);
 
       if (ppw->approx[ppw->index_ap_rsa] == (int)rsa_on) {
 
@@ -5271,6 +5273,9 @@ int perturb_einstein(
                    ppt->error_message);
 
       }
+
+      // printf("here after ok\n");
+
     }
 
     /* synchronous gauge */
@@ -5723,7 +5728,7 @@ int perturb_total_stress_energy(
             (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
              - ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]
              - 1./a2*pow(ppw->pvecback[pba->index_bg_phi_prime_scf],2)*psi);
-             // printf("delta_rho_scf KG %e\n", delta_rho_scf);
+             // printf("delta_rho_scf KG %e rho+p shear %e delta_p_scf %e phi %e psi %e phi_scf' %e V' %e\n", delta_rho_scf,delta_p_scf,ppw->rho_plus_p_shear,y[ppw->pv->index_pt_phi],psi,ppw->pvecback[pba->index_bg_phi_prime_scf],ppw->pvecback[pba->index_bg_dV_scf]);
         }
         else{ //evolving as fluid
                 if(pba->scf_potential == axionquad){
@@ -7675,7 +7680,7 @@ int perturb_derivs(double tau,
 
 
 
-        // printf("k %e a %e phi %e phi' %e\n",k,a, dy[pv->index_pt_phi_scf],dy[pv->index_pt_phi_prime_scf]);
+        printf("k %e a %e phi %e phi' %e metric_continuity %e\n",k,a, dy[pv->index_pt_phi_scf],dy[pv->index_pt_phi_prime_scf],metric_continuity);
         // if(ppt->perturbations_verbose>11){
           // fprintf(stdout,"Passed 'KG calc' \n ");
         // }
@@ -7725,7 +7730,7 @@ int perturb_derivs(double tau,
 
         }
         //Regardless, once scf_evolve_as_fluid = true we follow the fluid evolution ``a la axioncamb''.
-        if(pba->scf_potential == axionquad){
+        // if(pba->scf_potential == axionquad){
           tau_b = (pba->Omega0_cdm + pba->Omega0_b + pba->Omega0_scf)*pba->H0*tau/(4*sqrt(pba->Omega0_g+pba->Omega0_ur));
           if(pba->m_scf>=pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H]){
             cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
@@ -7741,11 +7746,11 @@ int perturb_derivs(double tau,
          //from 1410.2896 appendix B
           // pba->w_scf = pvecback[pba->index_bg_w_scf]+2./25*pba->m_scf*pba->m_scf*tau_b*tau_b*tau*tau+0.1; //from 1410.2896 appendix B
           // ca2 = pba->w_scf - pvecback[pba->index_bg_dw_scf]/ 3. / (1.+pba->w_scf) / a_prime_over_a;
-        }
-        else if(pba->scf_potential == axion){
-          cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
-          ca2 = pba->w_scf - pvecback[pba->index_bg_dw_scf]/ 3. / (1.+pba->w_scf) / a_prime_over_a;
-        }
+        // }
+        // else if(pba->scf_potential == axion && pba->scf_parameters[0]>1){
+        //   cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
+        //   ca2 = pba->w_scf - pvecback[pba->index_bg_dw_scf]/ 3. / (1.+pba->w_scf) / a_prime_over_a;
+        // }
         /** - ----> fluid density */
         // printf("tau %e pba->m_scf %e cs2 %e pba->w_scf %e ca2 %e ca2+7/3 %e \n",tau,pba->m_scf, cs2,pba->w_scf,ca2,ca2+7./3);
         if(ppt->use_big_theta_scf == _TRUE_){
