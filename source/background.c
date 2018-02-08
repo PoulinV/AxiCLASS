@@ -358,6 +358,7 @@ int background_functions(
     rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
     rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
     // printf("here KG equation, phi: %e, phi': %e rho_scf: %e \n", pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
+    // printf("%e %e %e %e\n",a,phi,phi_prime,V_scf(pba,phi));
     //printf("3H = %e \n", 3*pvecback[pba->index_bg_H]);
     //printf("KE = %e, V = %e \n", (phi_prime*phi_prime/(2*a*a) , V_scf(pba,phi)));
   }
@@ -2129,6 +2130,7 @@ int background_output_titles(struct background * pba,
   class_store_columntitle(titles,"(.)rho_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)p_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)w_scf",pba->has_scf);
+  class_store_columntitle(titles,"(.)dw_scf",pba->has_scf);
   class_store_columntitle(titles,"phi_scf",pba->has_scf);
   class_store_columntitle(titles,"phi'_scf",pba->has_scf);
   class_store_columntitle(titles,"V_scf",pba->has_scf);

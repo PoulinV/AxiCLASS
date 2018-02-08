@@ -4726,7 +4726,7 @@ int input_get_guess(double *xguess,
         printf("index 0, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
 
       }
-      if (ba.scf_tuning_index == 1 && (ba.scf_potential == axionquad) ){
+      if (ba.scf_tuning_index == 1 && (ba.scf_potential == axionquad)){
         // if (ba.scf_parameters[0] <= 1e18) {
         xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[0]),0.5)));//ba.scf_parameters[0] is the ratio m/H0
         // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
@@ -4747,7 +4747,7 @@ int input_get_guess(double *xguess,
       else if (ba.scf_tuning_index == 3 && (ba.scf_potential == axion) ){
         // xguess[index_guess] = 160*ba.scf_parameters[2];//set IC based on f_a.
         // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
-        xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[0]),0.5)));
+        xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[1]),0.5)));
         //xguess[index_guess] =1e-8;
         dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
         printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
@@ -4925,7 +4925,7 @@ int input_find_root(double *xzero,
           }
         }
 
-        if (f1*f2<0.0){
+        if (f1*f2<0.0 ){
         // if (f1+f2<0.01){
         // if (f1+f2<0.000005 && f1+f1>-0.000005){//VP: why f1+f1<-0.000005?
         // if (f1+f2<0.05){
