@@ -379,7 +379,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
   /** - case with unknown parameters */
   if (unknown_parameters_size > 0 && fzw.do_shooting == _TRUE_) {
-    printf("About to start shooting, initialising tables.\n"); //print_trigger
+    // printf("About to start shooting, initialising tables.\n"); //print_trigger
     /* Create file content structure with additional entries */
     class_call(parser_init(&(fzw.fc),
                            pfc->size+unknown_parameters_size,
@@ -407,9 +407,9 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
     /** - --> go through all cases with unknown parameters: */
     for (counter = 0; counter < unknown_parameters_size; counter++){
-      printf("counter is %e", counter);
+      // printf("counter is %e", counter);
       index_target = target_indices[counter]; /*Defining the target as the thing we have told code to shoot for */
-      fprintf(stdout, "index_target = %d\n",index_target );
+      // fprintf(stdout, "index_target = %d\n",index_target );
       class_call(parser_read_double(pfc,
                                     target_namestrings[index_target],
                                     &param1,
@@ -420,7 +420,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
       // store name of target parameter
       fzw.target_name[counter] = index_target;
-      printf("name of target parameter: %e", fzw.target_name[counter]);
+      // printf("name of target parameter: %e", fzw.target_name[counter]);
       // store target value of target parameter
       fzw.target_value[counter] = param1;
       fzw.unknown_parameters_index[counter]=pfc->size+counter;
@@ -1193,12 +1193,12 @@ int input_read_parameters(
     if (input_verbose > 0) printf(" -> matched budget equations by adjusting Omega_cdm = %e\n",pba->Omega0_cdm);
   } //COcdmchange
 
-  fprintf(stderr,"%e %e %e %e %e\n",
-          pba->Omega0_lambda,
-          pba->Omega0_fld,
-          pba->Omega0_scf,
-          pba->Omega0_k,
-          Omega_tot);
+  // fprintf(stderr,"%e %e %e %e %e\n",
+  //         pba->Omega0_lambda,
+  //         pba->Omega0_fld,
+  //         pba->Omega0_scf,
+  //         pba->Omega0_k,
+  //         Omega_tot);
 
 
   /** - Test that the user have not specified Omega_scf = -1 but left either
@@ -4555,6 +4555,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     /*COComment This must be updated to use value of rho from fluid equation */
       output[i] = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0)
         -ba.Omega0_scf;
+      pfzw->target_value[i] = ba.Omega0_scf;
         // printf("output[i] for scalar field %e \n", output[i]);
         // COComment Old print statements for scalar field, not relevant now using fluid equations as phi no longer evolves to end
         // printf("Made up of minus : %e \n", -ba.Omega0_scf);
@@ -4665,7 +4666,6 @@ int input_get_guess(double *xguess,
       /** - Update pb to reflect guess */
       ba.h = xguess[index_guess];
       ba.H0 = ba.h *  1.e5 / _c_;
-      printf("theta, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
 
       break;
     case Omega_dcdmdr:
@@ -4686,7 +4686,7 @@ int input_get_guess(double *xguess,
       xguess[index_guess] = pfzw->target_value[index_guess]/a_decay;
       dxdy[index_guess] = 1./a_decay;
       //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
-      printf("dcdmdr, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+      // printf("dcdmdr, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
 
       break;
     case omega_dcdmdr:
@@ -4709,7 +4709,7 @@ int input_get_guess(double *xguess,
 
         //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
       break;
-      printf("omdcdmdr, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+      // printf("omdcdmdr, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
 
     case Omega_scf:
 
@@ -4723,7 +4723,7 @@ int input_get_guess(double *xguess,
       if (ba.scf_tuning_index == 0 && (ba.scf_potential == double_exp || ba.scf_potential == pol_times_exp) ){
         xguess[index_guess] = sqrt(3.0/ba.Omega0_scf);
         dxdy[index_guess] = -0.5*sqrt(3.0)*pow(ba.Omega0_scf,-1.5);
-        printf("index 0, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+        // printf("index 0, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
 
       }
       if (ba.scf_tuning_index == 1 && (ba.scf_potential == axionquad)){
@@ -4732,8 +4732,8 @@ int input_get_guess(double *xguess,
         // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
         // xguess[index_guess] =1e-8;
         dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
-        printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
-        printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
+        // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
+        // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
         // }
         // else {
         // xguess[index_guess] = 0.0001*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
@@ -4750,8 +4750,8 @@ int input_get_guess(double *xguess,
         xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[1]),0.5)));
         //xguess[index_guess] =1e-8;
         dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
-        printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
-        printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
+        // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
+        // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
 
       }
       else if (ba.scf_tuning_index == 2 && (ba.scf_potential == ax_cos_cubed) ){
@@ -4759,24 +4759,24 @@ int input_get_guess(double *xguess,
               //0.2*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
               //xguess[index_guess] =1e-8;
               dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
-              printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
-              printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
+              // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
+              // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
       }
 
       else{
         /* Default: take the passed value as xguess and set dxdy to 1. */
         xguess[index_guess] = ba.scf_parameters[ba.scf_tuning_index];
         dxdy[index_guess] = 1.;
-        printf("x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+        // printf("x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
 
       }
       break;
-      printf("xguess = %g\n",xguess[index_guess]);
+      // printf("xguess = %g\n",xguess[index_guess]);
 
 
     case omega_ini_dcdm:
       Omega0_dcdmdr = 1./(ba.h*ba.h);
-    printf("om_ini, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+    // printf("om_ini, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
 
     case Omega_ini_dcdm:
       /** - This works since correspondence is
@@ -4794,7 +4794,7 @@ int input_get_guess(double *xguess,
       if (gamma > 100)
         dxdy[index_guess] *= gamma/100;
 
-      printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+      // printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
       break;
     }
     /* printf("xguess = %g\n",xguess[index_guess]); */
@@ -4821,21 +4821,36 @@ int input_find_root(double *xzero,
   double f_a;
   int iter, iter2;
   int return_function;
+  int input_verbose;
+  int flag;
+  int param;
   //int i;
+  class_call(parser_read_int(&(pfzw->fc),
+                             "input_verbose",
+                             &param,
+                             &flag,
+                             errmsg),
+             errmsg,
+             errmsg);
+  if (flag == _TRUE_)
+    input_verbose = param;
+  else
+    input_verbose = 0;
 
   /** Summary: */
 
   /** - Fisrt we do our guess */
   class_call(input_get_guess(&x1, &dxdy, pfzw, errmsg),
              errmsg, errmsg);
-  printf("x1= %g\n",x1);
+
+  if(input_verbose>3)printf("x1= %g\n",x1);
   class_call(input_fzerofun_1d(x1,
                                pfzw,
                                &f1,
                                errmsg),
                  errmsg, errmsg);
   (*fevals)++;
-  printf("x1= %g, f1= %g\n",x1,f1);
+  if(input_verbose>3)printf("x1= %g, f1= %g\n",x1,f1);
   //CJComment - the line below used to be dx = 1.5*f1*dxdy; for the step size\
   // Can we edit the method so it's more of a bisection on the final density?
   // if result 2 > result 1, x - dx.
@@ -4845,96 +4860,129 @@ int input_find_root(double *xzero,
     else if(pfzw->scf_potential == axion)f_a = pfzw->scf_parameters[2];
     if(pfzw->do_shooting == _TRUE_){
       dx = 0.5; //f1*dxdy;
-      printf("axion cubed root finding \n");
-      printf("dx = %e\n", dx);
+      if(input_verbose>3){
+        printf("axion cubed root finding \n");
+        printf("dx = %e\n", dx);
+      }
+
       /** - Do linear hunt for boundaries */
-      for (iter=1; iter<=100; iter++){
+      for (iter=1; iter<=20; iter++){
+        if(input_verbose>3){
         printf("Root finding iteration: %d \n",iter);
+        }
         if (x1 > 0){
+          if(input_verbose>3){
           printf("x1 is positive: %e\n",x1);
+          }
           if(f1 > 100){
+            if(input_verbose>3){
             printf("f1 was way too high, x2 = x1/2: %e\n",x1/2);
+            }
             x2 = (x1/20);
           }
           else if(f1 > 0 && f1 <= 100 && (x1-dx>0)){
+            if(input_verbose>3){
             printf("f1 was slightly too high, x2 = x1 - dx is still positive, using this: %e\n", x1 - dx);
+            }
              x2 = (x1 - dx);
           }
           else if(f1 > 0 && f1 <= 100 && (x1-dx<=0)){
+            if(input_verbose>3){
             printf("f1 was slightly too high but x2 = x1 - dx goes negative, using x2 = x1 - (dx/n) with n such that x2 is positive\n");
+            }
             dxtmp=dx/2;
             x2=x1-dxtmp;
-            printf("initially x2 %e\n", x2);
             while(x2<0){
                dxtmp/=2;
                x2=x1-dxtmp;
                printf("x2 %e\n", x2);
              }
+             if(input_verbose>3){
              printf("x2 is then %e \n", x2);
+            }
           }
           else if (f1 < -100){
+            if(input_verbose>3){
             printf("f1 was way too low, x2 = 2x1: %e\n", (x1*2));
+            }
             x2 = (x1*2);
           }
           else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<180) && (pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion)){
+            if(input_verbose>3){
             printf("f1 was slightly too low, x2 = x1 + dx does not go above pi, using this: %e\n", x1 + dx);
+            }
              x2 = (x1 + dx);
           }
           else if(f1 < 0 && f1 >= -100){
+            if(input_verbose>3){
             printf("f1 was slightly too low, but x2 = x1 + dx goes above pi, using x2 = x1 + (dx/10) instead: %e\n", x1 + (dx/10));
+            }
              x2 = (x1 + (dx/10));
           }
         }
         if (x1 < 0 ){
+          if(input_verbose>3){
           printf("x1 is negative: %e\n",x1);
+          }
           if(x1+dx < 0){
+            if(input_verbose>3){
             printf("x1+dx is negative: %e\n",x1+dx);
+            }
             x2 = (x1 + dx);
-          printf("x2 = %e\n",x2);
+            if(input_verbose>3){
+              printf("x2 = %e\n",x2);
+            }
           }
           else if (x1+dx > 0){
+            if(input_verbose>3){
             printf("x1+dx is positive, using x1/10 instead: %e\n", (x1/10));
+            }
             x2 = (x1/10);
+            if(input_verbose>3){
             printf("x2 = %e\n",x2);
+            }
           }
         }
         for (iter2=1; iter2 <= 3; iter2++) {
           return_function = input_fzerofun_1d(x2,pfzw,&f2,errmsg);
           (*fevals)++;
-          printf("x2= %g, f2= %g\n",x2,f2);
+          if(input_verbose>3)printf("x2= %g, f2= %g\n",x2,f2);
           if (return_function ==_SUCCESS_) {
+          if(input_verbose>3){
             printf("Breaking because successful\n");
             printf("f1 = %e, f2 = %e\n",f1,f2);
             printf("f1+f2 = %e\n", f1+f2);
+            }
             break;
           }
           else if (iter2 < 3) {
-            dx*=0.5;
-            x2 = x1-dx;
-            printf("initially x2 %e\n", x2);
+            dxtmp=dx*0.5;
+            x2 = x1-dxtmp;
+            if(input_verbose>3)printf("initially x2 %e\n", x2);
             while(x2<0){
-               dx/=2;
-               x2=x1-dx;
-               printf("x2 %e\n", x2);
+               dxtmp/=2;
+               x2=x1-dxtmp;
+               if(input_verbose>3)printf("x2 %e\n", x2);
              }
-             printf("x2 is then %e \n", x2);
+             if(input_verbose>3)printf("x2 is then %e \n", x2);
           }
           else {
             //fprintf(stderr,"get here\n");
             class_stop(errmsg,errmsg);
           }
         }
-
-        if (f1*f2<0.0 ){
+        if (f1*f2<0.0){
+        // if(sqrt(f1*f1)<0.01*pfzw->target_value[0] && sqrt(f2*f2)<0.01*pfzw->target_value[0]){
+        // if(sqrt(f1*f1)<0.01*pfzw->target_value[0] && sqrt(f2*f2)<0.01*pfzw->target_value[0]){
+        // if (f1*f2<0.0 && sqrt(f1*f1)<0.01*pfzw->target_value[0] && sqrt(f2*f2)<0.01*pfzw->target_value[0]){
         // if (f1+f2<0.01){
         // if (f1+f2<0.000005 && f1+f1>-0.000005){//VP: why f1+f1<-0.000005?
         // if (f1+f2<0.05){
           /** - root has been bracketed */
-          printf("Root has been bracketed after %d iterations: [%g, %g].\n",iter,x1,x2);
           if (0==0){
-            printf("Root has been bracketed after %d iterations: [%g, %g].\n",iter,x1,x2);
+            if(input_verbose>3)printf("Root has been bracketed after %d iterations: [%g, %g].\n",iter,x1,x2);
+            break;
           }
-          break;
         }
 
         x1 = x2;
@@ -5078,11 +5126,13 @@ int input_find_root(double *xzero,
   //printf("Not calling ridders."); //line calls Ridders method. x1 = %g, x2 = %g, f1 = %g, f2 = %g \n",x1,x2,f1,f2);
   //*xzero = x1;
   //printf("xzero = %e \n",*xzero);
-  if (pfzw->scf_potential != ax_cos_cubed_inp || pfzw->do_shooting == _TRUE_){
+  if (pfzw->do_shooting == _TRUE_){
+    if(input_verbose>3)printf("bracketting succeeded, I am improve accuracy now %e\n");
     class_call(class_fzero_ridder(input_fzerofun_1d,
                                   x1,
                                   x2,
                                   1e-15*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding
+                                  // 1e-5*pfzw->target_value[0]*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding
                                   pfzw,
                                   &f1,
                                   &f2,

@@ -5750,9 +5750,9 @@ int perturb_total_stress_energy(
       ppw->delta_p += delta_p_scf; // an important difference from CDM because if SCF evolving via KG then pressure is not necessarily zero.
 
       if (pba->scf_kg_eq == _TRUE_){ //evolving via KG
-      ppw->rho_plus_p_theta +=  1./3.*
-        k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
-      rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
+        ppw->rho_plus_p_theta +=  1./3.*
+          k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
+        rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
       }
       else { //evolving via fluid mimicking fld
         rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];

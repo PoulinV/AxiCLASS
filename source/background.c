@@ -623,7 +623,7 @@ int background_init(
              pba->error_message,
              "Shooting failed, try optimising input_get_guess(). Error message:\n\n%s",
              pba->shooting_error);
-  printf("Passed shooting test. Calling background_indices.\n");
+  // printf("Passed shooting test. Calling background_indices.\n");
   /** - assign values to all indices in vectors of background quantities with background_indices()*/
   class_call(background_indices(pba),
              pba->error_message,
@@ -685,7 +685,7 @@ int background_init(
 
   /** - this function integrates the background over time, allocates
       and fills the background table */
-  printf("Last step in background_init, calling background_solve.\n");
+  // printf("Last step in background_init, calling background_solve.\n");
 
   class_call(background_solve(ppr,pba),
              pba->error_message,
@@ -818,7 +818,6 @@ int background_indices(
   }
 
   if (pba->Omega0_scf != 0.){
-    printf("Inside Omega0_scf != 0 \n");
     pba->has_scf = _TRUE_;
     pba->scf_kg_eq = _TRUE_; //Initially, we solve the KG equation.
   }
@@ -1866,7 +1865,7 @@ int background_solve(
   free(pvecback);
   free(pvecback_integration);
   pba->scf_kg_eq = _TRUE_; // COpertchange
-  printf("Finished background computation, resetting scf flags to KG.\n"); //print_trigger
+  // printf("Finished background computation, resetting scf flags to KG.\n"); //print_trigger
   return _SUCCESS_;
 
 }
@@ -2027,7 +2026,7 @@ int background_initial_conditions(
         sqrt(V_scf(pba,pvecback_integration[pba->index_bi_phi_scf]))*pba->phi_prime_ini_scf;
     }
     else{
-      printf("Not using attractor initial conditions\n");
+      // printf("Not using attractor initial conditions\n");
       /** - --> If no attractor initial conditions are assigned, gets the provided ones. */
       pvecback_integration[pba->index_bi_phi_scf] = pba->phi_ini_scf;
       pvecback_integration[pba->index_bi_phi_prime_scf] = pba->phi_prime_ini_scf;
@@ -2036,7 +2035,7 @@ int background_initial_conditions(
       //printf(" phi / fa = %e ", (pba->phi_ini_scf/pba->scf_parameters[1]));
       //printf(" phi / fa radians = %e ", ((pba->phi_ini_scf/pba->scf_parameters[1])*_PI_/180));
       //printf("cos(phi_init) = %e ", cos((pba->phi_ini_scf/pba->scf_parameters[1])*_PI_/180));
-      printf("phi ini = %e \n", pba->phi_ini_scf);
+      // printf("phi ini = %e \n", pba->phi_ini_scf);
     }
     class_test(!isfinite(pvecback_integration[pba->index_bi_phi_scf]) ||
                !isfinite(pvecback_integration[pba->index_bi_phi_scf]),
@@ -2047,7 +2046,7 @@ int background_initial_conditions(
 
     pvecback_integration[pba->index_bi_rho_scf] = 0; //initialise to 0, we will update its value when needed.
   }
-  printf("Calling background functions.\n");//print_trigger
+  // printf("Calling background functions.\n");//print_trigger
   /* Infer pvecback from pvecback_integration */
   class_call(background_functions(pba, pvecback_integration, pba->normal_info, pvecback),
 	     pba->error_message,
