@@ -7679,6 +7679,7 @@ int perturb_derivs(double tau,
         /** - ----> Klein Gordon equation */
         dy[pv->index_pt_phi_prime_scf] =  - 2.*a_prime_over_a*y[pv->index_pt_phi_prime_scf]
         - metric_continuity*pvecback[pba->index_bg_phi_prime_scf] //  metric_continuity = h'/2
+        // - 2*a2/k2*metric_euler*pvecback[pba->index_bg_dV_scf] //VP: This term was missing in newtonian gauge, but we do not follow psi' so we cannot yet solve the perturbed KG equation in newtonian gauge.
         - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]; //checked
 
 

@@ -2487,21 +2487,25 @@ double ddV_ax_cos_cubed_scf(
 double V_axion_scf(
                   struct background *pba,
                   double phi){
-        // printf("cos(pi) %e cos(2pi) %e \n", cos(_PI_),cos(2*_PI_));
-      // printf("phi %e theta %e V %e \n",phi,(phi/pba->scf_parameters[2])*_PI_/180,pow(pba->scf_parameters[1],2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2])*_PI_/180)),pba->scf_parameters[0]));
-    return pow(pba->m_scf,2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2]))),pba->scf_parameters[0]);//pba->scf_parameters[1] is given in units of H0 and then converted in input.c
-    // return pow(pba->m_scf,2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2])*_PI_)),pba->scf_parameters[0]);//pba->scf_parameters[1] is given in units of H0 and then converted in input.c
-    // return pow(pba->m_scf,2)*pow(pba->scf_parameters[2],2)*pow((1 - cos((phi/pba->scf_parameters[2])*_PI_/180)),pba->scf_parameters[0]);//pba->scf_parameters[1] is given in units of H0 and then converted in input.c
+    int n = pba->scf_parameters[0];
+    double fa = pba->scf_parameters[2];
+    double result;
+
+    result = pow(pba->m_scf,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
+    return result;
 
 }
 
 double dV_axion_scf(
                   struct background *pba,
                   double phi){
-    // printf("phi %e dV %e \n",phi,pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),1-pba->scf_parameters[0])*sin((phi/pba->scf_parameters[2])*_PI_/180));
-    return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])),pba->scf_parameters[0]-1)*sin((phi/pba->scf_parameters[2]));
-    // return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_),pba->scf_parameters[0]-1)*sin((phi/pba->scf_parameters[2])*_PI_);
-    // return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-1)*sin((phi/pba->scf_parameters[2])*_PI_/180);
+    int n = pba->scf_parameters[0];
+    double fa = pba->scf_parameters[2];
+    double result;
+    if(n>1)result = n*pow(pba->m_scf,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa);
+    else result = pow(pba->m_scf,2)*fa*sin(phi/fa);
+
+    return result;
 
 }
 
@@ -2512,21 +2516,11 @@ double ddV_axion_scf(
      int n = pba->scf_parameters[0];
      double fa = pba->scf_parameters[2];
      double result;
-     if(n>1)result = n*pow(pba->m_scf,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)); //this formula bugs sometimes for n=1
-     else result = n*pow(pba->m_scf,2)*cos(phi/fa);
-    // printf("phi %e ddV %e \n",phi,pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
-    // ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_/180),2)
-    // +pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),1-pba->scf_parameters[0])/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_/180)));
-    // printf("1 %e 2 %e \n", exp(-pba->scf_parameters[0]*phi),pow(pba->scf_parameters[0],4));
-    return result;
-    // return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
-    // ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_),2)
-    // +pow(1-cos((phi/pba->scf_parameters[2])*_PI_),pba->scf_parameters[0]-1)/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_));
-    // return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
-    // ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_/180),2)
-    // +pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-1)/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_/180));
-    // return pow(pba->scf_parameters[0],2)*cos((phi/pba->scf_parameters[1]*pba->H0)*_PI_/180);
+     if(n==1) result = n*pow(pba->m_scf,2)*cos(phi/fa);
+     else if (n==2) result =  n*pow(pba->m_scf,2)*(pow(sin(phi/fa),2)+(1-cos(phi/fa))*cos(phi/fa));
+     else result = n*pow(pba->m_scf,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)); //this formula bugs sometimes for n=1
 
+     return result;
 }
 /** parameters and functions for the axion quadratic potential
  * \f$ V_axion = m_a*m_a*phi*phi/2

@@ -1272,6 +1272,8 @@ int input_read_parameters(
     else {
       pba->scf_evolve_as_fluid = _FALSE_;
     }
+    class_test(ppt->gauge == newtonian && pba->scf_evolve_as_fluid == _FALSE_,errmsg,
+      "You are running a scalar field without the fluid approximation however the perturbed KG equation is only written in the synchronous gauge, please switch your gauge!")
 
     class_call(parser_read_string(pfc,
                                   "use_big_theta_scf",
