@@ -7683,8 +7683,10 @@ int perturb_derivs(double tau,
 
 
 
-
-        // printf("k %e a %e phi %e phi' %e metric_continuity %e\n",k,a, dy[pv->index_pt_phi_scf],dy[pv->index_pt_phi_prime_scf],metric_continuity);
+        if(ppt->perturbations_verbose>11){
+        printf("k %e a %e delta_phi %e delta_phi' %e d_delta_phi' %e metric_continuity %e\n",k,a, dy[pv->index_pt_phi_scf],y[pv->index_pt_phi_prime_scf],dy[pv->index_pt_phi_prime_scf],metric_continuity);
+        printf("phi' %e ddV %e\n",pvecback[pba->index_bg_phi_prime_scf],pvecback[pba->index_bg_ddV_scf]);
+        }
         // if(ppt->perturbations_verbose>11){
           // fprintf(stdout,"Passed 'KG calc' \n ");
         // }

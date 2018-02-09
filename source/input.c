@@ -4745,14 +4745,14 @@ int input_get_guess(double *xguess,
 
       }
       else if (ba.scf_tuning_index == 3 && (ba.scf_potential == axion) ){
-        if(ba.scf_parameters[0]>1){
-          xguess[index_guess] = _PI_*ba.scf_parameters[2];//set IC based on f_a.
-          dxdy[index_guess] = 0.5*xguess[index_guess]; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
-        }
-        else{
+        // if(ba.scf_parameters[0]>1){
+        //   xguess[index_guess] = _PI_*ba.scf_parameters[2];//set IC based on f_a.
+        //   dxdy[index_guess] = 0.5*xguess[index_guess]; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
+        // }
+        // else{
           xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[1]),0.5)));
           dxdy[index_guess] = 0.5;
-        }
+        // }
         // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
         // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
 
@@ -4911,17 +4911,28 @@ int input_find_root(double *xzero,
             }
             x2 = (x1*2);
           }
-          else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<180) && (pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion)){
+          else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<=_PI_) && (pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion)){
+          // else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<180) && (pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion)){
             if(input_verbose>3){
             printf("f1 was slightly too low, x2 = x1 + dx does not go above pi, using this: %e\n", x1 + dx);
             }
              x2 = (x1 + dx);
           }
-          else if(f1 < 0 && f1 >= -100){
+          else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a>_PI_)){
+          // else if(f1 < 0 && f1 >= -100){
             if(input_verbose>3){
             printf("f1 was slightly too low, but x2 = x1 + dx goes above pi, using x2 = x1 + (dx/10) instead: %e\n", x1 + (dx/10));
             }
-             x2 = (x1 + (dx/10));
+            dxtmp=dx/2;
+            x2=x1+dxtmp;
+            while(x2/f_a>_PI_){
+               dxtmp/=2;
+               x2=x1+dxtmp;
+               printf("x2 %e\n", x2);
+             }
+             if(input_verbose>3){
+             printf("x2 is then %e \n", x2);
+            }
           }
         }
         if (x1 < 0 ){

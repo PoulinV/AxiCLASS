@@ -2509,13 +2509,16 @@ double ddV_axion_scf(
                   struct background *pba,
                   double phi){
 
+     int n = pba->scf_parameters[0];
+     double fa = pba->scf_parameters[2];
+     double result;
+     if(n>1)result = n*pow(pba->m_scf,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)); //this formula bugs sometimes for n=1
+     else result = n*pow(pba->m_scf,2)*cos(phi/fa);
     // printf("phi %e ddV %e \n",phi,pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
     // ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_/180),2)
     // +pow(1-cos((phi/pba->scf_parameters[2])*_PI_/180),1-pba->scf_parameters[0])/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_/180)));
     // printf("1 %e 2 %e \n", exp(-pba->scf_parameters[0]*phi),pow(pba->scf_parameters[0],4));
-    return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
-    ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])),2)
-    +pow(1-cos((phi/pba->scf_parameters[2])),pba->scf_parameters[0]-1)/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])));
+    return result;
     // return pba->scf_parameters[0]*pow(pba->m_scf,2)*pba->scf_parameters[2]*
     // ((pba->scf_parameters[0]-1)/pba->scf_parameters[2]*pow(1-cos((phi/pba->scf_parameters[2])*_PI_),pba->scf_parameters[0]-2)*pow(sin((phi/pba->scf_parameters[2])*_PI_),2)
     // +pow(1-cos((phi/pba->scf_parameters[2])*_PI_),pba->scf_parameters[0]-1)/pba->scf_parameters[2]*cos((phi/pba->scf_parameters[2])*_PI_));
