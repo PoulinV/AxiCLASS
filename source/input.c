@@ -483,8 +483,8 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                                   x_inout,
                                   dxdF,
                                   unknown_parameters_size,
-                                  1e-4,
-                                  1e-6,
+                                  1e-5, //Here we have improved accuracy manually, in the future needs to adapt it to the parameter we shoot for
+                                  1e-10, //Here we have improved accuracy manually, in the future needs to adapt it to the parameter we shoot for
                                   &fzw,
                                   &fevals,
                                   errmsg),
@@ -4745,11 +4745,14 @@ int input_get_guess(double *xguess,
 
       }
       else if (ba.scf_tuning_index == 3 && (ba.scf_potential == axion) ){
-        // xguess[index_guess] = 160*ba.scf_parameters[2];//set IC based on f_a.
-        // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
-        xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[1]),0.5)));
-        //xguess[index_guess] =1e-8;
-        dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
+        if(ba.scf_parameters[0]>1){
+          xguess[index_guess] = _PI_*ba.scf_parameters[2];//set IC based on f_a.
+          dxdy[index_guess] = 0.5*xguess[index_guess]; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
+        }
+        else{
+          xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[1]),0.5)));
+          dxdy[index_guess] = 0.5;
+        }
         // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
         // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
 
@@ -4859,7 +4862,8 @@ int input_find_root(double *xzero,
     if(pfzw->scf_potential == ax_cos_cubed)f_a = pfzw->scf_parameters[1];
     else if(pfzw->scf_potential == axion)f_a = pfzw->scf_parameters[2];
     if(pfzw->do_shooting == _TRUE_){
-      dx = 0.5; //f1*dxdy;
+      // dx = dxdy; //f1*dxdy;
+      dx=0.5;
       if(input_verbose>3){
         printf("axion cubed root finding \n");
         printf("dx = %e\n", dx);
@@ -5132,7 +5136,7 @@ int input_find_root(double *xzero,
                                   x1,
                                   x2,
                                   1e-15*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding
-                                  // 1e-5*pfzw->target_value[0]*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding
+                                  // 1e-10*pfzw->target_value[0]*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding - here we cheat because we want 1e-5 relative uncertainty on f(x) but fzero ridder take tol on x. found to be working anyway.
                                   pfzw,
                                   &f1,
                                   &f2,
