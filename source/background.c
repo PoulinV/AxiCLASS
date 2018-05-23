@@ -2491,7 +2491,8 @@ double V_axion_scf(
     double fa = pba->scf_parameters[2];
     double result;
 
-    result = pow(pba->m_scf,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
+    if(n>1)result = pow(pba->m_scf,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
+    else result = pow(pba->m_scf,2)*pow(fa,2)*(1 - cos(phi/fa));
     return result;
 
 }
