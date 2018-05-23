@@ -1351,6 +1351,12 @@ int input_read_parameters(
                                            &flag1,
                                            errmsg),
                errmsg,errmsg);
+
+     if(pba->scf_potential == axion){
+       pba->scf_parameters[3]*=pba->scf_parameters[2]; //conversion from theta_i to phi_i; multiplying by fa
+       pba->scf_parameters[4]*=pba->scf_parameters[2]; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
+     }
+
     class_read_int("scf_tuning_index",pba->scf_tuning_index);
     class_test(pba->scf_tuning_index >= pba->scf_parameters_size,
                errmsg,
@@ -1364,6 +1370,7 @@ int input_read_parameters(
       // pba->scf_parameters[0]*=1.95e28;/** conversion from Mpl to sqrt(Mpl/Mpc) */
       // pba->scf_parameters[1]*=1.95e28;/** conversion from Mpl to sqrt(Mpl/Mpc) */
     }
+
     for(int i=0;i<(int) pba->scf_parameters_size;i++){
       printf("i %e\n",pba->scf_parameters[i]);
     }
@@ -4752,10 +4759,12 @@ int input_get_guess(double *xguess,
         //   dxdy[index_guess] = 0.5*xguess[index_guess]; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
         // }
         // else{
-          xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[1]),0.5)));
-          dxdy[index_guess] = 0.5;
+
+          xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.scf_parameters[1]),0.5)));
+          // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*(ba.Omega0_cdm+ba.Omega0_b))); //there should be a switch depending on the mass.
+          dxdy[index_guess] = 0.5*xguess[index_guess];
         // }
-        // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
+        printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
         // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
 
       }
@@ -4863,9 +4872,10 @@ int input_find_root(double *xzero,
   if(pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion || pfzw->scf_potential == axionquad){
     if(pfzw->scf_potential == ax_cos_cubed)f_a = pfzw->scf_parameters[1];
     else if(pfzw->scf_potential == axion)f_a = pfzw->scf_parameters[2];
+    else if(pfzw->scf_potential == axionquad)f_a = pfzw->scf_parameters[1];
     if(pfzw->do_shooting == _TRUE_){
-      // dx = dxdy; //f1*dxdy;
-      dx=0.5;
+      dx = f1/sqrt(f1*f1)*dxdy; //f1*dxdy;
+      // dx=0.5;
       if(input_verbose>3){
         printf("axion cubed root finding \n");
         printf("dx = %e\n", dx);
@@ -4884,7 +4894,7 @@ int input_find_root(double *xzero,
             if(input_verbose>3){
             printf("f1 was way too high, x2 = x1/2: %e\n",x1/2);
             }
-            x2 = (x1/20);
+            x2 = (x1/(f1));
           }
           else if(f1 > 0 && f1 <= 100 && (x1-dx>0)){
             if(input_verbose>3){
@@ -4930,7 +4940,7 @@ int input_find_root(double *xzero,
             while(x2/f_a>_PI_){
                dxtmp/=2;
                x2=x1+dxtmp;
-               printf("x2 %e\n", x2);
+               printf("x2/f_a %e dxtmp %e\n", x2/f_a,dxtmp);
              }
              if(input_verbose>3){
              printf("x2 is then %e \n", x2);
