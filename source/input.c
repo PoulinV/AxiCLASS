@@ -4874,7 +4874,8 @@ int input_find_root(double *xzero,
     else if(pfzw->scf_potential == axion)f_a = pfzw->scf_parameters[2];
     else if(pfzw->scf_potential == axionquad)f_a = pfzw->scf_parameters[1];
     if(pfzw->do_shooting == _TRUE_){
-      dx = f1/sqrt(f1*f1)*dxdy; //f1*dxdy;
+      // dx = f1/sqrt(f1*f1)*dxdy; //f1*dxdy;
+      dx = 1.5*f1*dxdy;
       // dx=0.5;
       if(input_verbose>3){
         printf("axion cubed root finding \n");
