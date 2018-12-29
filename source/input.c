@@ -559,7 +559,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
   else{
     if(fzw.do_shooting==_FALSE_){
     xzero = 33.1;
-    printf("Shooting entirely skipped, phi_init initialised.\n");
+    // printf("Shooting entirely skipped, phi_init initialised.\n");
     }
     /** - --> just read all parameters from input pfc: */
     class_call(input_read_parameters(pfc,
@@ -1166,8 +1166,9 @@ int input_read_parameters(
   }
   if ((flag3 == _TRUE_) && (param3 >= 0.)){
     pba->Omega0_scf = param3;
+    // printf("param3 %e\n", param3);
     Omega_tot += pba->Omega0_scf;
-    printf("Omega0_scf (added in 'output') = %e \n", pba->Omega0_scf); //Sets Omega_scf today equal to users input
+    // printf("Omega0_scf (added in 'output') = %e \n", pba->Omega0_scf); //Sets Omega_scf today equal to users input
   }
   if (flag4 == _TRUE_){
     pba->Omega0_cdm = param4;
@@ -1372,8 +1373,8 @@ int input_read_parameters(
                errmsg,errmsg);
 
      if(pba->scf_potential == axion){
-       pba->scf_parameters[3]*=pba->scf_parameters[2]; //conversion from theta_i to phi_i; multiplying by fa
-       pba->scf_parameters[4]*=pba->scf_parameters[2]; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
+       pba->scf_parameters[0]*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
+       pba->scf_parameters[1]*=pba->f_axion; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
      }
 
     class_read_int("scf_tuning_index",pba->scf_tuning_index);
