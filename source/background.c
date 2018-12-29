@@ -674,6 +674,24 @@ int background_init(
     }
   }
 
+
+  if(pba->has_scf == _TRUE_){
+        if(pba->scf_potential == axionquad){
+          pba->m_scf = pba->scf_parameters[0]*pba->H0;
+          pba->w_scf = 0;
+        }
+        else if(pba->scf_potential == axion){
+          pba->m_scf = pba->m_scf*pba->H0;
+          pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
+          // printf("%e %e\n",  pba->m_scf,  pba->w_scf );
+        }
+        else{
+          pba->m_scf = 0;
+          pba->w_scf = 0; //default to 0 but never used in that case
+        }
+        // printf("m_scf is %e pba->w_scf %e\n", pba->m_scf,pba->w_scf);
+     }
+
   /* check other quantities which would lead to segmentation fault if zero */
   class_test(pba->a_today <= 0,
              pba->error_message,
@@ -1609,21 +1627,22 @@ int background_solve(
     pba->bt_size++;
     //printf("Calling generic_integrator.\n");//print_trigger
 
-    if(pba->has_scf == _TRUE_){
-          if(pba->scf_potential == axionquad){
-            pba->m_scf = pba->scf_parameters[0]*pba->H0;
-            pba->w_scf = 0;
-          }
-          else if(pba->scf_potential == axion){
-            pba->m_scf = pba->scf_parameters[1]*pba->H0;
-            pba->w_scf = (pba->scf_parameters[0]-1)/(pba->scf_parameters[0]+1);
-          }
-          else{
-            pba->m_scf = 0;
-            pba->w_scf = 0; //default to 0 but never used in that case
-          }
-          // printf("m_scf is %e pba->w_scf %e\n", pba->m_scf,pba->w_scf);
-       }
+    // if(pba->has_scf == _TRUE_){
+    //       if(pba->scf_potential == axionquad){
+    //         pba->m_scf = pba->scf_parameters[0]*pba->H0;
+    //         pba->w_scf = 0;
+    //       }
+    //       else if(pba->scf_potential == axion){
+    //         pba->m_scf = pba->m_scf*pba->H0;
+    //         pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
+    //         printf("%e %e\n",  pba->m_scf,  pba->w_scf );
+    //       }
+    //       else{
+    //         pba->m_scf = 0;
+    //         pba->w_scf = 0; //default to 0 but never used in that case
+    //       }
+    //       // printf("m_scf is %e pba->w_scf %e\n", pba->m_scf,pba->w_scf);
+    //    }
 
     /* -> perform one step */
     class_call(generic_integrator(background_derivs,
@@ -1842,17 +1861,17 @@ int background_solve(
       printf("Additional scf parameters used: \n");
       printf("m_a = %g eV\n",(pba->scf_parameters[0]/1.5638e29));
       }
-      if(pba->scf_potential ==axion){
+      if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
-      printf("n = %g m_a = %g eV, f_a/mpl = %g\n",pba->scf_parameters[0],(pba->scf_parameters[1]/1.5638e29),pba->scf_parameters[2]);
+      printf("n = %d m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf/1.5638e29),pba->f_axion);
       }
       if(pba->scf_potential == ax_cos_cubed){
       printf("Additional scf parameters used: \n");
       printf("m_a = %g eV, f_a/mpl = %g\n",(pba->scf_parameters[0]/1.5638e29),pba->scf_parameters[1]);
       }
       if(pba->has_lambda == _TRUE_)
-	printf("     -> Omega_Lambda = %g, wished %g\n",
-               pvecback[pba->index_bg_rho_lambda]/pvecback[pba->index_bg_rho_crit], pba->Omega0_lambda);
+	     printf("     -> Omega_Lambda = %g, wished %g\n",
+       pvecback[pba->index_bg_rho_lambda]/pvecback[pba->index_bg_rho_crit], pba->Omega0_lambda);
       //printf("     -> parameters: [lambda, alpha, A, B] = \n");
       //printf("                    [");
       //for (i=0; i<pba->scf_parameters_size-1; i++){
@@ -2487,11 +2506,14 @@ double ddV_ax_cos_cubed_scf(
 double V_axion_scf(
                   struct background *pba,
                   double phi){
-    int n = pba->scf_parameters[0];
-    double fa = pba->scf_parameters[2];
+    // int n = pba->scf_parameters[0];
+    int n = pba->n_axion;
+    // double fa = pba->scf_parameters[2];
+    double fa = pba->f_axion;
     double result;
 
-    result = pow(pba->m_scf,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
+    if(n>1)result = pow(pba->m_scf,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
+    else result = pow(pba->m_scf,2)*pow(fa,2)*(1 - cos(phi/fa));
     return result;
 
 }
@@ -2499,8 +2521,10 @@ double V_axion_scf(
 double dV_axion_scf(
                   struct background *pba,
                   double phi){
-    int n = pba->scf_parameters[0];
-    double fa = pba->scf_parameters[2];
+    // int n = pba->scf_parameters[0];
+    int n = pba->n_axion;
+    // double fa = pba->scf_parameters[2];
+    double fa = pba->f_axion;
     double result;
     if(n>1)result = n*pow(pba->m_scf,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa);
     else result = pow(pba->m_scf,2)*fa*sin(phi/fa);
@@ -2513,8 +2537,10 @@ double ddV_axion_scf(
                   struct background *pba,
                   double phi){
 
-     int n = pba->scf_parameters[0];
-     double fa = pba->scf_parameters[2];
+     // int n = pba->scf_parameters[0];
+     int n = pba->n_axion;
+     // double fa = pba->scf_parameters[2];
+     double fa = pba->f_axion;
      double result;
      if(n==1) result = n*pow(pba->m_scf,2)*cos(phi/fa);
      else if (n==2) result =  n*pow(pba->m_scf,2)*(pow(sin(phi/fa),2)+(1-cos(phi/fa))*cos(phi/fa));

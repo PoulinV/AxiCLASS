@@ -91,6 +91,8 @@ struct background
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
   double m_scf;
+  double f_axion;
+  int n_axion;
   double w_scf;
   double cs2_scf;
   double threshold_scf_fluid_m_over_H;

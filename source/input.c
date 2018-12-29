@@ -208,6 +208,7 @@ int input_init(
                ) {
 
   int flag1,flag2;
+  int int1,int2;
   double param1;
   int counter, index_target, i;
   double * unknown_parameter;
@@ -280,8 +281,11 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
       class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
     }
     else if(fzw.scf_potential == axion){
-      fzw.m_scf = fzw.scf_parameters[1];
-      fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
+      class_read_double("m_axion",fzw.m_scf);
+      class_read_double("f_axion",fzw.f_axion);
+      class_read_int("n_axion",fzw.n_axion);
+      printf("here input\n");
+      // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
       class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
     }
     else{
@@ -313,7 +317,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
   enum computation_stage target_cs[] = {cs_thermodynamics, cs_background, cs_background,
                                         cs_background, cs_background, cs_background};
 
-  int input_verbose = 0, int1, aux_flag, shooting_failed=_FALSE_;
+  int input_verbose = 0, aux_flag, shooting_failed=_FALSE_;
 
   class_read_int("input_verbose",input_verbose);
   if (input_verbose >0) printf("Reading input parameters\n");
@@ -1329,6 +1333,19 @@ int input_read_parameters(
        }
        if (strcmp(string1,"axion") == 0) {
          pba->scf_potential = axion;
+         class_call(parser_read_int(pfc,"n_axion",&int1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         pba->n_axion = int1;
+         class_call(parser_read_double(pfc,"f_axion",&param1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         pba->f_axion = param1;
+         class_call(parser_read_double(pfc,"m_axion",&param1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         pba->m_scf = param1;
+         // printf("%d %e %e\n",pba->n_axion,pba->m_scf,pba->f_axion);
          flag2 =_TRUE_;
        }
        if (strcmp(string1,"ax_cos_cubed") == 0) {
@@ -3672,6 +3689,9 @@ int input_default_params(
   pba->scf_parameters_size = 0;
   pba->scf_tuning_index = 0;
   pba->scf_potential = pol_times_exp;
+  pba->f_axion = 0.05;
+  pba->m_scf = 1e5;
+  pba->n_axion = 1;
   pba->scf_has_perturbations = _FALSE_;
   pba->threshold_scf_fluid_m_over_H = 3;
   //MZ: initial conditions are as multiplicative factors of the radiation attractor values
@@ -4752,10 +4772,13 @@ int input_get_guess(double *xguess,
         //   dxdy[index_guess] = 0.5*xguess[index_guess]; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
         // }
         // else{
-          xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[1]),0.5)));
-          dxdy[index_guess] = 0.5;
+
+          // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.scf_parameters[1]),0.5)));
+          xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.f_axion),0.5)));
+          // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*(ba.Omega0_cdm+ba.Omega0_b))); //there should be a switch depending on the mass.
+          dxdy[index_guess] = 0.5*xguess[index_guess];
         // }
-        // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
+        printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
         // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
 
       }
@@ -4862,10 +4885,11 @@ int input_find_root(double *xzero,
   // if result 2 < result 1, x + dx
   if(pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion || pfzw->scf_potential == axionquad){
     if(pfzw->scf_potential == ax_cos_cubed)f_a = pfzw->scf_parameters[1];
-    else if(pfzw->scf_potential == axion)f_a = pfzw->scf_parameters[2];
+    else if(pfzw->scf_potential == axion)f_a = pfzw->f_axion;
+    else if(pfzw->scf_potential == axionquad)f_a = pfzw->scf_parameters[1];
     if(pfzw->do_shooting == _TRUE_){
-      // dx = dxdy; //f1*dxdy;
-      dx=0.5;
+      dx = f1/sqrt(f1*f1)*dxdy; //f1*dxdy;
+      // dx=0.5;
       if(input_verbose>3){
         printf("axion cubed root finding \n");
         printf("dx = %e\n", dx);
@@ -4884,7 +4908,7 @@ int input_find_root(double *xzero,
             if(input_verbose>3){
             printf("f1 was way too high, x2 = x1/2: %e\n",x1/2);
             }
-            x2 = (x1/20);
+            x2 = (x1/(f1));
           }
           else if(f1 > 0 && f1 <= 100 && (x1-dx>0)){
             if(input_verbose>3){
@@ -4930,7 +4954,7 @@ int input_find_root(double *xzero,
             while(x2/f_a>_PI_){
                dxtmp/=2;
                x2=x1+dxtmp;
-               printf("x2 %e\n", x2);
+               printf("x2/f_a %e dxtmp %e\n", x2/f_a,dxtmp);
              }
              if(input_verbose>3){
              printf("x2 is then %e \n", x2);
