@@ -462,6 +462,7 @@ int background_functions(
   /** - compute relativistic density to total density ratio */
   pvecback[pba->index_bg_Omega_r] = rho_r / rho_tot;
 
+  pvecback[pba->index_bg_Omega_scf] = pvecback[pba->index_bg_rho_scf] / rho_tot;
   /** - compute other quantities in the exhaustive, redundant format */
   if (return_format == pba->long_info) {
 
@@ -894,6 +895,7 @@ int background_indices(
   class_define_index(pba->index_bg_dV_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_ddV_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_rho_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_Omega_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_p_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_w_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_dw_scf,pba->has_scf,index_bg,1);
@@ -1839,6 +1841,7 @@ int background_solve(
   if (pba->background_verbose > 0) {
     printf(" -> age = %f Gyr\n",pba->age);
     printf(" -> conformal age = %f Mpc\n",pba->conformal_age);
+    printf(" -> H0 = %f km/s/Mpc\n",pba->H0/(1.e3 / _c_));
   }
 
   if (pba->background_verbose > 2) {
@@ -2146,6 +2149,7 @@ int background_output_titles(struct background * pba,
   class_store_columntitle(titles,"(.)rho_dr",pba->has_dr);
 
   class_store_columntitle(titles,"(.)rho_scf",pba->has_scf);
+  class_store_columntitle(titles,"(.)Omega_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)p_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)w_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)dw_scf",pba->has_scf);
@@ -2200,6 +2204,7 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dr],pba->has_dr,storeidx);
 
     class_store_double(dataptr,pvecback[pba->index_bg_rho_scf],pba->has_scf,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_Omega_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_w_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dw_scf],pba->has_scf,storeidx);
@@ -2448,7 +2453,7 @@ double ddV_p_scf(
 }
 
 /** parameters and functions for the double exponential potential
- * \f$ V_double_exp = \Lambda_1^4e^{-\lambda\phi}+\Lambda_2^4e^{-\mu\phi}
+ * \f$ V_double_exp = \mu_1^4e^{-\lambda_1\phi}+\mu_2^4e^{-\lambda_2\phi}
  */
 
 double V_double_exp_scf(

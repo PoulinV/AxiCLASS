@@ -345,7 +345,9 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                                                    errmsg),
                  errmsg, errmsg);
       if (aux_flag == _TRUE_){
-        printf("Found target: %s, target value =  %e\n",target_namestrings[index_target],param1);
+        if(input_verbose > 10){
+          printf("Found target: %s, target value =  %e\n",target_namestrings[index_target],param1);
+        }
         target_indices[unknown_parameters_size] = index_target; /*setting up correct variable that we have defined to shoot for as an answer */
         fzw.required_computation_stage = MAX(fzw.required_computation_stage,target_cs[index_target]);
         unknown_parameters_size++;
@@ -1368,22 +1370,31 @@ int input_read_parameters(
                                            &flag1,
                                            errmsg),
                errmsg,errmsg);
+
+     if(pba->scf_potential == axion){
+       pba->scf_parameters[3]*=pba->scf_parameters[2]; //conversion from theta_i to phi_i; multiplying by fa
+       pba->scf_parameters[4]*=pba->scf_parameters[2]; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
+     }
+
     class_read_int("scf_tuning_index",pba->scf_tuning_index);
     class_test(pba->scf_tuning_index >= pba->scf_parameters_size,
                errmsg,
                "Tuning index scf_tuning_index = %d is larger than the number of entries %d in scf_parameters. Check your .ini file.",pba->scf_tuning_index,pba->scf_parameters_size);
     /** - Assign shooting parameter */
     class_read_double("scf_shooting_parameter",pba->scf_parameters[pba->scf_tuning_index]);
-    printf("input file read, the scf_shooting parameter is %e \n", pba->scf_parameters[pba->scf_tuning_index]);
+    if(input_verbose>10){
+      printf("input file read, the scf_shooting parameter is %e \n", pba->scf_parameters[pba->scf_tuning_index]);
+    }
 
     scf_lambda = pba->scf_parameters[0];
     if(pba->scf_potential == double_exp){
       // pba->scf_parameters[0]*=1.95e28;/** conversion from Mpl to sqrt(Mpl/Mpc) */
       // pba->scf_parameters[1]*=1.95e28;/** conversion from Mpl to sqrt(Mpl/Mpc) */
     }
-    for(int i=0;i<(int) pba->scf_parameters_size;i++){
-      printf("i %e\n",pba->scf_parameters[i]);
-    }
+
+    // for(int i=0;i<(int) pba->scf_parameters_size;i++){
+    //   printf("i %e\n",pba->scf_parameters[i]);
+    // }
     if ((fabs(scf_lambda) <3.)&&(pba->background_verbose>1)&&(pba->scf_potential==double_exp || pba->scf_potential == pol_times_exp ))
       printf("lambda = %e <3 won't be tracking (for exp quint) unless overwritten by tuning function\n",scf_lambda);
 
@@ -4583,13 +4594,16 @@ int input_try_unknown_parameters(double * unknown_parameter,
         // printf("Made up of minus : %e \n", -ba.Omega0_scf);
         // printf("background table [] %e where bt_size = %e, bg_size = %e and index_bg_rho_scf = %e \n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf],ba.bt_size,ba.bg_size,ba.index_bg_rho_scf);
         // printf("backgroundtable[] / H0^2 = %e \n ", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0));
-        printf("Where does the code end up? \n");
+        if(input_verbose>10){
+          printf("Where does the code end up? \n");
+          printf("rho_ax / rho_crit: %e\n",ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0));
+          printf("distance away from target: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0) - ba.Omega0_scf);
+        }
         // printf("phi: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_scf]);
         // printf("phidot: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]);
         // printf("K.E (not divided by a, as a=1?): %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]*ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]/2);
         // printf("potential: %e\n",ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_V_scf]);
-        printf("rho_ax / rho_crit: %e\n",ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0));
-        printf("distance away from target: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0) - ba.Omega0_scf);
+
       break;
     case Omega_ini_dcdm:
     case omega_ini_dcdm:

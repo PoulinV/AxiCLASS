@@ -194,6 +194,7 @@ struct background
   int index_bg_dV_scf;        /**< scalar field potential derivative V' */
   int index_bg_ddV_scf;       /**< scalar field potential second derivative V'' */
   int index_bg_rho_scf;       /**< scalar field energy density */
+  int index_bg_Omega_scf;       /**< scalar field fractional energy density */
   int index_bg_p_scf;         /**< scalar field pressure */
   int index_bg_w_scf;         /**< scalar field e.o.s. */
   int index_bg_dw_scf;         /**< scalar field derivative of e.o.s. w/r to tau */

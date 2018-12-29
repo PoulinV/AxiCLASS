@@ -4297,11 +4297,11 @@ int perturb_initial_conditions(struct precision * ppr,
         if(pba->scf_evolve_as_fluid == _TRUE_){
 
                 if(pba->scf_potential == axionquad){
-                  pba->m_scf = pba->scf_parameters[0]*pba->H0;
+                  // pba->m_scf = pba->scf_parameters[0]*pba->H0;
                   pba->w_scf = ppw->pvecback[pba->index_bg_w_scf];
                 }
                 else if(pba->scf_potential == axion){
-                  pba->m_scf = pba->scf_parameters[1]*pba->H0;
+                  // pba->m_scf = pba->scf_parameters[1]*pba->H0;
                   pba->w_scf = (pba->scf_parameters[0]-1)/(pba->scf_parameters[0]+1);
                 }
                 else{
