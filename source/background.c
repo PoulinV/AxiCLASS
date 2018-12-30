@@ -801,7 +801,6 @@ int background_indices(
                        ) {
 
   /** Summary: */
-  printf("here\n");
   /** - define local variables */
 
   /* a running index for the vector of background quantities */
