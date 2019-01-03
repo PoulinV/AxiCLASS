@@ -462,7 +462,9 @@ int background_functions(
   /** - compute relativistic density to total density ratio */
   pvecback[pba->index_bg_Omega_r] = rho_r / rho_tot;
 
-  pvecback[pba->index_bg_Omega_scf] = pvecback[pba->index_bg_rho_scf] / rho_tot;
+  if(pba->has_scf == _TRUE_){
+    pvecback[pba->index_bg_Omega_scf] = pvecback[pba->index_bg_rho_scf] / rho_tot;
+  }
   /** - compute other quantities in the exhaustive, redundant format */
   if (return_format == pba->long_info) {
 
