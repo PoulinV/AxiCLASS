@@ -1348,6 +1348,14 @@ int input_read_parameters(
                     errmsg,
                     errmsg);
          pba->m_scf = param1;
+         class_call(parser_read_double(pfc,"Omega0_axion",&param1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         pba->Omega0_axion = param1;
+         class_call(parser_read_double(pfc,"axion_ac",&param1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         pba->axion_ac = param1;
          // printf("%d %e %e\n",pba->n_axion,pba->m_scf,pba->f_axion);
          flag2 =_TRUE_;
        }
@@ -1372,10 +1380,7 @@ int input_read_parameters(
                                            errmsg),
                errmsg,errmsg);
 
-     if(pba->scf_potential == axion){
-       pba->scf_parameters[0]*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
-       pba->scf_parameters[1]*=pba->f_axion; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
-     }
+
 
     class_read_int("scf_tuning_index",pba->scf_tuning_index);
     class_test(pba->scf_tuning_index >= pba->scf_parameters_size,
@@ -3704,7 +3709,9 @@ int input_default_params(
   pba->f_axion = 0.05;
   pba->m_scf = 1e5;
   pba->n_axion = 1;
-  pba->scf_has_perturbations = _FALSE_;
+  pba->axion_ac = 0.0;
+  pba->Omega0_axion = 0.0;
+  pba->scf_has_perturbations = _TRUE_;
   pba->threshold_scf_fluid_m_over_H = 3;
   //MZ: initial conditions are as multiplicative factors of the radiation attractor values
   pba->phi_ini_scf = 1;

@@ -559,6 +559,7 @@ int background_init(
   double rho_ncdm_rel,rho_nu_rel;
   double Neff;
   double w_fld, dw_over_da, integral_fld;
+  double Omega_axion_ac,wn, f, p, Eac, xc,cos_initial,sin_initial, n;
   int filenum=0;
 
   /** - in verbose mode, provide some information */
@@ -684,14 +685,52 @@ int background_init(
           pba->w_scf = 0;
         }
         else if(pba->scf_potential == axion){
+
+          if(pba->axion_ac >= 0.0 && pba->Omega0_axion > 0.0){
+            // printf("ac %e omega %e\n",  pba->axion_ac,  pba->Omega0_axion);
+
+            //here we convert ac and omega0 into mu and alpha
+              if(pba->axion_ac<(pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm)){
+                p = 1./2;
+              }
+              else{
+                p = 2./3;
+              }
+              cos_initial = cos(pba->scf_parameters[0]);
+              sin_initial = sin(pba->scf_parameters[0]);
+              // printf("%e %e %e \n",cos_initial,sin_initial,p);
+
+              n = pba->n_axion;
+              wn = (n-1)/(n+1);
+
+              // if(pba->Omega0_fld!=0 || pba->Omega_many_fld[i] != 0) Omega0_fld = pba->Omega0_fld;
+              Omega_axion_ac = pba->Omega0_axion/2*(pow(pba->axion_ac,-3*(wn+1))+1);
+              Eac = sqrt((pba->Omega0_g+pba->Omega0_ur)*pow(pba->axion_ac,-4)+(pba->Omega0_b+pba->Omega0_cdm)*pow(pba->axion_ac,-3)+Omega_axion_ac);
+
+              xc = p/Eac;
+              f = 7./8;
+              pba->m_scf = pow(1-cos_initial,(1.-n)/2.)*sqrt((1-f)*(6*p+2)*pba->scf_parameters[0]/(n*sin_initial))/xc;
+              pba->f_axion = sqrt(6 * Omega_axion_ac)/pba->m_scf/pow(1-cos_initial,n/2);
+              // printf("before %e %e\n",  pba->m_scf,  pba->f_axion);
+          }
+
+
           pba->m_scf = pba->m_scf*pba->H0;
           pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
-          // printf("%e %e\n",  pba->m_scf,  pba->w_scf );
+          // printf("after %e %e\n",  pba->m_scf,  pba->w_scf );
+
+
+            pba->scf_parameters[0]*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
+            pba->scf_parameters[1]*=pba->f_axion; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
+
+
         }
         else{
           pba->m_scf = 0;
           pba->w_scf = 0; //default to 0 but never used in that case
         }
+
+
         // printf("m_scf is %e pba->w_scf %e\n", pba->m_scf,pba->w_scf);
      }
 
@@ -2645,6 +2684,7 @@ double ddV_scf(
   if(pba->scf_potential == pol_times_exp){
     result =  ddV_e_scf(pba,phi)*V_p_scf(pba,phi) + 2*dV_e_scf(pba,phi)*dV_p_scf(pba,phi) + V_e_scf(pba,phi)*ddV_p_scf(pba,phi);
   }
+
   else if(pba->scf_potential == double_exp){
     result =  ddV_double_exp_scf(pba,phi);
   }

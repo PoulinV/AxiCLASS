@@ -92,6 +92,8 @@ struct background
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
   double m_scf;
   double f_axion;
+  double axion_ac;
+  double Omega0_axion;
   int n_axion;
   double w_scf;
   double cs2_scf;
