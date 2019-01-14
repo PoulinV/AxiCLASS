@@ -559,7 +559,7 @@ int background_init(
   double rho_ncdm_rel,rho_nu_rel;
   double Neff;
   double w_fld, dw_over_da, integral_fld;
-  double Omega_axion_ac,wn, f, p, Eac, xc,cos_initial,sin_initial, n;
+  double wn, f, p, Eac, xc,cos_initial,sin_initial, n;
   int filenum=0;
 
   /** - in verbose mode, provide some information */
@@ -704,13 +704,13 @@ int background_init(
               wn = (n-1)/(n+1);
 
               // if(pba->Omega0_fld!=0 || pba->Omega_many_fld[i] != 0) Omega0_fld = pba->Omega0_fld;
-              Omega_axion_ac = pba->Omega0_axion/2*(pow(pba->axion_ac,-3*(wn+1))+1);
-              Eac = sqrt((pba->Omega0_g+pba->Omega0_ur)*pow(pba->axion_ac,-4)+(pba->Omega0_b+pba->Omega0_cdm)*pow(pba->axion_ac,-3)+Omega_axion_ac);
+              pba->Omega_axion_ac = pba->Omega0_axion/2*(pow(pba->axion_ac,-3*(wn+1))+1);
+              Eac = sqrt((pba->Omega0_g+pba->Omega0_ur)*pow(pba->axion_ac,-4)+(pba->Omega0_b+pba->Omega0_cdm)*pow(pba->axion_ac,-3)+pba->Omega_axion_ac);
 
               xc = p/Eac;
               f = 7./8;
               pba->m_scf = pow(1-cos_initial,(1.-n)/2.)*sqrt((1-f)*(6*p+2)*pba->scf_parameters[0]/(n*sin_initial))/xc;
-              pba->f_axion = sqrt(6 * Omega_axion_ac)/pba->m_scf/pow(1-cos_initial,n/2);
+              pba->f_axion = sqrt(6 * pba->Omega_axion_ac)/pba->m_scf/pow(1-cos_initial,n/2);
               // printf("before %e %e\n",  pba->m_scf,  pba->f_axion);
           }
 

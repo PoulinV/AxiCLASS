@@ -29,7 +29,7 @@ cdef extern from "class.h":
 
     cdef struct precision:
         ErrorMsg error_message
-		
+
         double param_fz_1
         double param_fz_2
         double param_fz_3
@@ -59,6 +59,10 @@ cdef extern from "class.h":
         double Omega0_ncdm_tot
         double Omega0_lambda
         double Omega0_fld
+        double m_scf
+        double f_axion
+        double Omega_axion_ac
+        double axion_ac
         double w0_fld
         double wa_fld
         double cs2_fld
@@ -88,11 +92,11 @@ cdef extern from "class.h":
         double rs_d
         double YHe
         double n_e
-		
+
         # BEGIN: Add additional parameters (related to exotic energy injection)
         double annihilation
         double PBH_low_mass
-        double PBH_fraction 
+        double PBH_fraction
         # END
 
         int tt_size

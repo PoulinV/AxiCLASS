@@ -94,6 +94,7 @@ struct background
   double f_axion;
   double axion_ac;
   double Omega0_axion;
+  double Omega_axion_ac;
   int n_axion;
   double w_scf;
   double cs2_scf;

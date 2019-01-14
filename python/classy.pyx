@@ -1362,6 +1362,14 @@ cdef class Class:
                 value = self.ba.Omega0_ncdm_tot*self.ba.h*self.ba.h*93.14
             elif name == 'Neff':
                 value = self.ba.Neff
+            elif name == 'Omega_axion_ac':
+                value = self.ba.Omega_axion_ac
+            elif name == 'axion_ac':
+                value = self.ba.axion_ac
+            elif name == 'f_axion':
+                value = self.ba.f_axion
+            elif name == 'm_axion':
+                value = self.ba.m_scf
             elif name == 'Omega_m':
                 value = (self.ba.Omega0_b + self.ba.Omega0_cdm+
                          self.ba.Omega0_ncdm_tot + self.ba.Omega0_dcdm)
@@ -1523,7 +1531,7 @@ cdef class Class:
             elif name == 'PBH_low_mass':
                 value = self.th.PBH_low_mass
             elif name == 'PBH_fraction':
-                value = self.th.PBH_fraction  
+                value = self.th.PBH_fraction
             ## END
             else:
                 raise CosmoSevereError("%s was not recognized as a derived parameter" % name)
