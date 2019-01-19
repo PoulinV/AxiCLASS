@@ -1370,6 +1370,16 @@ cdef class Class:
                 value = self.ba.f_axion
             elif name == 'm_axion':
                 value = self.ba.m_scf
+            elif name == 'log10_m_axion':
+                value = self.ba.log10_m_axion
+            elif name == 'log10_f_axion':
+                value = self.ba.log10_f_axion
+            elif name == 'f_ede':
+                value = self.ba.f_ede
+            elif name == 'log10_z_c':
+                value = self.ba.log10_z_c
+            elif name == 'phi_scf_c':
+                value = self.ba.phi_scf_c
             elif name == 'Omega_m':
                 value = (self.ba.Omega0_b + self.ba.Omega0_cdm+
                          self.ba.Omega0_ncdm_tot + self.ba.Omega0_dcdm)
