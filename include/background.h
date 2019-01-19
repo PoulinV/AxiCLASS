@@ -92,9 +92,14 @@ struct background
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
   double m_scf;
   double f_axion;
+  double log10_f_axion;
+  double log10_m_axion;
   double axion_ac;
   double Omega0_axion;
   double Omega_axion_ac;
+  double log10_z_c; //
+  double f_ede; // TK added doubles to fill with values of the exact z_c and fraction_ede eventually
+  double phi_scf_c; // Added for debugging. Trying to see whether the value of phi at z_c is really 7/8 phi_ini
   int n_axion;
   double w_scf;
   double cs2_scf;

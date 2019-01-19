@@ -7221,7 +7221,7 @@ int perturb_derivs(double tau,
           pba->scf_kg_eq = _TRUE_;
         }
         else{
-          if(pba->m_scf>=pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H]){
+          if(pba->m_scf>=pba->threshold_scf_fluid_m_over_H){
             pba->scf_kg_eq = _FALSE_; //We switch to fluid equations
             pba->scf_fluid_eq = _TRUE_;
           }
@@ -7739,7 +7739,7 @@ int perturb_derivs(double tau,
         //Regardless, once scf_evolve_as_fluid = true we follow the fluid evolution ``a la axioncamb''.
         // if(pba->scf_potential == axionquad){
           tau_b = (pba->Omega0_cdm + pba->Omega0_b + pba->Omega0_scf)*pba->H0*tau/(4*sqrt(pba->Omega0_g+pba->Omega0_ur));
-          if(pba->m_scf>=pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H]){
+          if(pba->m_scf>=pba->threshold_scf_fluid_m_over_H){
             cs2 = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
             ca2=0;
             pba->w_scf = pvecback[pba->index_bg_w_scf];

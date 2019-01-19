@@ -270,6 +270,8 @@ int background_functions(
   double w_fld, dw_over_da, integral_fld;
   /* scale factor */
   double a;
+  /* scalar field critical reshift and fractional energy density at z_c */
+  double z_c_new, f_ede_new, phi_c_new, counter_scf = 0;
   /* scalar field quantities */
   double phi = 0, phi_prime = 0;
   //printf("Inside background_functions.\n");//print_trigger
@@ -327,7 +329,7 @@ int background_functions(
     p_tot += (1./3.)*pvecback[pba->index_bg_rho_dr];
     rho_r += pvecback[pba->index_bg_rho_dr];
   }
-  if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ && pba->m_scf >= pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H] && pba->scf_evolve_as_fluid == _TRUE_){ //We switch for fluid equations
+  if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ && pba->m_scf >= pba->threshold_scf_fluid_m_over_H && pba->scf_evolve_as_fluid == _TRUE_){ //We switch for fluid equations
     pba->scf_kg_eq = _FALSE_;
   }
   else{
@@ -464,6 +466,16 @@ int background_functions(
 
   if(pba->has_scf == _TRUE_){
     pvecback[pba->index_bg_Omega_scf] = pvecback[pba->index_bg_rho_scf] / rho_tot;
+    if(pba->scf_potential == axion){
+      /* Scalar field critical redshift and fractional energy density at z_c calculations */
+      z_c_new = 1./a - 1.;
+      f_ede_new = pvecback[pba->index_bg_rho_scf]/rho_tot;
+      if(f_ede_new > pba->f_ede){
+        pba->log10_z_c = log10(z_c_new);
+        pba->f_ede = f_ede_new;
+        pba->phi_scf_c = pvecback[pba->index_bg_phi_scf];
+      }
+    }
   }
   /** - compute other quantities in the exhaustive, redundant format */
   if (return_format == pba->long_info) {
@@ -681,7 +693,7 @@ int background_init(
 
   if(pba->has_scf == _TRUE_){
         if(pba->scf_potential == axionquad){
-          pba->m_scf = pba->scf_parameters[0]*pba->H0;
+          pba->m_scf = pba->scf_parameters[0];
           pba->w_scf = 0;
         }
         else if(pba->scf_potential == axion){
@@ -711,11 +723,12 @@ int background_init(
               f = 7./8;
               pba->m_scf = pow(1-cos_initial,(1.-n)/2.)*sqrt((1-f)*(6*p+2)*pba->scf_parameters[0]/(n*sin_initial))/xc;
               pba->f_axion = sqrt(6 * pba->Omega_axion_ac)/pba->m_scf/pow(1-cos_initial,n/2);
+              pba->log10_f_axion = log10(pba->f_axion);
+              pba->log10_m_axion = log10(pba->m_scf);
               // printf("before %e %e\n",  pba->m_scf,  pba->f_axion);
           }
 
 
-          pba->m_scf = pba->m_scf*pba->H0;
           pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
           // printf("after %e %e\n",  pba->m_scf,  pba->w_scf );
 
@@ -1906,7 +1919,10 @@ int background_solve(
       }
       if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
-      printf("n = %d m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf/1.5638e29),pba->f_axion);
+      printf("n = %d m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion);
+      printf("     -> Exact log10(z_c) = %e \t f_ede = %e\n", pba->log10_z_c, pba->f_ede);
+      if(pba->axion_ac > 0.0)printf("     -> approx log10(z_c) = %e\n", log10(1/pba->axion_ac-1));
+      printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
       }
       if(pba->scf_potential == ax_cos_cubed){
       printf("Additional scf parameters used: \n");
@@ -2555,10 +2571,11 @@ double V_axion_scf(
     int n = pba->n_axion;
     // double fa = pba->scf_parameters[2];
     double fa = pba->f_axion;
+    double m = pba->m_scf*pba->H0;
     double result;
 
-    if(n>1)result = pow(pba->m_scf,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
-    else result = pow(pba->m_scf,2)*pow(fa,2)*(1 - cos(phi/fa));
+    if(n>1)result = pow(m,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
+    else result = pow(m,2)*pow(fa,2)*(1 - cos(phi/fa));
     return result;
 
 }
@@ -2570,9 +2587,10 @@ double dV_axion_scf(
     int n = pba->n_axion;
     // double fa = pba->scf_parameters[2];
     double fa = pba->f_axion;
+    double m = pba->m_scf*pba->H0;
     double result;
-    if(n>1)result = n*pow(pba->m_scf,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa);
-    else result = pow(pba->m_scf,2)*fa*sin(phi/fa);
+    if(n>1)result = n*pow(m,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa);
+    else result = pow(m,2)*fa*sin(phi/fa);
 
     return result;
 
@@ -2586,10 +2604,11 @@ double ddV_axion_scf(
      int n = pba->n_axion;
      // double fa = pba->scf_parameters[2];
      double fa = pba->f_axion;
+     double m = pba->m_scf*pba->H0;
      double result;
-     if(n==1) result = n*pow(pba->m_scf,2)*cos(phi/fa);
-     else if (n==2) result =  n*pow(pba->m_scf,2)*(pow(sin(phi/fa),2)+(1-cos(phi/fa))*cos(phi/fa));
-     else result = n*pow(pba->m_scf,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)); //this formula bugs sometimes for n=1
+     if(n==1) result = n*pow(m,2)*cos(phi/fa);
+     else if (n==2) result =  n*pow(m,2)*(pow(sin(phi/fa),2)+(1-cos(phi/fa))*cos(phi/fa));
+     else result = n*pow(m,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)); //this formula bugs sometimes for n=1
 
      return result;
 }
