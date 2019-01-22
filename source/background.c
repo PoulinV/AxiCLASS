@@ -569,7 +569,7 @@ int background_init(
   /** - define local variables */
   int n_ncdm;
   double rho_ncdm_rel,rho_nu_rel;
-  double Neff;
+  double Neff, Omega_rad_neutrinos, Omega_tot_ac;
   double w_fld, dw_over_da, integral_fld;
   double wn, f, p, Eac, xc,cos_initial,sin_initial, n;
   int filenum=0;
@@ -580,8 +580,9 @@ int background_init(
     printf("Computing background\n");
 
     /* below we want to inform the user about ncdm species*/
+    Neff = pba->Omega0_ur/7.*8./pow(4./11.,4./3.)/pba->Omega0_g;
+
     if (pba->N_ncdm > 0) {
-      Neff = pba->Omega0_ur/7.*8./pow(4./11.,4./3.)/pba->Omega0_g;
 
       /* loop over ncdm species */
       for (n_ncdm=0;n_ncdm<pba->N_ncdm; n_ncdm++) {
@@ -697,8 +698,10 @@ int background_init(
           pba->w_scf = 0;
         }
         else if(pba->scf_potential == axion){
-
-          if(pba->axion_ac >= 0.0 && pba->Omega0_axion > 0.0){
+          // if(pba->scf_parameters[0]>_PI_)pba->scf_parameters[0]-=_PI_;
+          // if(pba->scf_parameters[0]<0)pba->scf_parameters[0]+=_PI_;
+          printf("pba->scf_parameters[0] %e\n", pba->scf_parameters[0]);
+          if(pba->axion_ac > 0.0 && pba->Omega0_axion > 0.0){
             // printf("ac %e omega %e\n",  pba->axion_ac,  pba->Omega0_axion);
 
             //here we convert ac and omega0 into mu and alpha
@@ -727,6 +730,43 @@ int background_init(
               pba->log10_m_axion = log10(pba->m_scf);
               // printf("before %e %e\n",  pba->m_scf,  pba->f_axion);
           }
+          else if(pba->axion_ac > 0.0 && pba->fraction_axion_ac > 0.0){
+            // printf("ac %e omega %e\n",  pba->axion_ac,  pba->Omega0_axion);
+
+            //here we convert ac and omega0 into mu and alpha
+            // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
+            Omega_rad_neutrinos = pba->Omega0_ur;
+            // printf("pba->Omega_ur %e Omega_rad_neutrinos %e\n",pba->Omega0_ur,Omega_rad_neutrinos);
+              if(pba->axion_ac<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm)){
+                p = 1./2;
+              }
+              else{
+                p = 2./3;
+              }
+              cos_initial = cos(pba->scf_parameters[0]);
+              sin_initial = sin(pba->scf_parameters[0]);
+              // printf("cos %e sin %e theta %e \n",cos_initial,sin_initial,pba->scf_parameters[0]);
+
+              n = pba->n_axion;
+              wn = (n-1)/(n+1);
+              Omega_tot_ac = (pba->Omega0_cdm+pba->Omega0_b)*pow(pba->axion_ac,-3)+(pba->Omega0_g+Omega_rad_neutrinos)*pow(pba->axion_ac,-4)+pba->Omega0_lambda;
+              pba->Omega_axion_ac = Omega_tot_ac*pba->fraction_axion_ac/(1-pba->fraction_axion_ac);
+
+              // if(pba->Omega0_fld!=0 || pba->Omega_many_fld[i] != 0) Omega0_fld = pba->Omega0_fld;
+              // pba->Omega0_axion = ;
+              // pba->Omega_axion_ac = pba->Omega0_axion/2*(pow(pba->axion_ac,-3*(wn+1))+1);
+              Eac = sqrt(Omega_tot_ac+pba->Omega_axion_ac);
+
+              xc = p/Eac;
+              f = 7./8;
+              if(pba->m_scf == 0.0)pba->m_scf = pow(1-cos_initial,(1.-n)/2.)*sqrt((1-f)*(6*p+2)*pba->scf_parameters[0]/(n*sin_initial))/xc;
+              // printf("pba->log10_m_axion %e\n", pba->log10_m_axion);
+              // pba->m_scf = pow(10,pba->log10_m_axion);
+              if(pba->f_axion == 0.0)pba->f_axion = sqrt(6 * pba->Omega_axion_ac)/pba->m_scf/pow(1-cos_initial,n/2);
+              pba->log10_f_axion = log10(pba->f_axion);
+              pba->log10_m_axion = log10(pba->m_scf);
+              // printf("before %e %e\n",  pba->m_scf,  pba->f_axion);
+          }
 
 
           pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
@@ -743,8 +783,9 @@ int background_init(
           pba->w_scf = 0; //default to 0 but never used in that case
         }
 
-
-        // printf("m_scf is %e pba->w_scf %e\n", pba->m_scf,pba->w_scf);
+        pba->f_ede=0.0;
+        pba->log10_z_c=1;
+        // printf("m_scf is %e pba->w_scf %e pba->f_axion %e\n", pba->m_scf,pba->w_scf,pba->f_axion);
      }
 
   /* check other quantities which would lead to segmentation fault if zero */
@@ -889,7 +930,7 @@ int background_indices(
       pba->has_dr = _TRUE_;
   }
 
-  if (pba->Omega0_scf != 0.){
+  if (pba->Omega0_scf != 0. || pba->fraction_axion_ac != 0.){
     pba->has_scf = _TRUE_;
     pba->scf_kg_eq = _TRUE_; //Initially, we solve the KG equation.
   }

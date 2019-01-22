@@ -134,10 +134,10 @@
  * temporary parameters for background fzero function
  */
 
-enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr, Omega_scf, Omega_ini_dcdm, omega_ini_dcdm};
+enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr, Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,fraction_axion_ac};
 enum computation_stage {cs_background, cs_thermodynamics, cs_perturbations,
                         cs_primordial, cs_nonlinear, cs_transfer, cs_spectra};
-#define _NUM_TARGETS_ 6 //Keep this number as number of target_names
+#define _NUM_TARGETS_ 7 //Keep this number as number of target_names
 enum scf_pot_inp{
   pol_times_exp_inp, /** scf_potential set to pol_times_exp:V equals ((\phi-B)^\alpha + A)exp(-lambda*phi), see http://arxiv.org/abs/astro-ph/9908085.*/
   double_exp_inp, /* scf_potential set to double_exp: V equals \Lambda_1^4e^{-\lambda\phi}+\Lambda_2^4e^{-\mu\phi} */
@@ -159,7 +159,8 @@ struct fzerofun_workspace {
   enum computation_stage required_computation_stage;
   enum scf_pot scf_potential; /**< List of currently implement potential for a scalar field */
   short scf_evolve_as_fluid; /** Should we evolve as a fluid or use KG eqs all the way through? */
-  short do_shooting;        /**< Should we use shooting method to determine phi_init */
+  short do_shooting;        /**< Should we do shooting */
+  short do_shooting_scf;        /**< Should we use shooting method to determine phi_init */
   double m_scf;
   double f_axion;
   int n_axion;
