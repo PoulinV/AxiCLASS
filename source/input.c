@@ -286,7 +286,6 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
       pba->Omega0_axion = 0.0;
       pba->axion_ac = 0.0;
       class_read_int("n_axion",fzw.n_axion);
-      printf("here input\n");
       // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
       class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
     }
@@ -323,9 +322,9 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
    * These two arrays must contain the strings of names to be searched
    *  for and the corresponding new parameter */
   char * const target_namestrings[] = {"100*theta_s","Omega_dcdmdr","omega_dcdmdr",
-                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","fraction_axion_ac"};
+                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","fraction_axion_ac","axion_ac"};
   char * const unknown_namestrings[] = {"h","Omega_ini_dcdm","Omega_ini_dcdm",
-                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","scf_shooting_parameter"};
+                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","mu_squared_alpha_squared","power_of_mu"};
   enum computation_stage target_cs[] = {cs_thermodynamics, cs_background, cs_background,cs_background,
                                         cs_background, cs_background, cs_background,cs_background};
 
@@ -361,46 +360,16 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
           printf("Found target: %s, target value =  %e\n",target_namestrings[index_target],param1);
         }
         if(fzw.do_shooting_scf ==_FALSE_ && (target_namestrings[index_target]=="Omega_scf"|| target_namestrings[index_target]=="fraction_axion_ac")){
-          printf("I will not add it!\n");
-
+          // printf("I will not add it!\n");
         }else{
           target_indices[unknown_parameters_size] = index_target; /*setting up correct variable that we have defined to shoot for as an answer */
           fzw.required_computation_stage = MAX(fzw.required_computation_stage,target_cs[index_target]);
           unknown_parameters_size++;
         }
-
       }
 
     }
   }
-  // class_call(parser_read_double(pfc,
-  //                               "f_ini_dcdm",
-  //                               &param1,
-  //                               &flag1,
-  //                               errmsg),
-  //            errmsg,
-  //            errmsg);
-  //
-  // if (flag1 == _TRUE_){
-  //   /** input_auxillary_target_conditions() takes care of the case where for
-  //       instance Omega_dcdmdr is set to 0.0.
-  //    */
-  //   index_target = 5;
-  //   class_call(input_auxillary_target_conditions(pfc,
-  //                                                index_target,
-  //                                                param1,
-  //                                                &aux_flag,
-  //                                                errmsg),
-  //              errmsg, errmsg);
-  //   if (aux_flag == _TRUE_){
-  //     printf("Found target: %s\n",target_namestrings[index_target]);
-  //     target_indices[unknown_parameters_size] = index_target;
-  //     fzw.required_computation_stage = MAX(fzw.required_computation_stage,target_cs[index_target]);
-  //     unknown_parameters_size++;
-  //   }
-  //   fprintf(stdout, "index_target = %d\n",index_target );
-  //
-  // }
 
   /** - case with unknown parameters */
   if (unknown_parameters_size > 0 && fzw.do_shooting == _TRUE_) {
@@ -451,25 +420,9 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
       fzw.unknown_parameters_index[counter]=pfc->size+counter;
       // substitute the name of the target parameter with the name of the corresponding unknown parameter
       strcpy(fzw.fc.name[fzw.unknown_parameters_index[counter]],unknown_namestrings[index_target]);
-      printf("%d, %d: %s\n",counter,index_target,target_namestrings[index_target]);
+      if(input_verbose>3)printf("%d, %d: %s\n",counter,index_target,target_namestrings[index_target]);
     }
-    // class_call(parser_read_double(pfc,
-    //                               "f_ini_dcdm",
-    //                               &param1,
-    //                               &flag1,
-    //                               errmsg),
-    //          errmsg,
-    //          errmsg);
-    // if (flag1 == _TRUE_){
-    //   // store name of target parameter
-    //   fzw.target_name[counter] = index_target;
-    //   // store target value of target parameter
-    //   fzw.target_value[counter] = param1;
-    //   fzw.unknown_parameters_index[counter]=pfc->size+counter;
-    //   // substitute the name of the target parameter with the name of the corresponding unknown parameter
-    //   strcpy(fzw.fc.name[fzw.unknown_parameters_index[counter]],unknown_namestrings[index_target]);
-    //   //printf("%d, %d: %s\n",counter,index_target,target_namestrings[index_target]);
-    // }
+
 
     if (unknown_parameters_size == 1){
       fprintf(stdout," -> shooting for %s\n",
@@ -505,7 +458,6 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
                                  &fzw,
                                  errmsg),
                  errmsg, errmsg);
-
       class_call_try(fzero_Newton(input_try_unknown_parameters,
                                   x_inout,
                                   dxdF,
@@ -516,8 +468,7 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
                                   &fevals,
                                   errmsg),
                      errmsg, pba->shooting_error,shooting_failed=_TRUE_);
-
-      if (input_verbose > 0) {
+     if (input_verbose > 0) {
         fprintf(stdout,"Computing unknown input parameters\n");
       }
 
@@ -1262,10 +1213,12 @@ int input_read_parameters(
 
   /* Additional SCF parameters: */
   class_read_double("fraction_axion_ac",pba->fraction_axion_ac);
+  class_read_double("axion_ac",pba->axion_ac);
+  class_read_double("m_axion",pba->m_scf);
+  class_read_double("f_axion",pba->f_axion);
 
-  if (pba->Omega0_scf != 0.  || pba->fraction_axion_ac != 0. ){
+  if (pba->Omega0_scf != 0.  || pba->fraction_axion_ac != 0. || pba->axion_ac != 0 || pba->m_scf != 0 || pba->f_axion != 0){
     /** - Assign a given scalar field potential */
-
     class_call(parser_read_string(pfc,"scf_has_perturbations",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -1399,12 +1352,17 @@ int input_read_parameters(
             class_call(parser_read_double(pfc,"fraction_axion_ac",&param1,&flag1,errmsg),
                        errmsg,
                        errmsg);
+           if(flag1 == _TRUE_){
             pba->fraction_axion_ac = param1;
+          }
             // printf("pba->fraction_axion_ac %e \n", pba->fraction_axion_ac);
           }
 
 
         }
+        class_test(pba->axion_ac > 0 && pba->m_scf > 0,errmsg,"you cannot choose both pba->axion_ac && pba->m_scf because m_scf is used to shoot for ac. Please adapt your param file.");
+        class_test(pba->fraction_axion_ac > 0 && pba->f_axion > 0,errmsg,"you cannot choose both pba->fraction_axion_ac && pba->f_axion because f_axion is used to shoot for fraction_axion_ac. Please adapt your param file.");
+        class_test(pba->fraction_axion_ac > 0 && pba->Omega0_axion > 0, errmsg,"you cannot choose both Omega0_axion && fraction_axion_ac. Please adapt your param file.");
          // printf("%d %e %e %e %e\n",pba->n_axion,pba->m_scf,pba->f_axion,pba->axion_ac,pba->Omega0_axion );
          flag2 =_TRUE_;
        }
@@ -1437,9 +1395,12 @@ int input_read_parameters(
                "Tuning index scf_tuning_index = %d is larger than the number of entries %d in scf_parameters. Check your .ini file.",pba->scf_tuning_index,pba->scf_parameters_size);
     /** - Assign shooting parameter */
     class_read_double("scf_shooting_parameter",pba->scf_parameters[pba->scf_tuning_index]);
-    if(pba->scf_parameters[pba->scf_tuning_index]>_PI_)pba->scf_parameters[pba->scf_tuning_index]-=_PI_;
-    if(pba->scf_parameters[pba->scf_tuning_index]<0)pba->scf_parameters[pba->scf_tuning_index]+=_PI_;
+    // if(pba->scf_parameters[pba->scf_tuning_index]>_PI_)pba->scf_parameters[pba->scf_tuning_index]-=_PI_;
+    // if(pba->scf_parameters[pba->scf_tuning_index]<0)pba->scf_parameters[pba->scf_tuning_index]+=_PI_;
     class_read_double("log10_m_axion",pba->log10_m_axion);
+    class_read_double("mu_squared_alpha_squared",pba->mu_squared_alpha_squared);
+    class_read_double("power_of_mu",pba->power_of_mu);
+
     if(input_verbose>10){
       printf("input file read, the h is %e \n", pba->h);
       printf("input file read, the scf_shooting parameter is %e \n", pba->scf_parameters[pba->scf_tuning_index]);
@@ -4466,7 +4427,6 @@ int class_fzero_ridder(int (*func)(double x, void *param, double *y, ErrorMsg er
       s=sqrt(fm*fm-fl*fh);
       if (s == 0.0){
         *xzero = ans;
-        printf("Success 1\n");
         return _SUCCESS_;
       }
       xnew=xm+(xm-xl)*((fl >= fh ? 1.0 : -1.0)*fm/s);
@@ -4480,7 +4440,6 @@ int class_fzero_ridder(int (*func)(double x, void *param, double *y, ErrorMsg er
       *fevals = (*fevals)+1;
       if (fnew == 0.0){
         *xzero = ans;
-        printf("Success 2, ans=%g\n",ans);
         return _SUCCESS_;
       }
       if (NRSIGN(fm,fnew) != fm) {
@@ -4497,7 +4456,6 @@ int class_fzero_ridder(int (*func)(double x, void *param, double *y, ErrorMsg er
       } else return _FAILURE_;
       if (fabs(xh-xl) <= xtol) {
         *xzero = ans;
-        printf("Success 3\n");
         return _SUCCESS_;
       }
     }
@@ -4535,7 +4493,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
   int input_verbose;
   int flag;
   int param;
-
+  double ac;
   pfzw = (struct fzerofun_workspace *) voidpfzw;
 // cjcomment
 // Assigns 'new' value for whatever you are shooting to a list held in unknown_parameters_index
@@ -4648,7 +4606,12 @@ int input_try_unknown_parameters(double * unknown_parameter,
       break;
     case fraction_axion_ac:
       output[i] = ba.f_ede-pfzw->target_value[i];
-      printf("ba.f_ede %e  pfzw->target_value[i] %e\n", ba.f_ede,pfzw->target_value[i]);
+      // printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", ba.f_ede,pfzw->target_value[i],output[i]);
+      break;
+    case axion_ac:
+      ac = 1./(pow(10,ba.log10_z_c)+1);
+      output[i] = ac-pfzw->target_value[i];
+      // printf("ac %e  pfzw->target_value[i] %e output[i] %e\n", ac,pfzw->target_value[i],output[i]);
       break;
 
     case Omega_scf:
@@ -4738,8 +4701,8 @@ int input_get_guess(double *xguess,
   int i;
 
   double Omega_M, a_decay, gamma, Omega0_dcdmdr=1.0;
+  double Omega_tot_ac, phi_initial,p,guess,ac,fac;
   int index_guess;
-
   /* Cheat to read only known parameters: */
   pfzw->fc.size -= pfzw->target_size;
   class_call(input_read_parameters(&(pfzw->fc),
@@ -4767,7 +4730,7 @@ int input_get_guess(double *xguess,
     switch (pfzw->target_name[index_guess]) {
     case theta_s:
       xguess[index_guess] = 3.54*pow(pfzw->target_value[index_guess],2)-5.455*pfzw->target_value[index_guess]+2.548;
-      dxdy[index_guess] = (7.08*pfzw->target_value[index_guess]-5.455);
+      dxdy[index_guess] = (7.08*pfzw->target_value[index_guess]-5.455);//we changed by a - sign.
       /** - Update pb to reflect guess */
       ba.h = xguess[index_guess];
       ba.H0 = ba.h *  1.e5 / _c_;
@@ -4816,9 +4779,42 @@ int input_get_guess(double *xguess,
       break;
       // printf("omdcdmdr, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
     case fraction_axion_ac:
+        phi_initial = ba.scf_parameters[0];
          // xguess[index_guess] = pfzw->target_value[index_guess];
-         xguess[index_guess] = 1;
-         dxdy[index_guess] = 0.5;
+         if(ba.axion_ac>0.0){
+           // printf("here bug\n");
+           ac = ba.axion_ac;
+         }
+         else if(ba.m_scf>0.0){
+           ac = pow(2.5*(1+ba.fraction_axion_ac)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.25)/sqrt(ba.m_scf);
+         }
+         Omega_tot_ac=(ba.Omega0_b+ba.Omega0_cdm)/pow(ac,3)+(ba.Omega0_g+ba.Omega0_ur)/pow(ac,4);
+         xguess[index_guess] = 6*ba.fraction_axion_ac*Omega_tot_ac/((1-ba.fraction_axion_ac)*pow(1-cos(phi_initial),ba.n_axion));
+         dxdy[index_guess] = 6*Omega_tot_ac/(pow(1-ba.fraction_axion_ac,2)*pow(1-cos(phi_initial),ba.n_axion));
+         // printf("fraction_axion_ac %e ac %e Omega_tot_ac %e mu_squared_alpha_squared %e dxdy[index_guess] %e\n",ba.fraction_axion_ac,ac, Omega_tot_ac,xguess[index_guess],dxdy[index_guess]);
+         break;
+
+    case axion_ac:
+         phi_initial = ba.scf_parameters[0];
+         if(ba.fraction_axion_ac > 0.0){
+
+           fac=ba.fraction_axion_ac;
+         }else{
+
+           fac=0.0;
+         }
+         if(ba.axion_ac<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
+           p = 1./2;
+           guess = pow(2.5*(1+fac)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.25);
+         }else{
+           p = 2./3;
+           guess = pow(1.6875*(1+fac)*(ba.Omega0_cdm+ba.Omega0_b)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.333);
+         }
+         // xguess[index_guess] = pfzw->target_value[index_guess];
+         xguess[index_guess] = ba.axion_ac/guess;
+         dxdy[index_guess] = guess;
+         // dxdy[index_guess] = 100;
+         // printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e\n",ba.axion_ac,xguess[index_guess],dxdy[index_guess]);
          break;
 
     case Omega_scf:
@@ -4866,7 +4862,7 @@ int input_get_guess(double *xguess,
           // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*(ba.Omega0_cdm+ba.Omega0_b))); //there should be a switch depending on the mass.
           dxdy[index_guess] = 0.5*xguess[index_guess];
         // }
-        printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
+        // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
         // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
 
       }
@@ -4935,12 +4931,13 @@ int input_find_root(double *xzero,
   //struct background ba;       /* for cosmological background */
   double x1, x2, f1, f2, dxdy, dx,dxtmp;
   double f_a;
-  int iter, iter2;
+  int iter, iter2,itermax;
   int return_function;
   int input_verbose;
   int flag;
   int param;
   //int i;
+  itermax=500;
   class_call(parser_read_int(&(pfzw->fc),
                              "input_verbose",
                              &param,
@@ -4971,8 +4968,8 @@ int input_find_root(double *xzero,
   // Can we edit the method so it's more of a bisection on the final density?
   // if result 2 > result 1, x - dx.
   // if result 2 < result 1, x + dx
-  printf("pfzw->do_shooting_scf %d pfzw->do_shooting %d\n",pfzw->do_shooting_scf,pfzw->do_shooting);
-  if((pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion || pfzw->scf_potential == axionquad) && pfzw->do_shooting_scf == _TRUE_){
+  // printf("pfzw->do_shooting_scf %d pfzw->do_shooting %d\n",pfzw->do_shooting_scf,pfzw->do_shooting);
+  if((pfzw->scf_potential == ax_cos_cubed ||   pfzw->scf_potential == axionquad) && pfzw->do_shooting_scf == _TRUE_){
     if(pfzw->scf_potential == ax_cos_cubed)f_a = pfzw->scf_parameters[1];
     else if(pfzw->scf_potential == axion){
       if(pfzw->f_axion>0.0){
@@ -5022,7 +5019,7 @@ int input_find_root(double *xzero,
             while(x2<=0){
                dxtmp/=2;
                x2=x1-dxtmp;
-               printf("x2 %e\n", x2);
+               // printf("x2 %e\n", x2);
              }
              if(input_verbose>3){
              printf("x2 is then %e \n", x2);
@@ -5134,22 +5131,22 @@ int input_find_root(double *xzero,
   }
 
   // else {
-  // dx = f1*dxdy;
-  // printf("yo im here\n");
+  // dx = 1.5*f1*dxdy;
+  // // printf("yo im here\n");
   // // printf("pfzw->scf_potential = %s \n",pfzw->scf_potential);
   // printf("dx = %e %e %e\n", dx,dxdy,f1);
   // /** - Do linear hunt for boundaries */
-  //   for (iter=1; iter<=100; iter++){
+  //   for (iter=1; iter<=itermax; iter++){
   //     //x2 = x1 + search_dir*dx;
   //     printf("Root finding iteration: %d \n",iter);
   //     if (x1 > 0 || x2 > 0){
   //     	printf("x1 is positive: %e\n",x1);
-  //     	if((f1 > 0 || f2>0) && x1-dx > 0){
+  //     	if(x1-dx > 0){
   //     		printf("f1 was too high, x1-dx is still positive: %e\n",x1-dx);
   //     		x2 = (x1 - dx);
   //     		printf("x2 = x1 - dx = %e\n",x2);
   //       }
-  //       else if ((f1 > 0 || f2 >0 ) && x1-dx < 0){
+  //       else if (x1-dx < 0){
   //         printf("f1 was slightly too high but x2 = x1 - dx goes negative, using x2 = x1 - (dx/n) with n such that x2 is positive\n");
   //         x2=x1-dx;
   //         printf("initially x2 %e\n", x2);
@@ -5160,11 +5157,11 @@ int input_find_root(double *xzero,
   //          }
   //          printf("x2 is then %e \n", x2);
   //       }
-  //       else if (f1 < 0 || f2 < 0){
-  //         printf("f1 was too low, using x1+x1/2: %e\n",x1+x1/2);
-  //         x2 = (x1 + x1/2);
-  //         printf("x2 = x1 + x1/2 = %e\n",x2);
-  //       }
+  //       // else if (f1 < 0 || f2 < 0){
+  //       //   printf("f1 was too low, using x1+x1/2: %e\n",x1+x1/2);
+  //       //   x2 = (x1 + x1/2);
+  //       //   printf("x2 = x1 + x1/2 = %e\n",x2);
+  //       // }
   //     }
   //     if (x1 < 0 ){
   //       printf("x1 is negative: %e\n",x1);
@@ -5188,11 +5185,11 @@ int input_find_root(double *xzero,
   //     for (iter2=1; iter2 <= 3; iter2++) {
   //       return_function = input_fzerofun_1d(x2,pfzw,&f2,errmsg);
   //       (*fevals)++;
-  //       printf("x2= %g, f2= %g\n",x2,f2);
+  //       // printf("x2= %g, f2= %g\n",x2,f2);
   //       if (return_function ==_SUCCESS_) {
-  //         printf("Breaking because successful\n");
-  //         printf("f1 = %e, f2 = %e\n",f1,f2);
-  //         printf("f1+f2 = %e\n", f1+f2);
+  //         // printf("Breaking because successful\n");
+  //         // printf("f1 = %e, f2 = %e\n",f1,f2);
+  //         // printf("f1+f2 = %e\n", f1+f2);
   //         break;
   //       }
   //       else if (iter2 < 3) {
@@ -5205,16 +5202,18 @@ int input_find_root(double *xzero,
   //       }
   //     }
   //
-  //     //if (f1*f2<0.0){
-  //     if (f1+f2<0.01){
+  //     if (f1*f2<0.0){
+  //     // if (f1+f2<0.01){
   //     // if (f1+f2<0.05){
   //       /** - root has been bracketed */
-  //       if (0==0){
+  //       if (0==1){
   //         printf("Root has been bracketed after %d iterations: [%g, %g].\n",iter,x1,x2);
   //       }
   //       break;
   //     }
-  //
+  //         if(iter==itermax){
+  //           class_stop(errmsg,"I never could bracket the parameter you shoot for; please check your initial guess.");
+  //         }
   //     x1 = x2;
   //     f1 = f2;
   //   }
@@ -5227,14 +5226,14 @@ int input_find_root(double *xzero,
     dx = 1.5*f1*dxdy;
 
     //printf("Not using axionquad potential");
-for (iter=1; iter<=15; iter++){
-    //x2 = x1 + search_dir*dx;
-    x2 = x1 - dx;
-    printf("x2 = %e\n",x2);
+for (iter=1; iter<=itermax; iter++){
+    // x2 = x1 + search_dir*dx;
+    x2 = x1 - dx;//originial -dx
+    // printf("x2 = %e\n",x2);
     for (iter2=1; iter2 <= 3; iter2++) {
       return_function = input_fzerofun_1d(x2,pfzw,&f2,errmsg);
       (*fevals)++;
-      printf("x2= %g, f2= %g\n",x2,f2);
+      // printf("x2= %g, f2= %g\n",x2,f2);
       //fprintf(stderr,"iter2=%d\n",iter2);
 
       if (return_function ==_SUCCESS_) {
@@ -5258,6 +5257,10 @@ for (iter=1; iter<=15; iter++){
       break;
     }
 
+    if(iter==itermax){
+      class_stop(errmsg,"I never could bracket the parameter you shoot for; please check your initial guess.");
+    }
+
     x1 = x2;
     f1 = f2;
   }
@@ -5273,8 +5276,8 @@ for (iter=1; iter<=15; iter++){
     class_call(class_fzero_ridder(input_fzerofun_1d,
                                   x1,
                                   x2,
-                                  1e-15*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding
-                                  // 1e-5*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding
+                                  // 1e-15*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding
+                                  1e-5*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding
                                   // 1e-10*pfzw->target_value[0]*MAX(fabs(x1),fabs(x2)), //original 1e-5 - accuracy for root finding - here we cheat because we want 1e-5 relative uncertainty on f(x) but fzero ridder take tol on x. found to be working anyway.
                                   pfzw,
                                   &f1,
@@ -5313,6 +5316,7 @@ int input_auxillary_target_conditions(struct file_content * pfc,
   case omega_dcdmdr:
   case Omega_scf:
   case fraction_axion_ac:
+  case axion_ac:
   case Omega_ini_dcdm:
   case omega_ini_dcdm:
     /* Check that Omega's or omega's are nonzero: */
