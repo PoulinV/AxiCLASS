@@ -720,7 +720,9 @@ int background_init(
               pba->log10_m_axion = log10(pba->m_scf);
               // printf("before %e %e\n",  pba->m_scf,  pba->f_axion);
           }
-          else if(pba->axion_ac > 0.0 && pba->fraction_axion_ac > 0.0){
+          else if(pba->axion_ac != 0.0 && pba->fraction_axion_ac != 0.0){
+            pba->alpha_squared = fabs(pba->alpha_squared);
+            pba->power_of_mu = fabs(pba->power_of_mu);
             /*shoot for both*/
             // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
             // pba->mu_squared_alpha_squared= sqrt(pow(pba->mu_squared_alpha_squared,2));
@@ -739,10 +741,11 @@ int background_init(
 
               pba->log10_f_axion = log10(pba->f_axion);
               pba->log10_m_axion = log10(pba->m_scf);
-              printf("pba->axion_ac %e pba->fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->fraction_axion_ac,pba->m_scf,pba->f_axion);
+              // printf("pba->axion_ac %e pba->fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->fraction_axion_ac,pba->m_scf,pba->f_axion);
               // printf("pba->mu_squared_alpha_squared %e pba->power_of_mu %e \n",pba->mu_squared_alpha_squared,pba->power_of_mu);
           }
-          else if(pba->alpha_squared > 0.0 && pba->fraction_axion_ac > 0.0){
+          else if(pba->alpha_squared != 0.0 && pba->fraction_axion_ac > 0.0){
+            pba->alpha_squared = fabs(pba->alpha_squared);
             /*shoot for fac by varying alpha*/
             // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
             // pba->mu_squared_alpha_squared= sqrt(pow(pba->mu_squared_alpha_squared,2));
@@ -755,7 +758,8 @@ int background_init(
               // printf("pba->axion_ac %e pba->fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->fraction_axion_ac,pba->m_scf,pba->f_axion);
               // printf("pba->mu_squared_alpha_squared %e \n",pba->mu_squared_alpha_squared);
           }
-          else if(pba->power_of_mu > 0.0 && pba->axion_ac > 0.0){
+          else if(pba->power_of_mu != 0.0 && pba->axion_ac > 0.0){
+            pba->power_of_mu = fabs(pba->power_of_mu);
             /*shoot for axion ac by varying mu*/
             // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
             // pba->mu_squared_alpha_squared= sqrt(pow(pba->mu_squared_alpha_squared,2));

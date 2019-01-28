@@ -4800,7 +4800,7 @@ int input_get_guess(double *xguess,
         xguess[index_guess] = guess;
         dxdy[index_guess] = 0.1*guess/ba.fraction_axion_ac;
 
-         printf("fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",ba.fraction_axion_ac,xguess[index_guess],dxdy[index_guess]);
+         // printf("fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",ba.fraction_axion_ac,xguess[index_guess],dxdy[index_guess]);
          break;
 
     case axion_ac:
@@ -4820,7 +4820,7 @@ int input_get_guess(double *xguess,
          //   guess = pow(1.6875*(1+fac)*(ba.Omega0_cdm+ba.Omega0_b)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.333);
          // }
          /*OLD*/
-
+         phi_initial = ba.scf_parameters[0];
          if(ba.axion_ac<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
            p = 1./2;
            guess = sqrt(2.5*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
@@ -4834,7 +4834,7 @@ int input_get_guess(double *xguess,
          xguess[index_guess] = guess/0.6;
          dxdy[index_guess] = 0.1*guess/ba.axion_ac;
          // dxdy[index_guess] = 100;
-         printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e\n",ba.axion_ac,xguess[index_guess],dxdy[index_guess]);
+         // printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e\n",ba.axion_ac,xguess[index_guess],dxdy[index_guess]);
          break;
 
     case Omega_scf:
