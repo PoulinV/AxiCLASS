@@ -425,8 +425,8 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
 
 
     if (unknown_parameters_size == 1){
-      fprintf(stdout," -> shooting for %s\n",
-              fzw.fc.name[fzw.unknown_parameters_index[0]]);
+      // fprintf(stdout," -> shooting for %s\n",
+      //         fzw.fc.name[fzw.unknown_parameters_index[0]]);
       /* We can do 1 dimensional root finding */
       /* If shooting fails, postpone error to background module to play nice with MontePython. */
       class_call_try(input_find_root(&xzero,
