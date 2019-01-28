@@ -92,7 +92,7 @@ struct background
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
   double m_scf;
   double f_axion;
-  double mu_squared_alpha_squared;
+  double alpha_squared;
   double power_of_mu;
   double log10_f_axion;
   double log10_m_axion;

@@ -735,20 +735,20 @@ int background_init(
                 p = 2./3;
                 pba->m_scf = pow(pba->power_of_mu,-3./2);
               }
-              pba->f_axion = sqrt(pba->mu_squared_alpha_squared)/pba->m_scf;
+              pba->f_axion = sqrt(pba->alpha_squared);
 
               pba->log10_f_axion = log10(pba->f_axion);
               pba->log10_m_axion = log10(pba->m_scf);
-              // printf("pba->axion_ac %e pba->fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->fraction_axion_ac,pba->m_scf,pba->f_axion);
+              printf("pba->axion_ac %e pba->fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->fraction_axion_ac,pba->m_scf,pba->f_axion);
               // printf("pba->mu_squared_alpha_squared %e pba->power_of_mu %e \n",pba->mu_squared_alpha_squared,pba->power_of_mu);
           }
-          else if(pba->mu_squared_alpha_squared > 0.0 && pba->fraction_axion_ac > 0.0){
+          else if(pba->alpha_squared > 0.0 && pba->fraction_axion_ac > 0.0){
             /*shoot for fac by varying alpha*/
             // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
             // pba->mu_squared_alpha_squared= sqrt(pow(pba->mu_squared_alpha_squared,2));
             // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
 
-              pba->f_axion = sqrt(pba->mu_squared_alpha_squared)/pba->m_scf;
+              pba->f_axion = sqrt(pba->alpha_squared);
 
               pba->log10_f_axion = log10(pba->f_axion);
               pba->log10_m_axion = log10(pba->m_scf);

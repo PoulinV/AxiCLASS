@@ -324,7 +324,7 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
   char * const target_namestrings[] = {"100*theta_s","Omega_dcdmdr","omega_dcdmdr",
                                        "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","fraction_axion_ac","axion_ac"};
   char * const unknown_namestrings[] = {"h","Omega_ini_dcdm","Omega_ini_dcdm",
-                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","mu_squared_alpha_squared","power_of_mu"};
+                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","alpha_squared","power_of_mu"};
   enum computation_stage target_cs[] = {cs_thermodynamics, cs_background, cs_background,cs_background,
                                         cs_background, cs_background, cs_background,cs_background};
 
@@ -1398,7 +1398,7 @@ int input_read_parameters(
     // if(pba->scf_parameters[pba->scf_tuning_index]>_PI_)pba->scf_parameters[pba->scf_tuning_index]-=_PI_;
     // if(pba->scf_parameters[pba->scf_tuning_index]<0)pba->scf_parameters[pba->scf_tuning_index]+=_PI_;
     class_read_double("log10_m_axion",pba->log10_m_axion);
-    class_read_double("mu_squared_alpha_squared",pba->mu_squared_alpha_squared);
+    class_read_double("alpha_squared",pba->alpha_squared);
     class_read_double("power_of_mu",pba->power_of_mu);
 
     if(input_verbose>10){
@@ -4779,42 +4779,61 @@ int input_get_guess(double *xguess,
       break;
       // printf("omdcdmdr, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
     case fraction_axion_ac:
+        /*OLD*/
+        // phi_initial = ba.scf_parameters[0];
+        //  // xguess[index_guess] = pfzw->target_value[index_guess];
+         // if(ba.axion_ac>0.0){
+         //   // printf("here bug\n");
+         //   ac = ba.axion_ac;
+         // }
+         // else if(ba.m_scf>0.0){
+         //   ac = pow(2.5*(1+ba.fraction_axion_ac)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.25)/sqrt(ba.m_scf);
+         // }
+        //  Omega_tot_ac=(ba.Omega0_b+ba.Omega0_cdm)/pow(ac,3)+(ba.Omega0_g+ba.Omega0_ur)/pow(ac,4);
+        //  xguess[index_guess] = 6*ba.fraction_axion_ac*Omega_tot_ac/((1-ba.fraction_axion_ac)*pow(1-cos(phi_initial),ba.n_axion));
+        //  dxdy[index_guess] = 6*Omega_tot_ac/(pow(1-ba.fraction_axion_ac,2)*pow(1-cos(phi_initial),ba.n_axion));
+        /*OLD*/
+
+        /*NEW*/
         phi_initial = ba.scf_parameters[0];
-         // xguess[index_guess] = pfzw->target_value[index_guess];
-         if(ba.axion_ac>0.0){
-           // printf("here bug\n");
-           ac = ba.axion_ac;
-         }
-         else if(ba.m_scf>0.0){
-           ac = pow(2.5*(1+ba.fraction_axion_ac)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.25)/sqrt(ba.m_scf);
-         }
-         Omega_tot_ac=(ba.Omega0_b+ba.Omega0_cdm)/pow(ac,3)+(ba.Omega0_g+ba.Omega0_ur)/pow(ac,4);
-         xguess[index_guess] = 6*ba.fraction_axion_ac*Omega_tot_ac/((1-ba.fraction_axion_ac)*pow(1-cos(phi_initial),ba.n_axion));
-         dxdy[index_guess] = 6*Omega_tot_ac/(pow(1-ba.fraction_axion_ac,2)*pow(1-cos(phi_initial),ba.n_axion));
-         // printf("fraction_axion_ac %e ac %e Omega_tot_ac %e mu_squared_alpha_squared %e dxdy[index_guess] %e\n",ba.fraction_axion_ac,ac, Omega_tot_ac,xguess[index_guess],dxdy[index_guess]);
+        guess = 4*(6*ba.fraction_axion_ac*ba.n_axion)*pow(1-cos(phi_initial),ba.n_axion)/(phi_initial*(ba.n_axion*phi_initial*pow(1-cos(phi_initial),ba.n_axion)+20*pow(1-cos(7*phi_initial/8.),ba.n_axion)*tan(phi_initial/2.)));
+        xguess[index_guess] = guess;
+        dxdy[index_guess] = guess/ba.fraction_axion_ac;
+
+         printf("fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",ba.fraction_axion_ac,xguess[index_guess],dxdy[index_guess]);
          break;
 
     case axion_ac:
-         phi_initial = ba.scf_parameters[0];
-         if(ba.fraction_axion_ac > 0.0){
+         /*OLD*/
+         // phi_initial = ba.scf_parameters[0];
+         // if(ba.fraction_axion_ac > 0.0){
+         //   fac=ba.fraction_axion_ac;
+         // }else{
+         //
+         //   fac=0.0;
+         // }
+         // if(ba.axion_ac<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
+         //   p = 1./2;
+         //   guess = pow(2.5*(1+fac)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.25);
+         // }else{
+         //   p = 2./3;
+         //   guess = pow(1.6875*(1+fac)*(ba.Omega0_cdm+ba.Omega0_b)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.333);
+         // }
+         /*OLD*/
 
-           fac=ba.fraction_axion_ac;
-         }else{
-
-           fac=0.0;
-         }
          if(ba.axion_ac<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
            p = 1./2;
-           guess = pow(2.5*(1+fac)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.25);
+           guess = sqrt(2.5*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)*pow(1-cos(phi_initial),-ba.n_axion))/sqrt(ba.n_axion);
+           guess = pow(guess,-0.5);
          }else{
            p = 2./3;
-           guess = pow(1.6875*(1+fac)*(ba.Omega0_cdm+ba.Omega0_b)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.333);
+           guess = 3*sqrt(3)*sqrt(phi_initial)*sqrt(ba.Omega0_cdm+ba.Omega0_b)*sqrt(tan(phi_initial/2.))*pow(1-cos(phi_initial),-ba.n_axion/2)/(4*sqrt(ba.n_axion));
+           guess = pow(guess,-2./3);
          }
-         // xguess[index_guess] = pfzw->target_value[index_guess];
          xguess[index_guess] = ba.axion_ac/guess;
          dxdy[index_guess] = guess;
          // dxdy[index_guess] = 100;
-         // printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e\n",ba.axion_ac,xguess[index_guess],dxdy[index_guess]);
+         printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e\n",ba.axion_ac,xguess[index_guess],dxdy[index_guess]);
          break;
 
     case Omega_scf:
