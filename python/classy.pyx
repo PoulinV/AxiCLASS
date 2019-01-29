@@ -831,6 +831,18 @@ cdef class Class:
     def Omega_b(self):
         return self.ba.Omega0_b
 
+    def fEDE(self):
+        return self.ba.f_ede
+
+    def zc(self):
+        return 10**self.ba.log10_z_c
+
+    def log10_f_axion(self):
+        return self.ba.log10_f_axion
+
+    def log10_m_axion(self):
+        return self.ba.log10_m_axion
+
     def omega_b(self):
         return self.ba.Omega0_b * self.ba.h * self.ba.h
 
@@ -1364,8 +1376,8 @@ cdef class Class:
                 value = self.ba.Neff
             elif name == 'Omega_axion_ac':
                 value = self.ba.Omega_axion_ac
-            elif name == 'axion_ac':
-                value = self.ba.axion_ac
+            elif name == 'log10_axion_ac':
+                value = self.ba.log10_axion_ac
             elif name == 'f_axion':
                 value = self.ba.f_axion
             elif name == 'm_axion':
