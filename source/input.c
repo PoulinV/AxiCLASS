@@ -462,8 +462,8 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
                                   x_inout,
                                   dxdF,
                                   unknown_parameters_size,
-                                  1e-4, //Here we have improved accuracy manually, in the future needs to adapt it to the parameter we shoot for
-                                  1e-6, //Here we have improved accuracy manually, in the future needs to adapt it to the parameter we shoot for
+                                  1e-2, //Here we have improved accuracy manually, in the future needs to adapt it to the parameter we shoot for TLS
+                                  1e-2, //Here we have improved accuracy manually, in the future needs to adapt it to the parameter we shoot for
                                   &fzw,
                                   &fevals,
                                   errmsg),
@@ -1360,9 +1360,9 @@ int input_read_parameters(
 
 
         }
-        class_test(pba->axion_ac > 0 && pba->m_scf > 0,errmsg,"you cannot choose both pba->axion_ac && pba->m_scf because m_scf is used to shoot for ac. Please adapt your param file.");
-        class_test(pba->fraction_axion_ac > 0 && pba->f_axion > 0,errmsg,"you cannot choose both pba->fraction_axion_ac && pba->f_axion because f_axion is used to shoot for fraction_axion_ac. Please adapt your param file.");
-        class_test(pba->fraction_axion_ac > 0 && pba->Omega0_axion > 0, errmsg,"you cannot choose both Omega0_axion && fraction_axion_ac. Please adapt your param file.");
+        class_test(pba->axion_ac != 0 && pba->m_scf > 0,errmsg,"you cannot choose both pba->axion_ac && pba->m_scf because m_scf is used to shoot for ac. Please adapt your param file.");
+        class_test(pba->fraction_axion_ac != 0 && pba->f_axion > 0,errmsg,"you cannot choose both pba->fraction_axion_ac && pba->f_axion because f_axion is used to shoot for fraction_axion_ac. Please adapt your param file.");
+        class_test(pba->fraction_axion_ac != 0 && pba->Omega0_axion > 0, errmsg,"you cannot choose both Omega0_axion && fraction_axion_ac. Please adapt your param file.");
          // printf("%d %e %e %e %e\n",pba->n_axion,pba->m_scf,pba->f_axion,pba->axion_ac,pba->Omega0_axion );
          flag2 =_TRUE_;
        }
@@ -4604,14 +4604,14 @@ int input_try_unknown_parameters(double * unknown_parameter,
         rho_dr_today = 0.;
       output[i] = (rho_dcdm_today+rho_dr_today)/(ba.H0*ba.H0)-pfzw->target_value[i]/ba.h/ba.h;
       break;
-    case fraction_axion_ac:
-      output[i] = ba.f_ede-pfzw->target_value[i];
-      // printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", ba.f_ede,pfzw->target_value[i],output[i]);
+    case fraction_axion_ac: // TLS where to print out fraction_axion_ac and axion_ac
+      output[i] = log10(ba.f_ede)-pfzw->target_value[i];
+       printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
       break;
     case axion_ac:
       ac = 1./(pow(10,ba.log10_z_c)+1);
-      output[i] = ac-pfzw->target_value[i];
-      // printf("ac %e  pfzw->target_value[i] %e output[i] %e\n", ac,pfzw->target_value[i],output[i]);
+      output[i] = log10(ac)-pfzw->target_value[i];
+       printf("ac %e  pfzw->target_value[i] %e output[i] %e\n", log10(ac),pfzw->target_value[i],output[i]);
       break;
 
     case Omega_scf:
@@ -4701,7 +4701,7 @@ int input_get_guess(double *xguess,
   int i;
 
   double Omega_M, a_decay, gamma, Omega0_dcdmdr=1.0;
-  double Omega_tot_ac, phi_initial,p,guess,ac,fac;
+  double Omega_tot_ac, phi_initial,axc,fxc,p,guess,ac,fac;
   int index_guess;
   /* Cheat to read only known parameters: */
   pfzw->fc.size -= pfzw->target_size;
@@ -4794,13 +4794,20 @@ int input_get_guess(double *xguess,
         //  dxdy[index_guess] = 6*Omega_tot_ac/(pow(1-ba.fraction_axion_ac,2)*pow(1-cos(phi_initial),ba.n_axion));
         /*OLD*/
 
-        /*NEW*/
+        /*NEW TLS */
         phi_initial = ba.scf_parameters[0];
-        guess = 4.*(6.*ba.fraction_axion_ac*ba.n_axion)*pow(1-cos(phi_initial),ba.n_axion)/(phi_initial*(ba.n_axion*phi_initial*pow(1-cos(phi_initial),ba.n_axion)+20.*pow(1-cos(7.*phi_initial/8.),ba.n_axion)*tan(phi_initial/2.)));
-        xguess[index_guess] = guess;
-        dxdy[index_guess] = 0.1*guess/ba.fraction_axion_ac;
+        axc=pow(10.,ba.axion_ac);
+        fxc=pow(10.,ba.fraction_axion_ac);
+        double FF=0.8;
+        if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
+            guess = 0.25*(3.*fxc*pow(1.-cos(phi_initial),ba.n_axion)*ba.n_axion/tan(phi_initial/2.))/((1.-FF)*phi_initial*(5.*pow(1.-cos(FF*phi_initial),ba.n_axion)+2.*(1.-FF)*ba.n_axion*phi_initial*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)));
+        } else {
+            guess = 2./3.*fxc*ba.n_axion*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)/((1.-FF)*phi_initial*(3.*(pow(1.-cos(FF*phi_initial),ba.n_axion))+(1.-FF)*ba.n_axion*phi_initial*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)));
+        }
+        xguess[index_guess] = log10(guess);
+        dxdy[index_guess] = log10(guess);
 
-         printf("fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",ba.fraction_axion_ac,xguess[index_guess],dxdy[index_guess]);
+         printf("fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",fxc,xguess[index_guess],dxdy[index_guess]);
          break;
 
     case axion_ac:
@@ -4821,20 +4828,20 @@ int input_get_guess(double *xguess,
          // }
          /*OLD*/
 
-         if(ba.axion_ac<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
+         if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
            p = 1./2;
-           guess = sqrt(2.5*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
-           guess = pow(guess,-p)*ba.axion_ac;
+           guess = 2.*sqrt(5.*(1.-FF)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
+           guess = pow(guess,-p)*axc;
          }else{
            p = 2./3;
            guess =
-             0.75*sqrt(3.*phi_initial*(ba.Omega0_cdm+ba.Omega0_b)*pow(1.-cos(phi_initial),-ba.n_axion)*tan(phi_initial/2.)/ba.n_axion);
-           guess = pow(guess,-p)*ba.axion_ac;
+             3.*sqrt(1.5*(1.-FF)*phi_initial*(ba.Omega0_cdm+ba.Omega0_b)*pow(1.-cos(phi_initial),-ba.n_axion)*tan(phi_initial/2.)/ba.n_axion);
+           guess = pow(guess,-p)*axc;
          }
-         xguess[index_guess] = guess/0.6;
-         dxdy[index_guess] = 0.1*guess/ba.axion_ac;
+         xguess[index_guess] = log10(guess/1.6);
+         dxdy[index_guess] = log10(guess/1.6);
          // dxdy[index_guess] = 100;
-         printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e\n",ba.axion_ac,xguess[index_guess],dxdy[index_guess]);
+         printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],(ba.Omega0_cdm+ba.Omega0_b),(ba.Omega0_g+ba.Omega0_ur));
          break;
 
     case Omega_scf:
