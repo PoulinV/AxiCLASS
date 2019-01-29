@@ -284,7 +284,7 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
       class_read_double("m_axion",fzw.m_scf);
       class_read_double("f_axion",fzw.f_axion);
       pba->Omega0_axion = 0.0;
-      pba->axion_ac = 0.0;
+      pba->log10_axion_ac = 0.0;
       class_read_int("n_axion",fzw.n_axion);
       // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
       class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
@@ -322,7 +322,7 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
    * These two arrays must contain the strings of names to be searched
    *  for and the corresponding new parameter */
   char * const target_namestrings[] = {"100*theta_s","Omega_dcdmdr","omega_dcdmdr",
-                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","fraction_axion_ac","axion_ac"};
+                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","log10_fraction_axion_ac","log10_axion_ac"};
   char * const unknown_namestrings[] = {"h","Omega_ini_dcdm","Omega_ini_dcdm",
                                         "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","alpha_squared","power_of_mu"};
   enum computation_stage target_cs[] = {cs_thermodynamics, cs_background, cs_background,cs_background,
@@ -359,7 +359,7 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
         if(input_verbose > 10){
           printf("Found target: %s, target value =  %e\n",target_namestrings[index_target],param1);
         }
-        if(fzw.do_shooting_scf ==_FALSE_ && (target_namestrings[index_target]=="Omega_scf"|| target_namestrings[index_target]=="fraction_axion_ac")){
+        if(fzw.do_shooting_scf ==_FALSE_ && (target_namestrings[index_target]=="Omega_scf"|| target_namestrings[index_target]=="log10_fraction_axion_ac")){
           // printf("I will not add it!\n");
         }else{
           target_indices[unknown_parameters_size] = index_target; /*setting up correct variable that we have defined to shoot for as an answer */
@@ -1212,12 +1212,12 @@ int input_read_parameters(
   }
 
   /* Additional SCF parameters: */
-  class_read_double("fraction_axion_ac",pba->fraction_axion_ac);
-  class_read_double("axion_ac",pba->axion_ac);
+  class_read_double("log10_fraction_axion_ac",pba->log10_fraction_axion_ac);
+  class_read_double("log10_axion_ac",pba->log10_axion_ac);
   class_read_double("m_axion",pba->m_scf);
   class_read_double("f_axion",pba->f_axion);
 
-  if (pba->Omega0_scf != 0.  || pba->fraction_axion_ac != 0. || pba->axion_ac != 0 || pba->m_scf != 0 || pba->f_axion != 0){
+  if (pba->Omega0_scf != 0.  || pba->log10_fraction_axion_ac != 0. || pba->log10_axion_ac != 0 || pba->m_scf != 0 || pba->f_axion != 0){
     /** - Assign a given scalar field potential */
     class_call(parser_read_string(pfc,"scf_has_perturbations",&string1,&flag1,errmsg),
              errmsg,
@@ -1335,11 +1335,11 @@ int input_read_parameters(
           pba->m_scf = param1;
         }
         if(pba->m_scf == 0.0 || pba->f_axion == 0.0 ){
-          class_call(parser_read_double(pfc,"axion_ac",&param1,&flag1,errmsg),
+          class_call(parser_read_double(pfc,"log10_axion_ac",&param1,&flag1,errmsg),
                      errmsg,
                      errmsg);
          if(flag1 == _TRUE_){
-           pba->axion_ac = param1;
+           pba->log10_axion_ac = param1;
          }
 
           class_call(parser_read_double(pfc,"Omega0_axion",&param1,&flag1,errmsg),
@@ -1349,20 +1349,22 @@ int input_read_parameters(
           pba->Omega0_axion = param1;
           }
           else{
-            class_call(parser_read_double(pfc,"fraction_axion_ac",&param1,&flag1,errmsg),
+            class_call(parser_read_double(pfc,"log10_fraction_axion_ac",&param1,&flag1,errmsg),
                        errmsg,
                        errmsg);
            if(flag1 == _TRUE_){
-            pba->fraction_axion_ac = param1;
+            pba->log10_fraction_axion_ac = param1;
           }
-            // printf("pba->fraction_axion_ac %e \n", pba->fraction_axion_ac);
+            // printf("pba->log10_fraction_axion_ac %e \n", pba->log10_fraction_axion_ac);
           }
 
 
         }
-        class_test(pba->axion_ac != 0 && pba->m_scf > 0,errmsg,"you cannot choose both pba->axion_ac && pba->m_scf because m_scf is used to shoot for ac. Please adapt your param file.");
-        class_test(pba->fraction_axion_ac != 0 && pba->f_axion > 0,errmsg,"you cannot choose both pba->fraction_axion_ac && pba->f_axion because f_axion is used to shoot for fraction_axion_ac. Please adapt your param file.");
-        class_test(pba->fraction_axion_ac != 0 && pba->Omega0_axion > 0, errmsg,"you cannot choose both Omega0_axion && fraction_axion_ac. Please adapt your param file.");
+        class_test(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac == -30,errmsg,"you must define both pba->log10_axion_ac and pba->log10_fraction_axion_ac in your input file.");
+        class_test(pba->log10_axion_ac == -30 && pba->log10_fraction_axion_ac > -30,errmsg,"you must define both pba->log10_axion_ac and pba->log10_fraction_axion_ac in your input file.");
+        // class_test(pba->log10_axion_ac > -30 && pba->m_scf > 0,errmsg,"you cannot choose both pba->log10_axion_ac && pba->m_scf because m_scf is used to shoot for ac. Please adapt your param file.");
+        // class_test(pba->log10_fraction_axion_ac > -30 && pba->f_axion > 0,errmsg,"you cannot choose both pba->log10_fraction_axion_ac && pba->f_axion because f_axion is used to shoot for log10_fraction_axion_ac. Please adapt your param file.");
+        // class_test(pba->log10_fraction_axion_ac != 0 && pba->Omega0_axion > 0, errmsg,"you cannot choose both Omega0_axion && log10_fraction_axion_ac. Please adapt your param file.");
          // printf("%d %e %e %e %e\n",pba->n_axion,pba->m_scf,pba->f_axion,pba->axion_ac,pba->Omega0_axion );
          flag2 =_TRUE_;
        }
@@ -3716,8 +3718,8 @@ int input_default_params(
   pba->ncdm_psd_files = NULL;
 
   pba->Omega0_scf = 0.; /* Scalar field defaults */
-  pba->fraction_axion_ac = 0.; /* Scalar field defaults */
-  pba->log10_m_axion=10.;
+  pba->log10_fraction_axion_ac = -30; /* Scalar field defaults */
+  pba->log10_m_axion= -30.;
   pba->attractor_ic_scf = _TRUE_;
   pba->scf_parameters = NULL;
   pba->scf_parameters_size = 0;
@@ -3726,7 +3728,7 @@ int input_default_params(
   pba->f_axion = 0.0;
   pba->m_scf = 0.0;
   pba->n_axion = 1;
-  pba->axion_ac = 0.0;
+  pba->log10_axion_ac = -30;
   pba->Omega0_axion = 0.0;
   pba->scf_has_perturbations = _TRUE_;
   pba->threshold_scf_fluid_m_over_H = 3;
@@ -4604,14 +4606,14 @@ int input_try_unknown_parameters(double * unknown_parameter,
         rho_dr_today = 0.;
       output[i] = (rho_dcdm_today+rho_dr_today)/(ba.H0*ba.H0)-pfzw->target_value[i]/ba.h/ba.h;
       break;
-    case fraction_axion_ac: // TLS where to print out fraction_axion_ac and axion_ac
+    case log10_fraction_axion_ac: // TLS where to print out log10_fraction_axion_ac and axion_ac
       output[i] = log10(ba.f_ede)-pfzw->target_value[i];
-       printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
+       // printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
       break;
-    case axion_ac:
+    case log10_axion_ac:
       ac = 1./(pow(10,ba.log10_z_c)+1);
       output[i] = log10(ac)-pfzw->target_value[i];
-       printf("ac %e  pfzw->target_value[i] %e output[i] %e\n", log10(ac),pfzw->target_value[i],output[i]);
+       // printf("ac %e  pfzw->target_value[i] %e output[i] %e\n", log10(ac),pfzw->target_value[i],output[i]);
       break;
 
     case Omega_scf:
@@ -4778,7 +4780,7 @@ int input_get_guess(double *xguess,
         //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
       break;
       // printf("omdcdmdr, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
-    case fraction_axion_ac:
+    case log10_fraction_axion_ac:
         /*OLD*/
         // phi_initial = ba.scf_parameters[0];
         //  // xguess[index_guess] = pfzw->target_value[index_guess];
@@ -4796,8 +4798,13 @@ int input_get_guess(double *xguess,
 
         /*NEW TLS */
         phi_initial = ba.scf_parameters[0];
-        axc=pow(10.,ba.axion_ac);
-        fxc=pow(10.,ba.fraction_axion_ac);
+        if(ba.log10_axion_ac>-30){
+          axc=pow(10.,ba.log10_axion_ac);
+        }
+        else{
+          axc = 0.0;
+        }
+        fxc=pow(10.,ba.log10_fraction_axion_ac);
         FF=0.8;
         if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
             guess = 0.25*(3.*fxc*pow(1.-cos(phi_initial),ba.n_axion)*ba.n_axion/tan(phi_initial/2.))/((1.-FF)*phi_initial*(5.*pow(1.-cos(FF*phi_initial),ba.n_axion)+2.*(1.-FF)*ba.n_axion*phi_initial*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)));
@@ -4808,11 +4815,11 @@ int input_get_guess(double *xguess,
         dxdy[index_guess] = log10(guess);
 
 
-         // printf("fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",ba.fraction_axion_ac,xguess[index_guess],dxdy[index_guess]);
+         // printf("log10_fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",ba.log10_fraction_axion_ac,xguess[index_guess],dxdy[index_guess]);
 
          break;
 
-    case axion_ac:
+    case log10_axion_ac:
          /*OLD*/
          // phi_initial = ba.scf_parameters[0];
          // if(ba.fraction_axion_ac > 0.0){
@@ -4830,8 +4837,13 @@ int input_get_guess(double *xguess,
          // }
          /*OLD*/
             phi_initial = ba.scf_parameters[0];
-            axc=pow(10.,ba.axion_ac);
-            fxc=pow(10.,ba.fraction_axion_ac);
+            axc=pow(10.,ba.log10_axion_ac);
+            if(ba.log10_fraction_axion_ac>-30){
+              fxc=pow(10.,ba.log10_fraction_axion_ac);
+            }
+            else{
+              fxc = 0;
+            }
             FF=0.8;
          if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
            p = 1./2;
@@ -5349,8 +5361,8 @@ int input_auxillary_target_conditions(struct file_content * pfc,
   case Omega_dcdmdr:
   case omega_dcdmdr:
   case Omega_scf:
-  case fraction_axion_ac:
-  case axion_ac:
+  case log10_fraction_axion_ac:
+  case log10_axion_ac:
   case Omega_ini_dcdm:
   case omega_ini_dcdm:
     /* Check that Omega's or omega's are nonzero: */

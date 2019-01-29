@@ -96,8 +96,8 @@ struct background
   double power_of_mu;
   double log10_f_axion;
   double log10_m_axion;
-  double axion_ac;
-  double fraction_axion_ac;
+  double log10_axion_ac;
+  double log10_fraction_axion_ac;
   double Omega0_axion;
   double Omega_axion_ac;
   double log10_z_c; //

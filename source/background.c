@@ -688,40 +688,8 @@ int background_init(
           pba->w_scf = 0;
         }
         else if(pba->scf_potential == axion){
-          // if(pba->scf_parameters[0]>_PI_)pba->scf_parameters[0]-=_PI_;
-          // if(pba->scf_parameters[0]<0)pba->scf_parameters[0]+=_PI_;
-          // printf("pba->scf_parameters[0] %e\n", pba->scf_parameters[0]);
-          if(pba->axion_ac > 0.0 && pba->Omega0_axion > 0.0){
-            // printf("ac %e omega %e\n",  pba->axion_ac,  pba->Omega0_axion);
-
-            //here we convert ac and omega0 into mu and alpha
-              if(pba->axion_ac<(pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm)){
-                p = 1./2;
-              }
-              else{
-                p = 2./3;
-              }
-              cos_initial = cos(pba->scf_parameters[0]);
-              sin_initial = sin(pba->scf_parameters[0]);
-              // printf("%e %e %e \n",cos_initial,sin_initial,p);
-
-              n = pba->n_axion;
-              wn = (n-1)/(n+1);
-
-              // if(pba->Omega0_fld!=0 || pba->Omega_many_fld[i] != 0) Omega0_fld = pba->Omega0_fld;
-              pba->Omega_axion_ac = pba->Omega0_axion/2*(pow(pba->axion_ac,-3*(wn+1))+1);
-              Eac = sqrt((pba->Omega0_g+pba->Omega0_ur)*pow(pba->axion_ac,-4)+(pba->Omega0_b+pba->Omega0_cdm)*pow(pba->axion_ac,-3)+pba->Omega_axion_ac);
-
-              xc = p/Eac;
-              f = 7./8;
-              pba->m_scf = pow(1-cos_initial,(1.-n)/2.)*sqrt((1-f)*(6*p+2)*pba->scf_parameters[0]/(n*sin_initial))/xc;
-              pba->f_axion = sqrt(6 * pba->Omega_axion_ac)/pba->m_scf/pow(1-cos_initial,n/2);
-              pba->log10_f_axion = log10(pba->f_axion);
-              pba->log10_m_axion = log10(pba->m_scf);
-              // printf("before %e %e\n",  pba->m_scf,  pba->f_axion);
-          }
-          else if(pba->axion_ac != 0.0 && pba->fraction_axion_ac != 0.0){
-
+             if(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac > -30){
+               /*-30 is the default value*/
 //            pba->alpha_squared = fabs(pba->alpha_squared);
 //            pba->power_of_mu = fabs(pba->power_of_mu);
 
@@ -731,7 +699,7 @@ int background_init(
             // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
             Omega_rad_neutrinos = pba->Omega0_ur;
             // printf("pba->Omega_ur %e Omega_rad_neutrinos %e\n",pba->Omega0_ur,Omega_rad_neutrinos);
-              if(pba->axion_ac<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm)){
+              if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm)){
                 p = 1./2;
                 pba->m_scf = pow(pow(10,pba->power_of_mu),-2.);
               }
@@ -743,25 +711,25 @@ int background_init(
 
               pba->log10_f_axion = log10(pba->f_axion);
               pba->log10_m_axion = log10(pba->m_scf);
-              // printf("pba->axion_ac %e pba->fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->fraction_axion_ac,pba->m_scf,pba->f_axion);
+              // printf("pba->axion_ac %e pba->log10_fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->log10_fraction_axion_ac,pba->m_scf,pba->f_axion);
               // printf("pba->mu_squared_alpha_squared %e pba->power_of_mu %e \n",pba->mu_squared_alpha_squared,pba->power_of_mu);
           }
 
-          else if(pba->alpha_squared > 0.0 && pba->fraction_axion_ac != 0.0){
+          else if(pba->alpha_squared > -30 && pba->log10_fraction_axion_ac > -30){
 
             /*shoot for fac by varying alpha*/
             // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
             // pba->mu_squared_alpha_squared= sqrt(pow(pba->mu_squared_alpha_squared,2));
             // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
 
-              pba->f_axion = sqrt(pba->alpha_squared);
+              pba->f_axion = sqrt(pow(10,pba->alpha_squared));
 
               pba->log10_f_axion = log10(pba->f_axion);
               pba->log10_m_axion = log10(pba->m_scf);
               // printf("pba->axion_ac %e pba->fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->fraction_axion_ac,pba->m_scf,pba->f_axion);
               // printf("pba->mu_squared_alpha_squared %e \n",pba->mu_squared_alpha_squared);
           }
-          else if(pba->power_of_mu != 0.0 && pba->axion_ac > 0.0){
+          else if(pba->power_of_mu > -30 && pba->log10_axion_ac > -30){
             pba->power_of_mu = fabs(pba->power_of_mu);
             /*shoot for axion ac by varying mu*/
             // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
@@ -769,22 +737,21 @@ int background_init(
             // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
             Omega_rad_neutrinos = pba->Omega0_ur;
             // printf("pba->Omega_ur %e Omega_rad_neutrinos %e\n",pba->Omega0_ur,Omega_rad_neutrinos);
-              if(pba->axion_ac<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm)){
-                p = 1./2;
-                pba->m_scf = pow(pba->power_of_mu,-2.);
-              }
-              else{
-                p = 2./3;
-                pba->m_scf = pow(pba->power_of_mu,-3./2);
-              }
-
+            if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm)){
+              p = 1./2;
+              pba->m_scf = pow(pow(10,pba->power_of_mu),-2.);
+            }
+            else{
+              p = 2./3;
+              pba->m_scf = pow(pow(10,pba->power_of_mu),-3./2);
+            }
               pba->log10_f_axion = log10(pba->f_axion);
               pba->log10_m_axion = log10(pba->m_scf);
-              // printf("pba->axion_ac %e pba->fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->fraction_axion_ac,pba->m_scf,pba->f_axion);
+              // printf("pba->axion_ac %e pba->log10_fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->log10_fraction_axion_ac,pba->m_scf,pba->f_axion);
               // printf("pba->m_scf %e pba->power_of_mu %e \n",pba->m_scf,pba->power_of_mu);
           }
 
-          pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
+            pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
             // pba->scf_parameters[0]*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
             // pba->scf_parameters[1]*=pba->f_axion; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
             pba->phi_ini_scf*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
@@ -944,7 +911,8 @@ int background_indices(
       pba->has_dr = _TRUE_;
   }
 
-  if (pba->Omega0_scf != 0. || pba->fraction_axion_ac != 0. || pba->axion_ac != 0.0 || pba->m_scf != 0.0 || pba->f_axion != 0.0){
+  if (pba->Omega0_scf != 0. || pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0.0 || pba->f_axion != 0.0){
+    /* -30 default value for log_axion */
     pba->has_scf = _TRUE_;
     pba->scf_kg_eq = _TRUE_; //Initially, we solve the KG equation.
   }
@@ -1991,7 +1959,7 @@ int background_solve(
       printf("Additional scf parameters used: \n");
       printf("n = %d m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion);
       printf("     -> Exact log10(z_c) = %e \t f_ede = %e\n", pba->log10_z_c, pba->f_ede);
-      if(pba->axion_ac > 0.0)printf("     -> approx log10(z_c) = %e\n", log10(1/pba->axion_ac-1));
+      if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e\n", log10(1/pow(10,pba->log10_axion_ac)-1));
       printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
       }
       if(pba->scf_potential == ax_cos_cubed){
