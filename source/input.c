@@ -425,8 +425,8 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
 
 
     if (unknown_parameters_size == 1){
-      fprintf(stdout," -> shooting for %s\n",
-              fzw.fc.name[fzw.unknown_parameters_index[0]]);
+      // fprintf(stdout," -> shooting for %s\n",
+      //         fzw.fc.name[fzw.unknown_parameters_index[0]]);
       /* We can do 1 dimensional root finding */
       /* If shooting fails, postpone error to background module to play nice with MontePython. */
       class_call_try(input_find_root(&xzero,
@@ -4700,7 +4700,7 @@ int input_get_guess(double *xguess,
   struct output op;           /* for output files */
   int i;
 
-  double Omega_M, a_decay, gamma, Omega0_dcdmdr=1.0;
+  double Omega_M, a_decay, gamma, FF, Omega0_dcdmdr=1.0;
   double Omega_tot_ac, phi_initial,axc,fxc,p,guess,ac,fac;
   int index_guess;
   /* Cheat to read only known parameters: */
@@ -4798,7 +4798,7 @@ int input_get_guess(double *xguess,
         phi_initial = ba.scf_parameters[0];
         axc=pow(10.,ba.axion_ac);
         fxc=pow(10.,ba.fraction_axion_ac);
-        double FF=0.8;
+        FF=0.8;
         if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
             guess = 0.25*(3.*fxc*pow(1.-cos(phi_initial),ba.n_axion)*ba.n_axion/tan(phi_initial/2.))/((1.-FF)*phi_initial*(5.*pow(1.-cos(FF*phi_initial),ba.n_axion)+2.*(1.-FF)*ba.n_axion*phi_initial*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)));
         } else {
@@ -4807,7 +4807,9 @@ int input_get_guess(double *xguess,
         xguess[index_guess] = log10(guess);
         dxdy[index_guess] = log10(guess);
 
-         printf("fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",fxc,xguess[index_guess],dxdy[index_guess]);
+
+         // printf("fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",ba.fraction_axion_ac,xguess[index_guess],dxdy[index_guess]);
+
          break;
 
     case axion_ac:
@@ -4827,7 +4829,10 @@ int input_get_guess(double *xguess,
          //   guess = pow(1.6875*(1+fac)*(ba.Omega0_cdm+ba.Omega0_b)*phi_initial*tan(phi_initial/2.)/(ba.n_axion*pow(1-cos(phi_initial),ba.n_axion)),0.333);
          // }
          /*OLD*/
-
+            phi_initial = ba.scf_parameters[0];
+            axc=pow(10.,ba.axion_ac);
+            fxc=pow(10.,ba.fraction_axion_ac);
+            FF=0.8;
          if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
            p = 1./2;
            guess = 2.*sqrt(5.*(1.-FF)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
@@ -4841,7 +4846,9 @@ int input_get_guess(double *xguess,
          xguess[index_guess] = log10(guess/1.6);
          dxdy[index_guess] = log10(guess/1.6);
          // dxdy[index_guess] = 100;
-         printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],(ba.Omega0_cdm+ba.Omega0_b),(ba.Omega0_g+ba.Omega0_ur));
+
+//         printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],(ba.Omega0_cdm+ba.Omega0_b),(ba.Omega0_g+ba.Omega0_ur));
+
          break;
 
     case Omega_scf:
