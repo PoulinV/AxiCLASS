@@ -704,6 +704,22 @@ int input_read_parameters(
     }
   }
 
+
+    class_call(parser_read_string(pfc,"gauge_output",&string1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+
+    if (flag1 == _TRUE_) {
+
+      if ((strstr(string1,"newtonian") != NULL) || (strstr(string1,"Newtonian") != NULL) || (strstr(string1,"new") != NULL)) {
+        ppt->gauge_output = newtonian_output;
+      }
+
+      if ((strstr(string1,"synchronous") != NULL) || (strstr(string1,"sync") != NULL) || (strstr(string1,"Synchronous") != NULL)) {
+        ppt->gauge_output = synchronous_output;
+      }
+    }
+
   /** (a) background parameters */
 
   /** - scale factor today (arbitrary) */
@@ -1217,7 +1233,7 @@ int input_read_parameters(
   class_read_double("m_axion",pba->m_scf);
   class_read_double("f_axion",pba->f_axion);
 
-  if (pba->Omega0_scf != 0.  || pba->log10_fraction_axion_ac != 0. || pba->log10_axion_ac != 0 || pba->m_scf != 0 || pba->f_axion != 0){
+  if (pba->Omega0_scf != 0.  || pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0){
     /** - Assign a given scalar field potential */
     class_call(parser_read_string(pfc,"scf_has_perturbations",&string1,&flag1,errmsg),
              errmsg,
@@ -3716,7 +3732,6 @@ int input_default_params(
   pba->deg_ncdm = NULL;
   pba->ncdm_psd_parameters = NULL;
   pba->ncdm_psd_files = NULL;
-
   pba->Omega0_scf = 0.; /* Scalar field defaults */
   pba->log10_fraction_axion_ac = -30; /* Scalar field defaults */
   pba->log10_m_axion= -30.;
@@ -3893,6 +3908,7 @@ int input_default_params(
   ppt->k_max_for_pk=0.1;
 
   ppt->gauge=synchronous;
+  ppt->gauge_output=synchronous_output;
 
   ppt->k_output_values_num=0;
   ppt->store_perturbations = _FALSE_;

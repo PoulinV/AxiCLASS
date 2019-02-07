@@ -6829,7 +6829,7 @@ int perturb_print_variables(double tau,
     }
 
     /* converting synchronous variables to newtonian ones */
-    if (ppt->gauge == synchronous) {
+    if (ppt->gauge == synchronous && ppt->gauge_output == newtonian_output) {
 
       /* density and velocity perturbations (comment out if you wish to keep synchronous variables) */
 
