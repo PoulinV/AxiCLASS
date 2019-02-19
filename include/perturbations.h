@@ -57,7 +57,10 @@ enum possible_gauges {
   newtonian, /**< newtonian (or longitudinal) gauge */
   synchronous /**< synchronous gauge with \f$ \theta_{cdm} = 0 \f$ by convention */
 };
-
+enum possible_gauges_output {
+  newtonian_output, /**< newtonian (or longitudinal) gauge */
+  synchronous_output /**< synchronous gauge with \f$ \theta_{cdm} = 0 \f$ by convention */
+};
 //@}
 
 //@{
@@ -202,6 +205,7 @@ struct perturbs
   //@{
 
   enum possible_gauges gauge; /**< gauge in which to perform this calculation */
+  enum possible_gauges_output gauge_output; /**< gauge in which to output perturbation variables in this calculation */
 
   //@}
 
