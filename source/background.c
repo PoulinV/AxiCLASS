@@ -79,6 +79,8 @@
  */
 
 #include "background.h"
+#include "gsl/gsl_sf_gamma.h"
+#include "gsl/gsl_sf_hyperg.h"
 
 /**
  * Background quantities at given conformal time tau.
@@ -711,8 +713,8 @@ int background_init(
 
               pba->log10_f_axion = log10(pba->f_axion);
               pba->log10_m_axion = log10(pba->m_scf);
-              // printf("pba->axion_ac %e pba->log10_fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->axion_ac,pba->log10_fraction_axion_ac,pba->m_scf,pba->f_axion);
-              // printf("pba->mu_squared_alpha_squared %e pba->power_of_mu %e \n",pba->mu_squared_alpha_squared,pba->power_of_mu);
+              // printf("pba->axion_ac %e pba->log10_fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->log10_axion_ac,pba->log10_fraction_axion_ac,pba->m_scf,pba->f_axion);
+              // printf("pba->alpha_squared %e pba->power_of_mu %e \n",pba->alpha_squared,pba->power_of_mu);
           }
 
           else if(pba->alpha_squared > -30 && pba->log10_fraction_axion_ac > -30){
@@ -1636,6 +1638,9 @@ int background_solve(
   double comoving_radius=0.;
   /* scalar field critical reshift and fractional energy density at z_c */
   double z_c_new, f_ede_new, phi_c_new, counter_scf = 0;
+
+  double integration_stepsize;
+  double ac, n, anow, Tosc;
   bpaw.pba = pba;
   class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
   bpaw.pvecback = pvecback;
@@ -1684,8 +1689,28 @@ int background_solve(
                pba->error_message,
                pba->error_message);
 
-    if ((pvecback_integration[pba->index_bi_a]*(1.+ppr->back_integration_stepsize)) < pba->a_today) {
-      tau_end = tau_start + ppr->back_integration_stepsize / (pvecback_integration[pba->index_bi_a]*pvecback[pba->index_bg_H]);
+    integration_stepsize = ppr->back_integration_stepsize;
+
+    if(pba->scf_potential == axion){
+      if(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac > -30){
+        ac = pow(10,pba->log10_axion_ac);
+        if(pvecback_integration[pba->index_bi_a]>ac){
+          n = pba->n_axion;
+          anow = pvecback_integration[pba->index_bi_a];
+          if(pba->m_scf!=0 && pba->f_axion != 0)Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*pow((pba->phi_ini_scf/pba->f_axion)*pow(1.65*anow/ac,-3./(n+1.)),1.-n)*gsl_sf_gamma(1.+1./(2.*n))/((pba->m_scf)*gsl_sf_gamma((1.+n)/(2.*n))*(pba->H0));
+          // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
+          if(pvecback[pba->index_bg_H]*Tosc/10<integration_stepsize) {
+            // printf("old integration_stepsize %e\n", integration_stepsize);
+            integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/10;
+            // printf("updated integration_stepsize %e\n", integration_stepsize);
+          }
+        }
+      }
+    }
+
+
+    if ((pvecback_integration[pba->index_bi_a]*(1.+integration_stepsize)) < pba->a_today) {
+      tau_end = tau_start + integration_stepsize / (pvecback_integration[pba->index_bi_a]*pvecback[pba->index_bg_H]);
       /* no possible segmentation fault here: non-zeroness of "a" has been checked in background_functions() */
     //printf("Inside if statement where apparently no segmentation fault possible.\n");//print_trigger
     }

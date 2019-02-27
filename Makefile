@@ -17,7 +17,7 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc
+CC       = gcc-7
 #CC       = icc
 #CC       = pgcc
 
@@ -33,7 +33,7 @@ AR        = ar rv
 PYTHON ?= python
 
 # your optimization flag
-OPTFLAG = -O4 -ffast-math #-march=native 
+OPTFLAG = -O4 -ffast-math #-march=native
 #OPTFLAG = -Ofast -ffast-math #-march=native
 #OPTFLAG = -fast
 
@@ -43,16 +43,15 @@ OMPFLAG   = -fopenmp
 #OMPFLAG   = -openmp
 
 # all other compilation flags
-CCFLAG = -g -fPIC -fno-tree-vectorize
+CCFLAG = -g -fPIC
 LDFLAG = -g -fPIC
 
 # leave blank to compile without HyRec, or put path to HyRec directory
 # (with no slash at the end: e.g. hyrec or ../hyrec)
 HYREC = hyrec_2017
 
-
 # set to cosmorec, CosmoRec or COSMOREC to compile with CosmoRec
-COSMOREC = 
+COSMOREC =
 #COSMOREC = $(PWD)/cosmorec
 GSL_LIB = /opt/local/lib/
 CC++ = g++-mp-6
@@ -77,8 +76,16 @@ CCFLAG += -DHYREC
 #LDFLAGS += -DHYREC
 INCLUDES += -I../$(HYREC)/include
 EXTERNAL += hyrectools.o helium.o hydrogen.o history.o energy_injection.o
+
 endif
 
+#===============================================================================
+# GSL lib
+#===============================================================================
+CCFLAG += -lgsl -lgslcblas -lm
+#LDFLAGS= -lgsl
+#LIBS= -lgsl
+INCLUDES += -I/usr/local/include
 
 # eventually update flags for including CosmoRec
 ifneq ($(COSMOREC),)
@@ -159,7 +166,7 @@ libclass.a: $(TOOLS) $(SOURCE) $(EXTERNAL)
 	$(AR)  $@ $(addprefix build/, $(TOOLS) $(SOURCE) $(EXTERNAL))
 
 class: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(CLASS)
-	$(CC) $(OPTFLAG) $(OMPFLAG) -o class $(addprefix build/,$(notdir $^)) -lm $(LDFLAG)
+	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o class $(addprefix build/,$(notdir $^)) -lm -lgsl
 
 test_sigma: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_SIGMA)
 	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o test_sigma $(addprefix build/,$(notdir $^)) -lm
