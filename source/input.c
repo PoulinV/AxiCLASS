@@ -1477,6 +1477,7 @@ int input_read_parameters(
     }
 
   }
+  class_read_double("adptative_stepsize",pba->adptative_stepsize);
 
   /** - recombination parameters */
   class_call(parser_read_string(pfc,"recombination",&string1,&flag1,errmsg),
@@ -3736,6 +3737,7 @@ int input_default_params(
   pba->log10_fraction_axion_ac = -30; /* Scalar field defaults */
   pba->log10_m_axion= -30.;
   pba->attractor_ic_scf = _TRUE_;
+  pba->adptative_stepsize = 0;
   pba->scf_parameters = NULL;
   pba->scf_parameters_size = 0;
   pba->scf_tuning_index = 0;
