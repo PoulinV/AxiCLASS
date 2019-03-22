@@ -79,8 +79,8 @@
  */
 
 #include "background.h"
-#include "gsl/gsl_sf_gamma.h"
-#include "gsl/gsl_sf_hyperg.h"
+//#include "gsl/gsl_sf_gamma.h"
+//#include "gsl/gsl_sf_hyperg.h"
 
 /**
  * Background quantities at given conformal time tau.
@@ -1640,7 +1640,7 @@ int background_solve(
   double z_c_new, f_ede_new, phi_c_new, counter_scf = 0;
 
   double integration_stepsize;
-  double ac, n, anow, Tosc;
+  double ac, n, anow, Tosc,tempfac;
   bpaw.pba = pba;
   class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
   bpaw.pvecback = pvecback;
@@ -1696,13 +1696,26 @@ int background_solve(
         ac = pow(10,pba->log10_axion_ac);
         if(pvecback_integration[pba->index_bi_a]>ac){
           n = pba->n_axion;
+          if(n==1){
+            tempfac=0.886227;
+          }
+          if(n==2){
+            tempfac=0.739669;
+          }
+          if(n==3){
+            tempfac=0.68511;
+          }
+          if(n>3){
+            tempfac=0.564581;
+          }
           anow = pvecback_integration[pba->index_bi_a];
-          if(pba->m_scf!=0 && pba->f_axion != 0)Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*pow((pba->phi_ini_scf/pba->f_axion)*pow(1.65*anow/ac,-3./(n+1.)),1.-n)*gsl_sf_gamma(1.+1./(2.*n))/((pba->m_scf)*gsl_sf_gamma((1.+n)/(2.*n))*(pba->H0));
-          // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
+          if(pba->m_scf!=0 && pba->f_axion != 0)
+	    Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*pow((pba->phi_ini_scf/pba->f_axion)*pow(1.65*anow/ac,-3./(n+1.)),1.-n)/((pba->m_scf)*(pba->H0))*tempfac;
+          // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);                                                                                  
           if(pvecback[pba->index_bg_H]*Tosc/10<integration_stepsize) {
-            // printf("old integration_stepsize %e\n", integration_stepsize);
+            // printf("old integration_stepsize %e\n", integration_stepsize);                                                                                                       
             integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/10;
-            // printf("updated integration_stepsize %e\n", integration_stepsize);
+            // printf("updated integration_stepsize %e\n", integration_stepsize);                                                                                                   
           }
         }
       }
