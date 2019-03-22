@@ -97,7 +97,10 @@ struct background
   double log10_f_axion;
   double log10_m_axion;
   double log10_axion_ac;
+  double a_c;
   double log10_fraction_axion_ac;
+  double adptative_stepsize;
+  double omega_axion;
   double Omega0_axion;
   double Omega_axion_ac;
   double log10_z_c; //

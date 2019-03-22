@@ -330,12 +330,7 @@ int background_functions(
     p_tot += (1./3.)*pvecback[pba->index_bg_rho_dr];
     rho_r += pvecback[pba->index_bg_rho_dr];
   }
-  if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ && pba->m_scf >= pba->threshold_scf_fluid_m_over_H && pba->scf_evolve_as_fluid == _TRUE_){ //We switch for fluid equations
-    pba->scf_kg_eq = _FALSE_;
-  }
-  else{
-    pba->scf_kg_eq = _TRUE_;
-  }
+
   //printf("Scalar field? %f \n", pba->has_scf);//print_trigger
   /* Scalar field */
   if (pba->has_scf == _TRUE_ && pba->scf_kg_eq == _TRUE_) {
@@ -366,11 +361,27 @@ int background_functions(
     //printf("KE = %e, V = %e \n", (phi_prime*phi_prime/(2*a*a) , V_scf(pba,phi)));
   }
   else if(pba->has_scf == _TRUE_ &&  pba->scf_kg_eq == _FALSE_){
-    phi = pvecback[pba->index_bg_phi_scf]; //phi is frozen to its last value.
+    // phi = pvecback[pba->index_bg_phi_scf]; //phi is frozen to its last value.
+    phi = pvecback_B[pba->index_bi_phi_scf];
+    phi_prime = pvecback_B[pba->index_bi_phi_prime_scf];
+    /*** WE STORE THESE DUMMY QUANTITIES ANYWAY ***/
+    pvecback[pba->index_bg_phi_scf] = phi; // value of the scalar field phi
+    pvecback[pba->index_bg_phi_prime_scf] = phi_prime; // value of the scalar field phi derivative wrt conformal time
+    pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
+    pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
+    pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
+
+
+    /****THE REAL QUANTITIES ARE ASSIGNED HERE****/
     //pvecback[pba->index_bg_rho_scf] = pba->Omega0_scf * pow(pba->H0,2) / pow(a_rel,3);
     pvecback[pba->index_bg_rho_scf] = pvecback_B[pba->index_bi_rho_scf];
     pvecback[pba->index_bg_p_scf] = pba->w_scf*pvecback_B[pba->index_bi_rho_scf];
-    pvecback[pba->index_bg_w_scf] = pba->w_scf;
+    if(pba->log10_axion_ac > -30){
+      pvecback[pba->index_bg_w_scf] = (1+pba->w_scf)/(1+pow(pba->a_c/a,3*(1+pba->w_scf)))-1;
+    }
+    else{
+      pvecback[pba->index_bg_w_scf] = pba->w_scf;
+    }
     rho_tot += pvecback[pba->index_bg_rho_scf];
     p_tot += pvecback[pba->index_bg_p_scf];
     rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
@@ -563,7 +574,7 @@ int background_init(
   double rho_ncdm_rel,rho_nu_rel;
   double Neff, Omega_rad_neutrinos, Omega_tot_ac;
   double w_fld, dw_over_da, integral_fld;
-  double wn, f, p, Eac, xc,cos_initial,sin_initial, n;
+  double wn, f, p, Eac, xc,cos_initial,sin_initial, n, ac, tempfac,Tosc,Gac,anow;
   int filenum=0;
 
   /** - in verbose mode, provide some information */
@@ -683,38 +694,72 @@ int background_init(
     }
   }
 
-
   if(pba->has_scf == _TRUE_){
         if(pba->scf_potential == axionquad){
           pba->m_scf = pba->scf_parameters[0];
           pba->w_scf = 0;
         }
         else if(pba->scf_potential == axion){
-             if(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac > -30){
-               /*-30 is the default value*/
+            if(pba->f_axion > 0 && pba->m_scf > 0){
+
+            }
+        else if(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac > -30){
+           /*-30 is the default value*/
 //            pba->alpha_squared = fabs(pba->alpha_squared);
 //            pba->power_of_mu = fabs(pba->power_of_mu);
 
-            /*shoot for both*/
-            // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
-            // pba->mu_squared_alpha_squared= sqrt(pow(pba->mu_squared_alpha_squared,2));
-            // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
-            Omega_rad_neutrinos = pba->Omega0_ur;
-            // printf("pba->Omega_ur %e Omega_rad_neutrinos %e\n",pba->Omega0_ur,Omega_rad_neutrinos);
-              if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm)){
-                p = 1./2;
-                pba->m_scf = pow(pow(10,pba->power_of_mu),-2.);
-              }
-              else{
-                p = 2./3;
-                pba->m_scf = pow(pow(10,pba->power_of_mu),-3./2);
-              }
-              pba->f_axion = sqrt(pow(10,pba->alpha_squared));
+        /*shoot for both*/
+        // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
+        // pba->mu_squared_alpha_squared= sqrt(pow(pba->mu_squared_alpha_squared,2));
+        // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
+        Omega_rad_neutrinos = pba->Omega0_ur;
+        // printf("pba->Omega_ur %e Omega_rad_neutrinos %e\n",pba->Omega0_ur,Omega_rad_neutrinos);
+          if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm)){
+            p = 1./2;
+            pba->m_scf = pow(pow(10,pba->power_of_mu),-2.);
+          }
+          else{
+            p = 2./3;
+            pba->m_scf = pow(pow(10,pba->power_of_mu),-3./2);
+          }
+          pba->f_axion = sqrt(pow(10,pba->alpha_squared));
 
-              pba->log10_f_axion = log10(pba->f_axion);
-              pba->log10_m_axion = log10(pba->m_scf);
-              // printf("pba->axion_ac %e pba->log10_fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->log10_axion_ac,pba->log10_fraction_axion_ac,pba->m_scf,pba->f_axion);
-              // printf("pba->alpha_squared %e pba->power_of_mu %e \n",pba->alpha_squared,pba->power_of_mu);
+          pba->log10_f_axion = log10(pba->f_axion);
+          pba->log10_m_axion = log10(pba->m_scf);
+
+          pba->a_c=pow(10,pba->log10_axion_ac);
+
+          cos_initial = cos(pba->phi_ini_scf);
+          sin_initial = sin(pba->phi_ini_scf);
+          // printf("%e %e %e \n",cos_initial,sin_initial,p);
+
+          n = pba->n_axion;
+
+          if(n==1){
+            tempfac=1/0.886227;
+          }
+          if(n==2){
+            tempfac=1/0.739669;
+          }
+          if(n==3){
+            tempfac=1/0.68511;
+          }
+          if(n>3){
+            tempfac=1/0.564581;
+          }
+
+          if(pba->m_scf!=0 && pba->f_axion != 0)
+
+
+          Gac =sqrt(_PI_)*tempfac*pow(2,-(n*n+1)/(2*n))*pow(3,0.5*(1./n-1))
+          *pow(pba->a_c,3-6./(1+n))*pow(pow(pba->a_c,6*n/(1+n))+1,0.5*(1./n-1));
+
+          pba->omega_axion = (pba->H0*pba->m_scf*pow(1-cos_initial,0.5*(n-1)))*Gac;
+
+          //pba->omega_axion = pba->H0*pba->m_scf*pow(1-cos_initial,0.5*(n-1))*Gac;
+
+          // printf("pba->axion_ac %e pba->log10_fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->log10_axion_ac,pba->log10_fraction_axion_ac,pba->m_scf,pba->f_axion);
+          // printf("pba->m_scf %e pba->f_axion %e pba->omega_axion  %e\n",pba->m_scf,pba->f_axion,pba->omega_axion);
           }
 
           else if(pba->alpha_squared > -30 && pba->log10_fraction_axion_ac > -30){
@@ -754,11 +799,15 @@ int background_init(
           }
 
             pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
+
+
             // pba->scf_parameters[0]*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
             // pba->scf_parameters[1]*=pba->f_axion; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
             pba->phi_ini_scf*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
             pba->phi_prime_ini_scf*=pba->f_axion; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
             // printf("%e %e\n", pba->scf_parameters[0],  pba->scf_parameters[0]/pba->f_axion);
+
+
 
         }
         else{
@@ -1691,10 +1740,10 @@ int background_solve(
 
     integration_stepsize = ppr->back_integration_stepsize;
 
-    if(pba->scf_potential == axion){
+    if(pba->scf_potential == axion && pba->adptative_stepsize > 0){
       if(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac > -30){
         ac = pow(10,pba->log10_axion_ac);
-        if(pvecback_integration[pba->index_bi_a]>ac){
+        if(pvecback_integration[pba->index_bi_a]>ac/pba->adptative_stepsize){
           n = pba->n_axion;
           if(n==1){
             tempfac=0.886227;
@@ -1710,17 +1759,31 @@ int background_solve(
           }
           anow = pvecback_integration[pba->index_bi_a];
           if(pba->m_scf!=0 && pba->f_axion != 0)
-	    Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*pow((pba->phi_ini_scf/pba->f_axion)*pow(1.65*anow/ac,-3./(n+1.)),1.-n)/((pba->m_scf)*(pba->H0))*tempfac;
-          // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);                                                                                  
-          if(pvecback[pba->index_bg_H]*Tosc/10<integration_stepsize) {
-            // printf("old integration_stepsize %e\n", integration_stepsize);                                                                                                       
-            integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/10;
-            // printf("updated integration_stepsize %e\n", integration_stepsize);                                                                                                   
+          Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*pow((pba->phi_ini_scf/pba->f_axion)*pow(1.65*anow/ac,-3./(n+1.)),1.-n)/((pba->m_scf)*(pba->H0))*tempfac;
+          // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
+          // printf("pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize %e %e \n", pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize,integration_stepsize);
+          if(pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize<integration_stepsize) {
+            // printf("old integration_stepsize %e\n", integration_stepsize);
+            integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize;
+            // printf("updated integration_stepsize %e\n", integration_stepsize);
           }
         }
       }
     }
 
+    if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ ){
+      // printf("a %e pvecback[pba->index_bg_Omega_scf] %e pba->threshold_scf_fluid_m_over_H %e\n", pvecback_integration[pba->index_bi_a],pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H);
+      // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H || a>pba->threshold_for_fluid*pba->a_c){ //We switch for fluid equations
+      // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
+      // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
+      ac = pow(10,pba->log10_axion_ac);
+      if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback_integration[pba->index_bi_a] > ac){ //We switch for fluid equations
+        pba->scf_kg_eq = _FALSE_;
+      }
+      else{
+        pba->scf_kg_eq = _TRUE_;
+      }
+    }
 
     if ((pvecback_integration[pba->index_bi_a]*(1.+integration_stepsize)) < pba->a_today) {
       tau_end = tau_start + integration_stepsize / (pvecback_integration[pba->index_bi_a]*pvecback[pba->index_bg_H]);
