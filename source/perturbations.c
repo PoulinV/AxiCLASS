@@ -456,7 +456,8 @@ int perturb_init(
  */
 
 int perturb_free(
-                 struct perturbs * ppt
+                 struct perturbs * ppt,
+                 struct background * pba
                  ) {
 
   int index_md,index_ic,index_type;
@@ -479,6 +480,9 @@ int perturb_free(
       free(ppt->sources[index_md]);
 
       free(ppt->k[index_md]);
+      if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+        free(ppt->scf_kg_eq[index_md]);
+      }
 
     }
 
@@ -497,6 +501,10 @@ int perturb_free(
     free(ppt->k_size);
 
     free(ppt->sources);
+
+    if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+      free(ppt->scf_kg_eq);
+    }
 
     /** Stuff related to perturbations output: */
 
@@ -1292,7 +1300,11 @@ int perturb_get_k_list(
                ppt->md_size,
                sizeof(double),
                ppt->error_message);
-
+  if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+    class_alloc(ppt->scf_kg_eq,
+                ppt->md_size*sizeof(double*),
+                ppt->error_message);
+  }
   /** - scalar modes */
 
   if (ppt->has_scalars == _TRUE_) {
@@ -1845,6 +1857,15 @@ int perturb_get_k_list(
   free(k_max_cmb);
   free(k_max_cl);
 
+  if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+    class_alloc(ppt->scf_kg_eq[ppt->index_md_scalars],
+                ppt->k_size[ppt->index_md_scalars]*sizeof(double),ppt->error_message);
+    class_alloc(ppt->scf_kg_eq[ppt->index_md_vectors],
+                ppt->k_size[ppt->index_md_vectors]*sizeof(double),ppt->error_message);
+    class_alloc(ppt->scf_kg_eq[ppt->index_md_tensors],
+                ppt->k_size[ppt->index_md_tensors]*sizeof(double),ppt->error_message);
+  }
+
   return _SUCCESS_;
 
 }
@@ -2232,6 +2253,7 @@ int perturb_solve(
                  ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]);
     }
   }
+
 
   /* is at most the time at which sources must be sampled */
   tau_upper = ppt->tau_sampling[0];
@@ -5205,6 +5227,7 @@ int perturb_einstein(
                      struct thermo * pth,
                      struct perturbs * ppt,
                      int index_md,
+                     int index_k,
                      double k,
                      double tau,
                      double * y,
@@ -5230,7 +5253,7 @@ int perturb_einstein(
   dmu_gcdm = MIN(1.,dmu_gcdm);
   /** - sum up perturbations from all species */
   // printf("Calling perturb_total_stress_energy.\n");
-  class_call(perturb_total_stress_energy(ppr,pba,pth,ppt,index_md,k,y,ppw),
+  class_call(perturb_total_stress_energy(ppr,pba,pth,ppt,index_md,index_k,k,y,ppw),
              ppt->error_message,
              ppt->error_message);
   // printf("Leaving perturb_total_stress_energy.\n");
@@ -5409,6 +5432,7 @@ int perturb_total_stress_energy(
                                 struct thermo * pth,
                                 struct perturbs * ppt,
                                 int index_md,
+                                int index_k,
                                 double k,
                                 double * y,
                                 struct perturb_workspace * ppw
@@ -5455,22 +5479,22 @@ int perturb_total_stress_energy(
 
   // if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_){
   //   if(pba->scf_evolve_like_axionCAMB == _TRUE_){
-  //       pba->scf_kg_eq = _FALSE_; //if we evolve like axionCAMB we never follow the KG equations
+  //       ppt->scf_kg_eq = _FALSE_; //if we evolve like axionCAMB we never follow the KG equations
   //       pba->scf_fluid_eq = _TRUE_;
   //   }
   //   else{
   //     if(pba->scf_evolve_as_fluid == _FALSE_){
   //       pba->scf_fluid_eq = _FALSE_; //that is the standard case, we never follow the fluid equations
-  //       pba->scf_kg_eq = _TRUE_;
+  //       ppt->scf_kg_eq = _TRUE_;
   //     }
   //     else{
   //       if(pba->m_scf>=pba->threshold_scf_fluid_m_over_H*ppw->pvecback[pba->index_bg_H]){
-  //         pba->scf_kg_eq = _FALSE_; //We switch to fluid equations
+  //         ppt->scf_kg_eq = _FALSE_; //We switch to fluid equations
   //         pba->scf_fluid_eq = _TRUE_;
   //       }
   //       else {
   //         pba->scf_fluid_eq = _FALSE_; //We follow standard equations
-  //         pba->scf_kg_eq = _TRUE_;
+  //         ppt->scf_kg_eq = _TRUE_;
   //       }
   //     }
   //   }
@@ -5693,7 +5717,7 @@ int perturb_total_stress_energy(
         fprintf(stdout,"Inside scf if statement. pba->scf_has_perturbations = %f. \n", pba->scf_has_perturbations);
 
       if (ppt->gauge == synchronous){
-        if (pba->scf_kg_eq == _TRUE_){
+        if (ppt->scf_kg_eq[index_md][index_k] == _TRUE_){
           delta_rho_scf =  1./3.*
           (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
            + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
@@ -5721,7 +5745,7 @@ int perturb_total_stress_energy(
       }
     }
       else{ //if newtonian gauge, equation for psi */
-        if (pba->scf_kg_eq == _TRUE_){ //evolving via KG
+        if (ppt->scf_kg_eq[index_md][index_k] == _TRUE_){ //evolving via KG
           psi = y[ppw->pv->index_pt_phi] - 4.5 * (a2/k/k) * ppw->rho_plus_p_shear;
 
           delta_rho_scf =  1./3.*
@@ -5754,7 +5778,7 @@ int perturb_total_stress_energy(
 
       ppw->delta_p += delta_p_scf; // an important difference from CDM because if SCF evolving via KG then pressure is not necessarily zero.
 
-      if (pba->scf_kg_eq == _TRUE_){ //evolving via KG
+      if (ppt->scf_kg_eq[index_md][index_k] == _TRUE_){ //evolving via KG
         ppw->rho_plus_p_theta +=  1./3.*
           k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
         rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
@@ -6134,22 +6158,22 @@ int perturb_sources(
   }
   // if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_){
   //   if(pba->scf_evolve_like_axionCAMB == _TRUE_){
-  //       pba->scf_kg_eq = _FALSE_; //if we evolve like axionCAMB we never follow the KG equations
+  //       ppt->scf_kg_eq = _FALSE_; //if we evolve like axionCAMB we never follow the KG equations
   //       pba->scf_fluid_eq = _TRUE_;
   //   }
   //   else{
   //     if(pba->scf_evolve_as_fluid == _FALSE_){
   //       pba->scf_fluid_eq = _FALSE_; //that is the standard case, we never follow the fluid equations
-  //       pba->scf_kg_eq = _TRUE_;
+  //       ppt->scf_kg_eq = _TRUE_;
   //     }
   //     else{
   //       if(pba->m_scf>=pba->threshold_scf_fluid_m_over_H*pvecback[pba->index_bg_H]){
-  //         pba->scf_kg_eq = _FALSE_; //We switch to fluid equations
+  //         ppt->scf_kg_eq = _FALSE_; //We switch to fluid equations
   //         pba->scf_fluid_eq = _TRUE_;
   //       }
   //       else {
   //         pba->scf_fluid_eq = _FALSE_; //We follow standard equations
-  //         pba->scf_kg_eq = _TRUE_;
+  //         ppt->scf_kg_eq = _TRUE_;
   //       }
   //     }
   //   }
@@ -6164,6 +6188,7 @@ int perturb_sources(
                                 pth,
                                 ppt,
                                 index_md,
+                                index_k,
                                 k,
                                 tau,
                                 y,
@@ -6376,7 +6401,7 @@ int perturb_sources(
     /* delta_scf */
 
     if (ppt->has_source_delta_scf == _TRUE_) {
-      if (pba->scf_fluid_eq == _TRUE_){ //evolve as fluid
+      if (ppt->scf_kg_eq[index_md][index_k] == _FALSE_){ //evolve as fluid
       _set_source_(ppt->index_tp_delta_scf) = y[ppw->pv->index_pt_delta_scf];
       }
       else{ //evolve as KG
@@ -6454,7 +6479,7 @@ int perturb_sources(
 
     /* theta_scf */
     if (ppt->has_source_theta_scf == _TRUE_) {
-      if (pba->scf_kg_eq == _TRUE_){
+      if (ppt->scf_kg_eq[index_md][index_k] == _TRUE_){
       rho_plus_p_theta_scf = 1./3.*
         k*k/a2_rel*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
       _set_source_(ppt->index_tp_theta_scf) = rho_plus_p_theta_scf/
@@ -6571,7 +6596,7 @@ int perturb_print_variables(double tau,
 
   /** - define local variables */
   double k;
-  int index_md;
+  int index_md, index_k;
   //struct precision * ppr;
   struct background * pba;
   struct thermo * pth;
@@ -6612,6 +6637,7 @@ int perturb_print_variables(double tau,
   pppaw = parameters_and_workspace;
   k = pppaw->k;
   index_md = pppaw->index_md;
+  index_k = pppaw->index_k;
   //ppr = pppaw->ppr;
   pba = pppaw->pba;
   pth = pppaw->pth;
@@ -6800,7 +6826,7 @@ int perturb_print_variables(double tau,
 
 
     if (pba->has_scf == _TRUE_&& pba->scf_has_perturbations == _TRUE_){
-      if (pba->scf_kg_eq == _TRUE_){
+      if (ppt->scf_kg_eq[index_md][index_k] == _TRUE_){
       //If we are following KG:
         if (ppt->gauge == synchronous){
             delta_rho_scf =  1./3.*
@@ -7121,7 +7147,7 @@ int perturb_derivs(double tau,
   /* short-cut names for the fields of the input structure */
   struct perturb_parameters_and_workspace * pppaw;
   double k,k2;
-  int index_md;
+  int index_md,index_k;
   struct precision * ppr;
   struct background * pba;
   struct thermo * pth;
@@ -7175,6 +7201,7 @@ int perturb_derivs(double tau,
   k = pppaw->k;
   k2=k*k;
   index_md = pppaw->index_md;
+  index_k = pppaw->index_k;
   ppr = pppaw->ppr;
   pba = pppaw->pba;
   pth = pppaw->pth;
@@ -7215,36 +7242,38 @@ int perturb_derivs(double tau,
   //printf("Finished calling thermodynamics_at_z. \n");
 
     if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+
+
       //Here, we set a number of parameters that determines the way in which scf perturbations are computed.
       if(pba->scf_evolve_like_axionCAMB == _TRUE_){
-          pba->scf_kg_eq = _FALSE_; //if we evolve like axionCAMB we never follow the KG equations
-          pba->scf_fluid_eq = _TRUE_;
+          ppt->scf_kg_eq[index_md][index_k] = _FALSE_; //if we evolve like axionCAMB we never follow the KG equations
+          // pba->scf_fluid_eq = _TRUE_;
       }
       else{
         if(pba->scf_evolve_as_fluid == _FALSE_){
           // printf("here\n");
-          pba->scf_fluid_eq = _FALSE_; //that is the standard case, we never follow the fluid equations
-          pba->scf_kg_eq = _TRUE_;
+          // pba->scf_fluid_eq = _FALSE_; //that is the standard case, we never follow the fluid equations
+          ppt->scf_kg_eq[index_md][index_k] = _TRUE_;
         }
         else{
           // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){
           if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback[pba->index_bg_a] > pba->a_c){
             // printf("pvecback[pba->index_bg_a] %e pba->a_c %e\n",pvecback[pba->index_bg_a], pba->a_c);
             // printf("fluid: a %e k %e\n", pvecback[pba->index_bg_a],k);
-            pba->scf_kg_eq = _FALSE_; //We switch to fluid equations
-            pba->scf_fluid_eq = _TRUE_;
+            ppt->scf_kg_eq[index_md][index_k] = _FALSE_; //We switch to fluid equations
+            // pba->scf_fluid_eq = _TRUE_;
           }
           else {
             // printf("KG: a %e k %e\n", pvecback[pba->index_bg_a],k);
-            pba->scf_kg_eq = _TRUE_;
-            pba->scf_fluid_eq = _FALSE_; //We follow standard equations
+            ppt->scf_kg_eq[index_md][index_k] = _TRUE_;
+            // pba->scf_fluid_eq = _FALSE_; //We follow standard equations
           }
-          // printf("here pvecback[pba->index_bg_Omega_scf] %e threshold_scf_fluid_m_over_H %e a %e pba->scf_kg_eq %d pba->scf_fluid_eq %d\n",pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H,a,pba->scf_kg_eq,pba->scf_fluid_eq);
+          // printf("here pvecback[pba->index_bg_Omega_scf] %e threshold_scf_fluid_m_over_H %e a %e ppt->scf_kg_eq %d pba->scf_fluid_eq %d\n",pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H,a,ppt->scf_kg_eq,pba->scf_fluid_eq);
         }
       }
 
       // pba->scf_fluid_eq = _FALSE_; //that is the standard case, we never follow the fluid equations
-      // pba->scf_kg_eq = _TRUE_;
+      // ppt->scf_kg_eq = _TRUE_;
 
    //CO 22.01.18 scf_evolve_as_fluid == _TRUE_ means user wants to use fluid equation. scf_parameters[0]>3H means this mode is in the regime where fluid eqs apply.
       // && pba->scf_parameters[0] >= 3*pvecback[pba->index_bg_H]
@@ -7281,6 +7310,7 @@ int perturb_derivs(double tau,
                               pth,
                               ppt,
                               index_md,
+                              index_k,
                               k,
                               tau,
                               y,
@@ -7678,7 +7708,7 @@ int perturb_derivs(double tau,
 
     /** - ---> scalar field (scf) */
     if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) {
-      if (pba->scf_kg_eq == _TRUE_) {
+      if (ppt->scf_kg_eq[index_md][index_k] == _TRUE_) {
         if (ppt->perturbations_verbose>10){
           fprintf(stdout,"Evolving as KG.\n");
         }
@@ -7704,7 +7734,7 @@ int perturb_derivs(double tau,
         // }
 
       }
-      else if(pba->scf_kg_eq == _FALSE_ && pba->scf_evolve_like_axionCAMB == _FALSE_){
+      else if(ppt->scf_kg_eq[index_md][index_k] == _FALSE_ && pba->scf_evolve_like_axionCAMB == _FALSE_){
         dy[pv->index_pt_phi_prime_scf] =0;
         dy[pv->index_pt_phi_scf] = 0; //VP: if we have declared these variables we follow their evolution eventhough we have switched to fluid equations otherwise the code is blocked.
         // printf("KG is 0 %e %e \n",dy[pv->index_pt_phi_prime_scf],dy[pv->index_pt_phi_scf]);
@@ -7714,7 +7744,7 @@ int perturb_derivs(double tau,
 
 
 
-        // if (pba->scf_evolve_like_axionCAMB == _FALSE_ && pba->scf_kg_eq == _TRUE_) {
+        // if (pba->scf_evolve_like_axionCAMB == _FALSE_ && ppt->scf_kg_eq == _TRUE_) {
         // //If we are following KG we compute delta_rho and theta from the field directly before the threshold
         // if (ppt->gauge == synchronous){
         //     delta_rho_scf =  1./3.*

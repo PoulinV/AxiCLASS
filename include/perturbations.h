@@ -336,6 +336,7 @@ struct perturbs
                        for \f$ C_l \f$'s */
 
   double ** k;      /**< k[index_md][index_k] = list of values */
+  int ** scf_kg_eq;      /**< scf_kg_eq[index_md][index_k] = 1 or 0: for each mode: if 1, solve the kg equation; if 0, solve the fluid equation */
 
   double k_min;     /**< minimum value (over all modes) */
   double k_max;     /**< maximum value (over all modes) */
@@ -615,7 +616,8 @@ extern "C" {
                    );
 
   int perturb_free(
-                   struct perturbs * ppt
+                   struct perturbs * ppt,
+                   struct background * pba
                    );
 
   int perturb_indices_of_perturbs(
@@ -747,6 +749,7 @@ extern "C" {
                        struct thermo * pth,
                        struct perturbs * ppt,
                        int index_md,
+                       int index_k,
                        double k,
                        double tau,
                        double * y,
@@ -759,6 +762,7 @@ extern "C" {
                                   struct thermo * pth,
                                   struct perturbs * ppt,
                                   int index_md,
+                                  int index_k,
                                   double k,
                                   double * y,
                                   struct perturb_workspace * ppw

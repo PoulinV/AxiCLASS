@@ -4686,7 +4686,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     class_call(primordial_free(&pm), pm.error_message, errmsg);
   }
   if (pfzw->required_computation_stage >= cs_perturbations){
-    class_call(perturb_free(&pt), pt.error_message, errmsg);
+    class_call(perturb_free(&pt,&ba), pt.error_message, errmsg);
   }
   if (pfzw->required_computation_stage >= cs_thermodynamics){
     class_call(thermodynamics_free(&th), th.error_message, errmsg);
