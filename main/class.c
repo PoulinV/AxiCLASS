@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
     return _FAILURE_;
   }
 
-  if (perturb_free(&pt) == _FAILURE_) {
+  if (perturb_free(&pt,&ba) == _FAILURE_) {
     printf("\n\nError in perturb_free \n=>%s\n",pt.error_message);
     return _FAILURE_;
   }
