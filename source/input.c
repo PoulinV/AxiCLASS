@@ -252,6 +252,10 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
           fzw.scf_potential = axion;
           flag2 =_TRUE_;
        }
+       if (strcmp(string1,"phi_2n") == 0) {
+          fzw.scf_potential = phi_2n;
+          flag2 =_TRUE_;
+       }
        if (strcmp(string1,"ax_cos_cubed") == 0) {
           fzw.scf_potential = ax_cos_cubed;
          flag2 =_TRUE_;
@@ -263,7 +267,7 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
 
    class_test(flag2==_FALSE_,
                   errmsg,
-                  "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','axionquad','ax_cos_cubed'.");
+                  "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','axionquad','ax_cos_cubed'.");
      }
 
 
@@ -1229,6 +1233,7 @@ int input_read_parameters(
 
   /* Additional SCF parameters: */
   class_read_double("log10_fraction_axion_ac",pba->log10_fraction_axion_ac);
+  class_read_double("log10_fraction_axion_ac_phi2n",pba->log10_fraction_axion_ac);
   class_read_double("log10_axion_ac",pba->log10_axion_ac);
   class_read_double("m_axion",pba->m_scf);
   class_read_double("f_axion",pba->f_axion);
@@ -1386,6 +1391,38 @@ int input_read_parameters(
        }
        if (strcmp(string1,"ax_cos_cubed") == 0) {
          pba->scf_potential = ax_cos_cubed;
+         flag2 =_TRUE_;
+       }
+       if (strcmp(string1,"phi_2n") == 0) {
+         pba->scf_potential = phi_2n;
+         flag1=_FALSE_;
+         class_call(parser_read_int(pfc,"n_axion",&int1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+        if(flag1 == _TRUE_){
+         pba->n_axion = int1;
+        }
+        else{
+          class_stop(errmsg,"incomprehensible input '%d' for the field 'n_axion'",int1);
+        }
+        class_call(parser_read_double(pfc,"log10_fraction_axion_ac_phi2n",&param1,&flag1,errmsg),
+                   errmsg,
+                   errmsg);
+       if(flag1 == _TRUE_){
+        pba->log10_fraction_axion_ac = param1;
+      }
+      else{
+        class_stop(errmsg,"incomprehensible input '%e' for the field 'log10_fraction_axion_ac'",param1);
+      }
+      class_call(parser_read_double(pfc,"log10_axion_ac_phi2n",&param1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+     if(flag1 == _TRUE_){
+       pba->log10_axion_ac = param1;
+     }
+     else{
+       class_stop(errmsg,"incomprehensible input '%e' for the field 'log10_axion_ac'",param1);
+     }
          flag2 =_TRUE_;
        }
        if (strcmp(string1,"axionquad") == 0) {

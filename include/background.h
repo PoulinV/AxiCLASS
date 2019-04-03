@@ -25,6 +25,7 @@ enum scf_pot{
   pol_times_exp, /** scf_potential set to pol_times_exp:V equals ((\phi-B)^\alpha + A)exp(-lambda*phi), see http://arxiv.org/abs/astro-ph/9908085.*/
   double_exp, /** scf_potential set to double_exp: V equals \Lambda_1^4e^{-\lambda\phi}+\Lambda_2^4e^{-\mu\phi} */
   axion, /** scf_potential set to axion: V equals m^2f^2(1-cos(phi/f)) */
+  phi_2n, /** scf_potential set to axion: V equals V0((phi)^2n) */
   axionquad, /* scf_potential set to axion quadratic form: V = m^2phi^2/2 */
   ax_cos_cubed
 };
@@ -97,6 +98,7 @@ struct background
   double log10_f_axion;
   double log10_m_axion;
   double log10_axion_ac;
+  double V0_phi2n;
   double a_c;
   double log10_fraction_axion_ac;
   double adptative_stepsize;

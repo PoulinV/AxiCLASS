@@ -1905,7 +1905,7 @@ int background_solve(
     class_call(background_functions(pba,pData+i*pba->bi_size, pba->long_info, pvecback),
                pba->error_message,
                pba->error_message);
-   if(pba->scf_potential == axion){
+   if(pba->scf_potential == axion || pba->scf_potential == phi_2n){
      /* Scalar field critical redshift and fractional energy density at z_c calculations */
      z_c_new = pba->z_table[i];
      f_ede_new = pvecback[pba->index_bg_Omega_scf];
@@ -2210,6 +2210,22 @@ int background_initial_conditions(
       }
       pvecback_integration[pba->index_bi_phi_prime_scf] = 2*pvecback_integration[pba->index_bi_a]*
         sqrt(V_scf(pba,pvecback_integration[pba->index_bi_phi_scf]))*pba->phi_prime_ini_scf;
+    }
+    if(pba->scf_potential == phi_2n){
+      double fa = pow(10,pba->log10_fraction_axion_ac);
+      double un_plus_zc = 1/pow(10,pba->log10_axion_ac);
+      class_test(fa==1,pba->error_message,"f_axion cannot be strictly 1");
+      double Omega_rad = 2.47310e-5*1.445;
+      double Omega_LCDM=(pba->Omega0_b+pba->Omega0_cdm)*pow(un_plus_zc,3)+Omega_rad*pow(un_plus_zc,4);
+      double Omega_tot=Omega_LCDM/(1-fa);
+      double H = pba->H0*pow(Omega_tot,0.5);
+      double Vphi =3*fa*H*H;//in CLASS, V is in unit of Mpl^2/Mpc^2. no extra factor Mpl^2.
+      double ratio = 3/fa;//units of 1/Mpl^2
+      double phi_i=pow(ratio/2*pba->n_axion*(2*pba->n_axion-1),-0.5); //units of Mpl
+      pba->V0_phi2n = Vphi/pow(phi_i,2*pba->n_axion);
+     pvecback_integration[pba->index_bi_phi_scf] = phi_i;
+     // printf("phi_i %e pba->V0_phi2n  %e\n",phi_i,pba->V0_phi2n );
+     pvecback_integration[pba->index_bi_phi_prime_scf] =  pba->phi_prime_ini_scf;
     }
     else{
       // printf("Not using attractor initial conditions\n");
@@ -2720,6 +2736,46 @@ double ddV_axion_scf(
 
      return result;
 }
+/** parameters and functions for the phi^2n potential
+ * \f$ V_axion = m_a*m_a*f_a*f_a*(1 - cos(phi/f_a))
+ */
+double V_phi_2n_scf(
+                  struct background *pba,
+                  double phi){
+    // int n = pba->scf_parameters[0];
+    int n = pba->n_axion;
+    double result;
+
+    result = pba->V0_phi2n*pow((phi),2*n);
+
+    return result;
+
+}
+
+double dV_phi_2n_scf(
+                  struct background *pba,
+                  double phi){
+    // int n = pba->scf_parameters[0];
+    int n = pba->n_axion;
+    double result;
+
+    result = pba->V0_phi2n*2*n*pow((phi),2*n-1);
+
+    return result;
+
+}
+
+double ddV_phi_2n_scf(
+                  struct background *pba,
+                  double phi){
+
+     // int n = pba->scf_parameters[0];
+     int n = pba->n_axion;
+     double result;
+     if(n==1) result=pba->V0_phi2n*2;
+     else result = pba->V0_phi2n*2*n*(2*n-1)*pow((phi),2*n-2);
+     return result;
+}
 /** parameters and functions for the axion quadratic potential
  * \f$ V_axion = m_a*m_a*phi*phi/2
  */
@@ -2765,6 +2821,9 @@ double V_scf(
   else if(pba->scf_potential == axion){
     result = V_axion_scf(pba,phi);
   }
+  else if(pba->scf_potential == phi_2n){
+    result = V_phi_2n_scf(pba,phi);
+  }
   else if(pba->scf_potential == axionquad){
     result = V_axionquad_scf(pba,phi);
   }
@@ -2789,6 +2848,9 @@ double dV_scf(
   }
   else if(pba->scf_potential == axion){
     result = dV_axion_scf(pba,phi);
+  }
+  else if(pba->scf_potential == phi_2n){
+    result = dV_phi_2n_scf(pba,phi);
   }
   else if(pba->scf_potential == axionquad){
     result = dV_axionquad_scf(pba,phi);
@@ -2817,6 +2879,9 @@ double ddV_scf(
   }
   else if(pba->scf_potential == axion){
     result = ddV_axion_scf(pba,phi);
+  }
+  else if(pba->scf_potential == phi_2n){
+    result = ddV_phi_2n_scf(pba,phi);
   }
   else if(pba->scf_potential == axionquad){
     result = ddV_axionquad_scf(pba,phi);
