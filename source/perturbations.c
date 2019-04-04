@@ -211,7 +211,12 @@ int perturb_init(
                "Non-adiabatic initial conditions not coded in presence of decaying dark matter");
 
   }
-
+  if(pba->has_scf == _TRUE_){
+    ppt->has_scf == _TRUE_;
+  }
+  if(pba->scf_has_perturbations == _TRUE_){
+    ppt->scf_has_perturbations == _TRUE_;
+  }
   class_test(ppt->has_vectors == _TRUE_,
              ppt->error_message,
              "Vectors not coded yet");
@@ -456,8 +461,7 @@ int perturb_init(
  */
 
 int perturb_free(
-                 struct perturbs * ppt,
-                 struct background * pba
+                 struct perturbs * ppt
                  ) {
 
   int index_md,index_ic,index_type;
@@ -480,7 +484,7 @@ int perturb_free(
       free(ppt->sources[index_md]);
 
       free(ppt->k[index_md]);
-      if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+      if(ppt->has_scf == _TRUE_ && ppt->scf_has_perturbations == _TRUE_){
         free(ppt->scf_kg_eq[index_md]);
       }
 
@@ -502,7 +506,7 @@ int perturb_free(
 
     free(ppt->sources);
 
-    if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+    if(ppt->has_scf == _TRUE_ && ppt->scf_has_perturbations == _TRUE_){
       free(ppt->scf_kg_eq);
     }
 

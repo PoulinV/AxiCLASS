@@ -107,6 +107,8 @@ struct perturbs
   short has_perturbations; /**< do we need to compute perturbations at all ? */
 
   short scf_fluid_flag_perts; /** how do we evolve scalar perts? */
+  short scf_has_perturbations; /** how do we evolve scalar perts? */
+  short has_scf; /** how do we evolve scalar perts? */
   short scf_KG_switch_to_fluid;
   short has_cls; /**< do we need any harmonic space spectrum \f$ C_l \f$ (and hence Bessel functions, transfer functions, ...)? */
 
@@ -616,8 +618,7 @@ extern "C" {
                    );
 
   int perturb_free(
-                   struct perturbs * ppt,
-                   struct background * pba
+                   struct perturbs * ppt
                    );
 
   int perturb_indices_of_perturbs(

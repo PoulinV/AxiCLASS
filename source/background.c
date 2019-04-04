@@ -2032,6 +2032,10 @@ int background_solve(
       if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e\n", log10(1/pow(10,pba->log10_axion_ac)-1));
       printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
       }
+      if(pba->scf_potential ==phi_2n){
+        printf("     -> approximate log10(z_c) = %e \t f_ede = %e\n", log10(1/pow(10,pba->log10_axion_ac)-1), pow(10,pba->log10_fraction_axion_ac));
+        printf("     -> Exact log10(z_c) = %e \t f_ede = %e\n", pba->log10_z_c, pba->f_ede);
+      }
       if(pba->scf_potential == ax_cos_cubed){
       printf("Additional scf parameters used: \n");
       printf("m_a = %g eV, f_a/mpl = %g\n",(pba->scf_parameters[0]/1.5638e29),pba->scf_parameters[1]);
@@ -2215,17 +2219,17 @@ int background_initial_conditions(
       double fa = pow(10,pba->log10_fraction_axion_ac);
       double un_plus_zc = 1/pow(10,pba->log10_axion_ac);
       class_test(fa==1,pba->error_message,"f_axion cannot be strictly 1");
-      double Omega_rad = 2.47310e-5*1.445;
+      double Omega_rad = 2.47310e-5*1.445;//hardcoded for simplicity; in any case this is an approximate guess for f(zc) and zc
       double Omega_LCDM=(pba->Omega0_b+pba->Omega0_cdm)*pow(un_plus_zc,3)+Omega_rad*pow(un_plus_zc,4);
       double Omega_tot=Omega_LCDM/(1-fa);
       double H = pba->H0*pow(Omega_tot,0.5);
       double Vphi =3*fa*H*H;//in CLASS, V is in unit of Mpl^2/Mpc^2. no extra factor Mpl^2.
       double ratio = 3/fa;//units of 1/Mpl^2
-      double phi_i=pow(ratio/2*pba->n_axion*(2*pba->n_axion-1),-0.5); //units of Mpl
+      double phi_i=pow(ratio/(2*pba->n_axion*(2*pba->n_axion-1)),-0.5); //units of Mpl
       pba->V0_phi2n = Vphi/pow(phi_i,2*pba->n_axion);
-     pvecback_integration[pba->index_bi_phi_scf] = phi_i;
-     // printf("phi_i %e pba->V0_phi2n  %e\n",phi_i,pba->V0_phi2n );
-     pvecback_integration[pba->index_bi_phi_prime_scf] =  pba->phi_prime_ini_scf;
+      pvecback_integration[pba->index_bi_phi_scf] = phi_i;
+     // printf("phi_i %e pba->V0_phi2n  %e v2 %e\n",phi_i,pba->V0_phi2n,H*H*9/(2*pba->n_axion*(2*pba->n_axion-1)*pow(phi_i,2*pba->n_axion-2))); //check that the 2 ways of calculating V0 agrees.
+      pvecback_integration[pba->index_bi_phi_prime_scf] =  pba->phi_prime_ini_scf;
     }
     else{
       // printf("Not using attractor initial conditions\n");
