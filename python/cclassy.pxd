@@ -71,7 +71,8 @@ cdef extern from "class.h":
         double w0_fld
         double wa_fld
         double cs2_fld
-
+        double phi_ini_scf
+        double V0_phi2n
         int bt_size
 
     cdef struct thermo:
