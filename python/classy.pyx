@@ -1392,6 +1392,10 @@ cdef class Class:
                 value = self.ba.log10_z_c
             elif name == 'phi_scf_c':
                 value = self.ba.phi_scf_c
+            elif name == 'phi_ini_scf':
+                value = self.ba.phi_ini_scf
+            elif name == 'V0_phi2n':
+                value = self.ba.V0_phi2n
             elif name == 'Omega_m':
                 value = (self.ba.Omega0_b + self.ba.Omega0_cdm+
                          self.ba.Omega0_ncdm_tot + self.ba.Omega0_dcdm)
