@@ -1739,6 +1739,21 @@ int background_solve(
         }
       }
     }
+    if(pba->scf_potential == phi_2n && pba->adptative_stepsize > 0){
+        ac = pow(10,pba->log10_fraction_axion_ac);
+        if(pvecback_integration[pba->index_bi_a]>ac/pba->adptative_stepsize){
+          n = pba->n_axion;
+          anow = pvecback_integration[pba->index_bi_a];
+          Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*gsl_sf_gamma(1.+1./(2.*n))/(pow(pba->V0_phi2n,0.5)*gsl_sf_gamma((1.+n)/(2.*n))*(pba->H0));
+          // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
+          // printf("pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize %e %e \n", pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize,integration_stepsize);
+          if(pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize<integration_stepsize) {
+            // printf("old integration_stepsize %e\n", integration_stepsize);
+            integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize;
+            // printf("updated integration_stepsize %e\n", integration_stepsize);
+          }
+        }
+    }
 
     if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ ){
       // printf("a %e pvecback[pba->index_bg_Omega_scf] %e pba->threshold_scf_fluid_m_over_H %e\n", pvecback_integration[pba->index_bi_a],pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H);
