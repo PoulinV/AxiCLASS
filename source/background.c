@@ -1929,6 +1929,7 @@ int background_solve(
        // pba->axion_ac = 1/z_c_new-1;
        pba->f_ede = f_ede_new;
        pba->phi_scf_c = pvecback[pba->index_bg_phi_scf];
+       // printf("z %e pba->f_ede %e\n", pba->z_table[i],pba->f_ede);
      }
    }
     /* -> compute growth functions (valid in dust universe) */
@@ -2231,20 +2232,29 @@ int background_initial_conditions(
         sqrt(V_scf(pba,pvecback_integration[pba->index_bi_phi_scf]))*pba->phi_prime_ini_scf;
     }
     if(pba->scf_potential == phi_2n){
-      double fa = pow(10,pba->log10_fraction_axion_ac);
-      double un_plus_zc = 1/pow(10,pba->log10_axion_ac);
-      class_test(fa==1,pba->error_message,"f_axion cannot be strictly 1");
-      double Omega_rad = 2.47310e-5*1.445;//hardcoded for simplicity; in any case this is an approximate guess for f(zc) and zc
-      double Omega_LCDM=(pba->Omega0_b+pba->Omega0_cdm)*pow(un_plus_zc,3)+Omega_rad*pow(un_plus_zc,4);
-      double Omega_tot=Omega_LCDM/(1-fa);
-      double H = pba->H0*pow(Omega_tot,0.5);
-      double Vphi =3*fa*H*H;//in CLASS, V is in unit of Mpl^2/Mpc^2. no extra factor Mpl^2.
-      double ratio = 3/fa;//units of 1/Mpl^2
-      double phi_i=pow(ratio/(2*pba->n_axion*(2*pba->n_axion-1)),-0.5); //units of Mpl
-      pba->V0_phi2n = Vphi/pow(phi_i,2*pba->n_axion);
-      pvecback_integration[pba->index_bi_phi_scf] = phi_i;
-     // printf("phi_i %e pba->V0_phi2n  %e v2 %e\n",phi_i,pba->V0_phi2n,H*H*9/(2*pba->n_axion*(2*pba->n_axion-1)*pow(phi_i,2*pba->n_axion-2))); //check that the 2 ways of calculating V0 agrees.
-      pvecback_integration[pba->index_bi_phi_prime_scf] =  pba->phi_prime_ini_scf;
+      if(pba->V0_phi2n == 0.0){
+        double fa = pow(10,pba->log10_fraction_axion_ac);
+        double un_plus_zc = 1/pow(10,pba->log10_axion_ac);
+        class_test(fa==1,pba->error_message,"f_axion cannot be strictly 1");
+        double Omega_rad = 2.47310e-5*1.445;//hardcoded for simplicity; in any case this is an approximate guess for f(zc) and zc
+        double Omega_LCDM=(pba->Omega0_b+pba->Omega0_cdm)*pow(un_plus_zc,3)+Omega_rad*pow(un_plus_zc,4);
+        double Omega_tot=Omega_LCDM/(1-fa);
+        double H = pba->H0*pow(Omega_tot,0.5);
+        double Vphi =3*fa*H*H;//in CLASS, V is in unit of Mpl^2/Mpc^2. no extra factor Mpl^2.
+        double ratio = 3/fa;//units of 1/Mpl^2
+        double phi_i=pow(ratio/(2*pba->n_axion*(2*pba->n_axion-1)),-0.5); //units of Mpl
+        pba->V0_phi2n = Vphi/pow(phi_i,2*pba->n_axion);
+        pvecback_integration[pba->index_bi_phi_scf] = phi_i;
+        pba->phi_ini_scf = phi_i;
+        // printf("phi_i %e pba->V0_phi2n  %e v2 %e\n",phi_i,pba->V0_phi2n,H*H*9/(2*pba->n_axion*(2*pba->n_axion-1)*pow(phi_i,2*pba->n_axion-2))); //check that the 2 ways of calculating V0 agrees.
+        pvecback_integration[pba->index_bi_phi_prime_scf] =  pba->phi_prime_ini_scf;
+      }else{
+        // printf("phi_i %e pba->V0_phi2n %e \n",pba->phi_ini_scf,pba->V0_phi2n); //check that the 2 ways of calculating V0 agrees.
+
+        pvecback_integration[pba->index_bi_phi_scf] = pba->phi_ini_scf;
+        pvecback_integration[pba->index_bi_phi_prime_scf] =  pba->phi_prime_ini_scf;
+      }
+
     }
     else{
       // printf("Not using attractor initial conditions\n");

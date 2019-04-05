@@ -293,6 +293,11 @@ class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
       // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
       class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
     }
+    else if(fzw.scf_potential == phi_2n){
+      pba->Omega0_axion = 0.0;
+      pba->log10_axion_ac = 0.0;
+      class_read_int("n_axion",fzw.n_axion);
+    }
     else{
       class_stop("fluid approximation is not working for potential different than 'axion' and 'axionquad'!. Please switch scf_evolve_as_fluid to no.",errmsg);
     }
@@ -326,11 +331,11 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
    * These two arrays must contain the strings of names to be searched
    *  for and the corresponding new parameter */
   char * const target_namestrings[] = {"100*theta_s","Omega_dcdmdr","omega_dcdmdr",
-                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","log10_fraction_axion_ac","log10_axion_ac"};
+                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","log10_fraction_axion_ac","log10_axion_ac","log10_fraction_axion_ac_phi2n","log10_axion_ac_phi2n"};
   char * const unknown_namestrings[] = {"h","Omega_ini_dcdm","Omega_ini_dcdm",
-                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","alpha_squared","power_of_mu"};
+                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","alpha_squared","power_of_mu","phi_ini_scf","V0_phi2n"};
   enum computation_stage target_cs[] = {cs_thermodynamics, cs_background, cs_background,cs_background,
-                                        cs_background, cs_background, cs_background,cs_background};
+                                        cs_background, cs_background, cs_background,cs_background,cs_background,cs_background};
 
   int input_verbose = 0, aux_flag, shooting_failed=_FALSE_;
 
@@ -363,7 +368,7 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
         if(input_verbose > 10){
           printf("Found target: %s, target value =  %e\n",target_namestrings[index_target],param1);
         }
-        if(fzw.do_shooting_scf ==_FALSE_ && (target_namestrings[index_target]=="Omega_scf"|| target_namestrings[index_target]=="log10_fraction_axion_ac")){
+        if(fzw.do_shooting_scf ==_FALSE_ && (target_namestrings[index_target]=="Omega_scf"|| target_namestrings[index_target]=="log10_fraction_axion_ac" ||  target_namestrings[index_target]=="log10_fraction_axion_ac_phi2n"||  target_namestrings[index_target]=="log10_axion_ac_phi2n")){
           // printf("I will not add it!\n");
         }else{
           target_indices[unknown_parameters_size] = index_target; /*setting up correct variable that we have defined to shoot for as an answer */
@@ -1424,6 +1429,8 @@ int input_read_parameters(
        class_stop(errmsg,"incomprehensible input '%e' for the field 'log10_axion_ac'",param1);
      }
          flag2 =_TRUE_;
+
+
        }
        if (strcmp(string1,"axionquad") == 0) {
          pba->scf_potential = axionquad;
@@ -1455,6 +1462,11 @@ int input_read_parameters(
     class_read_double("log10_m_axion",pba->log10_m_axion);
     class_read_double("alpha_squared",pba->alpha_squared);
     class_read_double("power_of_mu",pba->power_of_mu);
+
+   /***additional parameters: only for shooting*/
+   class_read_double("phi_ini_scf",pba->phi_ini_scf);
+   class_read_double("V0_phi2n",pba->V0_phi2n);
+
 
     if(input_verbose>10){
       printf("input file read, the h is %e \n", pba->h);
@@ -1491,8 +1503,14 @@ int input_read_parameters(
         class_test(pba->scf_parameters_size<2,
                errmsg,
                "Since you are not using attractor initial conditions, you must specify phi and its derivative phi' as the last two entries in scf_parameters. See explanatory.ini for more details.");
-        pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2];
-        pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];
+        if(pba->scf_potential != phi_2n){
+          pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2];
+          pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];
+        }else{
+          // pba->phi_ini_scf = 0;//dummy: will be set later
+          pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];//dummy: will be set later
+        }
+
       }
     }
   }
@@ -4670,6 +4688,15 @@ int input_try_unknown_parameters(double * unknown_parameter,
       output[i] = log10(ac)-pfzw->target_value[i];
        // printf("ac %e  pfzw->target_value[i] %e output[i] %e\n", log10(ac),pfzw->target_value[i],output[i]);
       break;
+    case log10_fraction_axion_ac_phi2n: // TLS where to print out log10_fraction_axion_ac and axion_ac
+      output[i] = log10(ba.f_ede)-pfzw->target_value[i];
+       // printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
+      break;
+    case log10_axion_ac_phi2n:
+      ac = 1./(pow(10,ba.log10_z_c)+1);
+      output[i] = log10(ac)-pfzw->target_value[i];
+       // printf("ac %e  pfzw->target_value[i] %e output[i] %e\n", log10(ac),pfzw->target_value[i],output[i]);
+      break;
 
     case Omega_scf:
       /** - In case scalar field is used to fill, pba->Omega0_scf is not equal to pfzw->target_value[i].*/
@@ -4760,6 +4787,12 @@ int input_get_guess(double *xguess,
   double Omega_M, a_decay, gamma, FF, Omega0_dcdmdr=1.0;
   double Omega_tot_ac, phi_initial,axc,fxc,p,guess,ac,fac;
   int index_guess;
+  double Omega_rad;//hardcoded for simplicity; in any case this is an approximate guess for f(zc) and zc
+  double Omega_LCDM;
+  double H;
+  double Vphi;//in CLASS, V is in unit of Mpl^2/Mpc^2. no extra factor Mpl^2.
+  double ratio ;//units of 1/Mpl^2
+  double phi_i; //units of Mpl
   /* Cheat to read only known parameters: */
   pfzw->fc.size -= pfzw->target_size;
   class_call(input_read_parameters(&(pfzw->fc),
@@ -4835,6 +4868,36 @@ int input_get_guess(double *xguess,
         //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
       break;
       // printf("omdcdmdr, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+      case log10_axion_ac_phi2n:
+        //we map log10_axion_ac_phi2n to V0
+        fxc=pow(10.,ba.log10_fraction_axion_ac);
+        axc=pow(10.,ba.log10_axion_ac);
+        class_test(fxc==1,ba.error_message,"f_axion cannot be strictly 1");
+        Omega_rad = 2.47310e-5*1.445;//hardcoded for simplicity; in any case this is an approximate guess for f(zc) and zc
+        Omega_LCDM=(ba.Omega0_b+ba.Omega0_cdm)*pow(axc,-3)+Omega_rad*pow(axc,-4);
+        Omega_tot_ac=Omega_LCDM/(1-fxc);
+        H = ba.H0*pow(Omega_tot_ac,0.5);
+        Vphi =3*fxc*H*H;//in CLASS, V is in unit of Mpl^2/Mpc^2. no extra factor Mpl^2.
+        ratio = 3/fxc;//units of 1/Mpl^2
+        phi_i=pow(ratio/(2*ba.n_axion*(2*ba.n_axion-1)),-0.5); //units of Mpl
+        xguess[index_guess] = Vphi/pow(phi_i,2*ba.n_axion);
+        dxdy[index_guess] = -3*fxc/pow(phi_i,2*ba.n_axion)*ba.H0*ba.H0*(3*(ba.Omega0_b+ba.Omega0_cdm)*pow(axc,-3)+4*Omega_rad*pow(axc,-4))/(1-fxc);//derivative w/r to log10 ac
+        // dxdy[index_guess] =   xguess[index_guess];
+        // printf("V0 %e dxdy[index_guess] %e %d\n", xguess[index_guess],dxdy[index_guess],index_guess);
+        break;
+
+    case log10_fraction_axion_ac_phi2n:
+
+        //we map log10_fraction_axion_ac_phi2n to phi_i
+        fxc=pow(10.,ba.log10_fraction_axion_ac);
+        class_test(fxc==1,ba.error_message,"f_axion cannot be strictly 1");
+        ratio = 3/fxc;//units of 1/Mpl^2
+        phi_i=pow(ratio/(2*ba.n_axion*(2*ba.n_axion-1)),-0.5); //units of Mpl
+        xguess[index_guess] = phi_i;
+        dxdy[index_guess] = 0.5*phi_i;//derivative w/r to log10 fac
+        // printf("phi_i %e dxdy[index_guess] %e fxc %e\n", phi_i,dxdy[index_guess],fxc);
+        break;
+
     case log10_fraction_axion_ac:
         /*OLD*/
         // phi_initial = ba.scf_parameters[0];
