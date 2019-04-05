@@ -1448,6 +1448,8 @@ cdef class Class:
                 value = self.th.rs_d*self.ba.h
             elif name == '100*theta_s':
                 value = 100.*self.th.rs_rec/self.th.da_rec/(1.+self.th.z_rec)
+            elif name == '100*theta_d':
+                value = 100.*self.th.rd_rec/self.th.da_rec/(1.+self.th.z_rec)
             elif name == 'YHe':
                 value = self.th.YHe
             elif name == 'n_e':
