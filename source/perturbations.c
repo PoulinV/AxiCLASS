@@ -1864,10 +1864,14 @@ int perturb_get_k_list(
   if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
     class_alloc(ppt->scf_kg_eq[ppt->index_md_scalars],
                 ppt->k_size[ppt->index_md_scalars]*sizeof(double),ppt->error_message);
+                if (ppt->has_vectors == _TRUE_) {
     class_alloc(ppt->scf_kg_eq[ppt->index_md_vectors],
                 ppt->k_size[ppt->index_md_vectors]*sizeof(double),ppt->error_message);
+              }
+                if (ppt->has_tensors == _TRUE_) {
     class_alloc(ppt->scf_kg_eq[ppt->index_md_tensors],
                 ppt->k_size[ppt->index_md_tensors]*sizeof(double),ppt->error_message);
+              }
   }
 
   return _SUCCESS_;
