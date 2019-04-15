@@ -7532,7 +7532,7 @@ int perturb_derivs(double tau,
 
     }
     if(ppt->compute_phase_shift == _TRUE_){
-      Phi_plus = -pvecmetric[ppw->index_mt_psi] + y[ppw->pv->index_pt_phi]; //CAREFUL: different convention than Baumann. Phi^{Baumann} = - Psi^{us} and Psi^{Baumann}=Phi^{us}.
+      Phi_plus = pvecmetric[ppw->index_mt_psi] + y[ppw->pv->index_pt_phi]; //CAREFUL: different convention than Baumann. Phi^{Baumann} = - Psi^{us} and Psi^{Baumann}=Phi^{us}.
       c_gamma_squared = 1/(3*(1+R));
       // printf("Phi_plus %e psi %e phi %e c_gamma_squared %e \n",Phi_plus, pvecmetric[ppw->index_mt_psi],y[ppw->pv->index_pt_phi],c_gamma_squared);
       dy[pv->index_pt_phase_shift_A] = Phi_plus * sin(c_gamma_squared*tau*k);
