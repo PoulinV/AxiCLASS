@@ -108,6 +108,7 @@ struct perturbs
 
   short scf_fluid_flag_perts; /** how do we evolve scalar perts? */
   short scf_has_perturbations; /** how do we evolve scalar perts? */
+  short compute_phase_shift; /** do we want to compute the phase shift a la Baumann? */
   short has_scf; /** how do we evolve scalar perts? */
   short scf_KG_switch_to_fluid;
   short has_cls; /**< do we need any harmonic space spectrum \f$ C_l \f$ (and hence Bessel functions, transfer functions, ...)? */
@@ -288,6 +289,7 @@ struct perturbs
   int index_tp_delta_dcdm;/**< index value for delta of DCDM */
   int index_tp_delta_fld;  /**< index value for delta of dark energy */
   int index_tp_delta_scf;  /**< index value for delta of scalar field */
+  int index_tp_phase_shift;  /**< index value for phase shift a la Baumann */
   int index_tp_delta_dr; /**< index value for delta of decay radiation */
   int index_tp_delta_ur; /**< index value for delta of ultra-relativistic neutrinos/relics */
   int index_tp_delta_ncdm1; /**< index value for delta of first non-cold dark matter species (e.g. massive neutrinos) */
@@ -377,7 +379,7 @@ struct perturbs
 
 
   //@}
-
+  double phase_shift; /** pahse shift a la Baumann */
   /** @name - technical parameters */
 
   //@{
@@ -423,6 +425,9 @@ struct perturb_vector
   int index_pt_delta_scf; /**< scf density for fluid */
   int index_pt_theta_scf; /**< scf velocity */
   int index_pt_big_theta_scf;  /**< dark energy velocity divided by (1+w_fld) in true fluid case */
+  int index_pt_phase_shift_A;  /**< index for the variable A of the phase shift a la Baumann */
+  int index_pt_phase_shift_B;  /**< index for the variable B of the phase shift a la Baumann  */
+  int index_pt_phase_shift;  /**< index for the total phase shift a la Baumann  */
   int index_pt_delta_ur; /**< density of ultra-relativistic neutrinos/relics */
   int index_pt_theta_ur; /**< velocity of ultra-relativistic neutrinos/relics */
   int index_pt_shear_ur; /**< shear of ultra-relativistic neutrinos/relics */

@@ -419,6 +419,18 @@ int perturb_init(
           printf("In %s: time spent in parallel region (loop over k's) = %e s for thread %d\n",
                  __func__,tspent,omp_get_thread_num());
 #endif
+        /**************************************/
+        /***WE NOW CALCULATE THE PHASE SHIFT***/
+        /**************************************/
+
+
+
+
+
+
+        /**************************************/
+        /**************************************/
+        /**************************************/
 
       } /* end of parallel region */
       // printf("abort = true? %d",abort); //print_trigger
@@ -789,6 +801,7 @@ int perturb_indices_of_perturbs(
       class_define_index(ppt->index_tp_h_prime,    ppt->has_source_h_prime,   index_type,1);
       class_define_index(ppt->index_tp_eta,        ppt->has_source_eta,       index_type,1);
       class_define_index(ppt->index_tp_eta_prime,  ppt->has_source_eta_prime, index_type,1);
+      class_define_index(ppt->index_tp_phase_shift,  ppt->compute_phase_shift, index_type,1);
       ppt->tp_size[index_md] = index_type;
 
       class_test(index_type == 0,
@@ -2588,6 +2601,11 @@ int perturb_prepare_output(struct background * pba,
         class_store_columntitle(ppt->scalar_titles, "theta_scf", pba->has_scf);
       }
       }
+
+      class_store_columntitle(ppt->scalar_titles,"phase_shift_A",ppt->compute_phase_shift);
+      class_store_columntitle(ppt->scalar_titles,"phase_shift_B",ppt->compute_phase_shift);
+      class_store_columntitle(ppt->scalar_titles,"phase_shift_total",ppt->compute_phase_shift);
+
       ppt->number_of_scalar_titles =
         get_number_of_titles(ppt->scalar_titles);
     }
@@ -3168,6 +3186,13 @@ int perturb_vector_init(
           }
         }
     }
+
+    if(ppt->compute_phase_shift == _TRUE_){
+      class_define_index(ppv->index_pt_phase_shift_A,_TRUE_,index_pt,1); /* scf density (velocity zero in synchronous gauge)*/ //COpertchange
+      class_define_index(ppv->index_pt_phase_shift_B,_TRUE_,index_pt,1); /* scf density (velocity zero in synchronous gauge)*/ //COpertchange
+      class_define_index(ppv->index_pt_phase_shift,_TRUE_,index_pt,1); /* scf density (velocity zero in synchronous gauge)*/ //COpertchange
+    }
+
     /* perturbed recombination: the indices are defined once tca is off. */
     if ( (ppt->has_perturbed_recombination == _TRUE_) && (ppw->approx[ppw->index_ap_tca] == (int)tca_off) ){
       class_define_index(ppv->index_pt_perturbed_recombination_delta_temp,_TRUE_,index_pt,1);
@@ -3675,12 +3700,16 @@ int perturb_vector_init(
             }
           }
         }
-
+        if(ppt->compute_phase_shift == _TRUE_){
+          ppv->y[ppv->index_pt_phase_shift_A] = ppw->pv->y[ppw->pv->index_pt_phase_shift_A];
+          ppv->y[ppv->index_pt_phase_shift_B] = ppw->pv->y[ppw->pv->index_pt_phase_shift_B];
+          ppv->y[ppv->index_pt_phase_shift] = ppw->pv->y[ppw->pv->index_pt_phase_shift];
+        }
         /* perturbed recombination */
         /* the initial conditions are set when tca is switched off (current block) */
         if (ppt->has_perturbed_recombination == _TRUE_){
           ppv->y[ppv->index_pt_perturbed_recombination_delta_temp] = 1./3.*ppv->y[ppw->pv->index_pt_delta_b];
-          ppv->y[ppv->index_pt_perturbed_recombination_delta_chi] =0.;
+          ppv->y[ppv->index_pt_perturbed_recombination_delta_chi] = 0.;
         }
 
       }  // end of block tca ON -> tca OFF
@@ -4687,7 +4716,11 @@ int perturb_initial_conditions(struct precision * ppr,
       ppw->pv->y[ppw->pv->index_pt_F0_dr+3] = l3_ur*f_dr;
 
     }
-
+    if(ppt->compute_phase_shift == _TRUE_){
+        ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = 0;
+        ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = 0;
+        ppw->pv->y[ppw->pv->index_pt_phase_shift] = 0;
+    }
   }
   /** --> For tensors */
   if (_tensors_) {
@@ -6117,6 +6150,8 @@ int perturb_sources(
 
   double a_rel, a2_rel, f_dr;
 
+  double Phi_plus,c_gamma_squared,d_gamma,phase_shift, R;
+
   /** - rename structure fields (just to avoid heavy notations) */
 
   pppaw = parameters_and_workspace;
@@ -6512,6 +6547,23 @@ int perturb_sources(
       }
     }
 
+    if(ppt->compute_phase_shift == _TRUE_){
+      d_gamma = y[ppw->pv->index_pt_delta_g]-3*pvecmetric[ppw->index_mt_psi];
+      R = 4./3. * pvecback[pba->index_bg_rho_g]/pvecback[pba->index_bg_rho_b];
+      c_gamma_squared = 1/(3*(1+R));
+      // printf("c_gamma_squared %e d_gamma %e \n",c_gamma_squared,d_gamma );
+      y[ppw->pv->index_pt_phase_shift]  = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
+      if(z>pth->z_rec){
+        if(k == ppt->k_max)ppt->phase_shift = y[ppw->pv->index_pt_phase_shift]  ;
+        _set_source_(ppt->index_tp_phase_shift) = y[ppw->pv->index_pt_phase_shift];
+      }
+      else{
+        _set_source_(ppt->index_tp_phase_shift) = 0;
+      }
+      // printf("%e\n", ppt->phase_shift);
+
+    }
+
     /* theta_dr */
     if (ppt->has_source_theta_dr == _TRUE_) {
       f_dr = pow(a2_rel/pba->H0,2)*pvecback[pba->index_bg_rho_dr];
@@ -6645,7 +6697,7 @@ int perturb_print_variables(double tau,
   int idx,index_q, storeidx;
   double *dataptr;
 
-
+  double phase_shift_A, phase_shift_B, phase_shift_total,d_gamma,R,c_gamma_squared;
   /** - rename structure fields (just to avoid heavy notations) */
 
   pppaw = parameters_and_workspace;
@@ -6874,6 +6926,16 @@ int perturb_print_variables(double tau,
       }
     }
 
+    if(ppt->compute_phase_shift == _TRUE_){
+      phase_shift_A = y[ppw->pv->index_pt_phase_shift_A];
+      phase_shift_B = y[ppw->pv->index_pt_phase_shift_B];
+      d_gamma = y[ppw->pv->index_pt_delta_g]-3*ppw->pvecmetric[ppw->index_mt_psi];
+      R = 4./3. * ppw->pvecback[pba->index_bg_rho_g]/ppw->pvecback[pba->index_bg_rho_b];
+      c_gamma_squared = 1/(3*(1+R));
+      // printf("c_gamma_squared %e d_gamma %e \n",c_gamma_squared,d_gamma );
+      phase_shift_total = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
+    }
+
     /* converting synchronous variables to newtonian ones */
     if (ppt->gauge == synchronous && ppt->gauge_output == newtonian_output) {
 
@@ -6986,6 +7048,11 @@ int perturb_print_variables(double tau,
       class_store_double(dataptr, theta_scf, pba->has_scf, storeidx);
     }
     }
+
+    class_store_double(dataptr, phase_shift_A, ppt->compute_phase_shift, storeidx);
+    class_store_double(dataptr, phase_shift_B, ppt->compute_phase_shift, storeidx);
+    class_store_double(dataptr, phase_shift_total, ppt->compute_phase_shift, storeidx);
+
     //fprintf(ppw->perturb_output_file,"\n");
 
   }
@@ -7209,6 +7276,8 @@ int perturb_derivs(double tau,
   /* in case of DM-baryon interactions */
   double dmu_gcdm;
   double a_over_ac;
+
+  double Phi_plus,c_gamma_squared,d_gamma;
   /** - rename the fields of the input structure (just to avoid heavy notations) */
   pppaw = parameters_and_workspace;
 
@@ -7460,6 +7529,15 @@ int perturb_derivs(double tau,
     if (ppw->approx[ppw->index_ap_rsa] == (int)rsa_off) {
 
       dy[pv->index_pt_delta_g] = -4./3.*(theta_g+metric_continuity);
+
+    }
+    if(ppt->compute_phase_shift == _TRUE_){
+      Phi_plus = pvecmetric[ppw->index_mt_psi] + y[ppw->pv->index_pt_phi];
+      c_gamma_squared = 1/(3*(1+R));
+      // printf("Phi_plus %e psi %e phi %e c_gamma_squared %e \n",Phi_plus, pvecmetric[ppw->index_mt_psi],y[ppw->pv->index_pt_phi],c_gamma_squared);
+      dy[pv->index_pt_phase_shift_A] = Phi_plus * sin(c_gamma_squared*tau*k);
+      dy[pv->index_pt_phase_shift_B] = Phi_plus * cos(c_gamma_squared*tau*k);
+      dy[pv->index_pt_phase_shift] = 0; //dummy: will be assigned later
 
     }
 

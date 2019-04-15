@@ -1282,8 +1282,10 @@ int input_read_parameters(
     else {
       pba->scf_evolve_as_fluid = _FALSE_;
     }
-    class_test(ppt->gauge == newtonian && pba->scf_evolve_as_fluid == _FALSE_,errmsg,
-      "You are running a scalar field without the fluid approximation however the perturbed KG equation is only written in the synchronous gauge, please switch your gauge!")
+    // class_test(ppt->gauge == newtonian && pba->scf_evolve_as_fluid == _FALSE_,errmsg,
+    //   "You are running a scalar field without the fluid approximation however the perturbed KG equation is only written in the synchronous gauge, please switch your gauge!")
+
+
 
     class_call(parser_read_string(pfc,
                                   "use_big_theta_scf",
@@ -2358,6 +2360,17 @@ if(pth->PBH_low_mass > 0.){
     }
   }
 
+  /** do we calculate the phase shift a la Baumann ? **/
+  class_call(parser_read_string(pfc,"compute_phase_shift",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+
+    ppt->compute_phase_shift = _TRUE_;
+
+  }
+  class_test(ppt->compute_phase_shift == _TRUE_ && ppt->gauge == synchronous, errmsg, "currently the phase shift can only be calculated in the newtonian gauge!! please adapt your ini file.");
   /** (d) define the primordial spectrum */
 
   class_call(parser_read_string(pfc,"P_k_ini type",&string1,&flag1,errmsg),
@@ -3920,6 +3933,7 @@ int input_default_params(
 
 
   /** - perturbation structure */
+  ppt->compute_phase_shift=_FALSE_;
 
   ppt->has_cl_cmb_temperature = _FALSE_;
   ppt->has_cl_cmb_polarization = _FALSE_;
