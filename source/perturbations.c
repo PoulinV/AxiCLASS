@@ -6548,10 +6548,10 @@ int perturb_sources(
     }
 
     if(ppt->compute_phase_shift == _TRUE_){
-      d_gamma = y[ppw->pv->index_pt_delta_g]-3*pvecmetric[ppw->index_mt_psi];
+      d_gamma = y[ppw->pv->index_pt_delta_g]-3*y[ppw->pv->index_pt_phi];
       R = 4./3. * pvecback[pba->index_bg_rho_g]/pvecback[pba->index_bg_rho_b];
       c_gamma_squared = 1/(3*(1+R));
-      // printf("c_gamma_squared %e d_gamma %e \n",c_gamma_squared,d_gamma );
+      // printf("c_gamma_squared %e d_gamm[43]a %e \n",c_gamma_squared,d_gamma );
       y[ppw->pv->index_pt_phase_shift]  = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
       if(z>pth->z_rec){
         if(k == ppt->k_max)ppt->phase_shift = y[ppw->pv->index_pt_phase_shift]  ;
@@ -6929,7 +6929,7 @@ int perturb_print_variables(double tau,
     if(ppt->compute_phase_shift == _TRUE_){
       phase_shift_A = y[ppw->pv->index_pt_phase_shift_A];
       phase_shift_B = y[ppw->pv->index_pt_phase_shift_B];
-      d_gamma = y[ppw->pv->index_pt_delta_g]-3*ppw->pvecmetric[ppw->index_mt_psi];
+      d_gamma = y[ppw->pv->index_pt_delta_g]-3*y[ppw->pv->index_pt_phi];
       R = 4./3. * ppw->pvecback[pba->index_bg_rho_g]/ppw->pvecback[pba->index_bg_rho_b];
       c_gamma_squared = 1/(3*(1+R));
       // printf("c_gamma_squared %e d_gamma %e \n",c_gamma_squared,d_gamma );
@@ -7532,7 +7532,7 @@ int perturb_derivs(double tau,
 
     }
     if(ppt->compute_phase_shift == _TRUE_){
-      Phi_plus = pvecmetric[ppw->index_mt_psi] + y[ppw->pv->index_pt_phi];
+      Phi_plus = -pvecmetric[ppw->index_mt_psi] + y[ppw->pv->index_pt_phi]; //CAREFUL: different convention than Baumann. Phi^{Baumann} = - Psi^{us} and Psi^{Baumann}=Phi^{us}.
       c_gamma_squared = 1/(3*(1+R));
       // printf("Phi_plus %e psi %e phi %e c_gamma_squared %e \n",Phi_plus, pvecmetric[ppw->index_mt_psi],y[ppw->pv->index_pt_phi],c_gamma_squared);
       dy[pv->index_pt_phase_shift_A] = Phi_plus * sin(c_gamma_squared*tau*k);
