@@ -3797,6 +3797,7 @@ int input_default_params(
   pba->scf_parameters_size = 0;
   pba->scf_tuning_index = 0;
   pba->scf_potential = pol_times_exp;
+  pba->V0_phi2n = 0.0;
   pba->f_axion = 0.0;
   pba->m_scf = 0.0;
   pba->n_axion = 1;

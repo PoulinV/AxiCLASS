@@ -2044,13 +2044,14 @@ int background_solve(
       if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
       printf("n = %d m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion);
-      printf("     -> Exact log10(z_c) = %e \t f_ede = %e\n", pba->log10_z_c, pba->f_ede);
+      printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
       if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e\n", log10(1/pow(10,pba->log10_axion_ac)-1));
       printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
       }
       if(pba->scf_potential ==phi_2n){
         printf("     -> approximate log10(z_c) = %e \t f_ede = %e\n", log10(1/pow(10,pba->log10_axion_ac)-1), pow(10,pba->log10_fraction_axion_ac));
-        printf("     -> Exact log10(z_c) = %e \t f_ede = %e\n", pba->log10_z_c, pba->f_ede);
+        printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
+        printf("     -> V0 = %e \t phi_i = %e => m_fld = %e pba->H0 %e\n", pba->V0_phi2n, pba->phi_ini_scf,pow(pow(2,pba->n_axion)*pba->V0_phi2n,0.5)/pba->H0,pba->H0);
       }
       if(pba->scf_potential == ax_cos_cubed){
       printf("Additional scf parameters used: \n");
@@ -2726,9 +2727,10 @@ double V_axion_scf(
     double fa = pba->f_axion;
     double m = pba->m_scf*pba->H0;
     double result;
-    // printf("n %d fa %e m %e phi/fa %e \n",n,fa,m,phi/fa);
+    // printf("n %d fa %e V %e phi/fa %e \n",n,fa,m*m/pow(2,n),phi/fa);
     if(n>1)result = pow(m,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
     else result = pow(m,2)*pow(fa,2)*(1 - cos(phi/fa));
+    // printf("result %e phi %e m^2 %e\n",result,phi,m*m);
     return result;
 
 }
