@@ -534,6 +534,7 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
     free(unknown_parameter);
     free(fzw.unknown_parameters_index);
     free(fzw.target_name);
+    free(fzw.scf_parameters);
     free(fzw.target_value);
   }
   /** - case with no unknown parameters */

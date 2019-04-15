@@ -213,9 +213,13 @@ int perturb_init(
   }
   if(pba->has_scf == _TRUE_){
     ppt->has_scf == _TRUE_;
+  }else{
+    ppt->has_scf = _FALSE_;
   }
   if(pba->scf_has_perturbations == _TRUE_){
     ppt->scf_has_perturbations == _TRUE_;
+  }else{
+    ppt->scf_has_perturbations = _FALSE_;
   }
   class_test(ppt->has_vectors == _TRUE_,
              ppt->error_message,
