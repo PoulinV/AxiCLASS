@@ -867,7 +867,6 @@ int input_read_parameters(
              errmsg,
              errmsg);
   if (flag1 == _TRUE_) ppt->three_ceff2_ur = 3.*param1;
-
   class_call(parser_read_double(pfc,"cvis2_ur",&param1,&flag1,errmsg),
              errmsg,
              errmsg);

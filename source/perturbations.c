@@ -460,7 +460,7 @@ int perturb_init(
     if (abort == _TRUE_) return _FAILURE_;
 
   } /* end loop over modes */
-
+  if(ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("phase shift %e \n", asin(ppt->phase_shift));
   free(pppw);
 
   return _SUCCESS_;
@@ -802,6 +802,8 @@ int perturb_indices_of_perturbs(
       class_define_index(ppt->index_tp_eta,        ppt->has_source_eta,       index_type,1);
       class_define_index(ppt->index_tp_eta_prime,  ppt->has_source_eta_prime, index_type,1);
       class_define_index(ppt->index_tp_phase_shift,  ppt->compute_phase_shift, index_type,1);
+      class_define_index(ppt->index_tp_amplitude,  ppt->compute_phase_shift, index_type,1);
+
       ppt->tp_size[index_md] = index_type;
 
       class_test(index_type == 0,
@@ -2605,6 +2607,7 @@ int perturb_prepare_output(struct background * pba,
       class_store_columntitle(ppt->scalar_titles,"phase_shift_A",ppt->compute_phase_shift);
       class_store_columntitle(ppt->scalar_titles,"phase_shift_B",ppt->compute_phase_shift);
       class_store_columntitle(ppt->scalar_titles,"phase_shift_total",ppt->compute_phase_shift);
+      class_store_columntitle(ppt->scalar_titles,"amplitude_total",ppt->compute_phase_shift);
 
       ppt->number_of_scalar_titles =
         get_number_of_titles(ppt->scalar_titles);
@@ -6548,18 +6551,21 @@ int perturb_sources(
     }
 
     if(ppt->compute_phase_shift == _TRUE_){
-      d_gamma = y[ppw->pv->index_pt_delta_g]-3*y[ppw->pv->index_pt_phi];
+      d_gamma = y[ppw->pv->index_pt_delta_g]-3*y[ppw->pv->index_pt_phi];//phi^us = psi^baumann
       R = 4./3. * pvecback[pba->index_bg_rho_g]/pvecback[pba->index_bg_rho_b];
       c_gamma_squared = 1/(3*(1+R));
       // printf("c_gamma_squared %e d_gamm[43]a %e \n",c_gamma_squared,d_gamma );
       y[ppw->pv->index_pt_phase_shift]  = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
-      if(z>pth->z_rec){
-        if(k == ppt->k_max)ppt->phase_shift = y[ppw->pv->index_pt_phase_shift]  ;
-        _set_source_(ppt->index_tp_phase_shift) = y[ppw->pv->index_pt_phase_shift];
-      }
-      else{
-        _set_source_(ppt->index_tp_phase_shift) = 0;
-      }
+      // if(z>pth->z_rec){
+        if(k == ppt->k_max && z>pth->z_rec) ppt->phase_shift = y[ppw->pv->index_pt_phase_shift]  ;
+        _set_source_(ppt->index_tp_phase_shift) = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),2);
+        _set_source_(ppt->index_tp_amplitude) = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2);
+        // printf("%e\n", y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),2));
+        // }
+      // else{
+      //   _set_source_(ppt->index_tp_phase_shift) = 0;
+      //   _set_source_(ppt->index_tp_amplitude) = 0;
+      // }
       // printf("%e\n", ppt->phase_shift);
 
     }
@@ -6697,7 +6703,7 @@ int perturb_print_variables(double tau,
   int idx,index_q, storeidx;
   double *dataptr;
 
-  double phase_shift_A, phase_shift_B, phase_shift_total,d_gamma,R,c_gamma_squared;
+  double phase_shift_A, phase_shift_B, phase_shift_total,d_gamma,R,c_gamma_squared,amplitude_total;
   /** - rename structure fields (just to avoid heavy notations) */
 
   pppaw = parameters_and_workspace;
@@ -6929,11 +6935,12 @@ int perturb_print_variables(double tau,
     if(ppt->compute_phase_shift == _TRUE_){
       phase_shift_A = y[ppw->pv->index_pt_phase_shift_A];
       phase_shift_B = y[ppw->pv->index_pt_phase_shift_B];
-      d_gamma = y[ppw->pv->index_pt_delta_g]-3*y[ppw->pv->index_pt_phi];
+      d_gamma = y[ppw->pv->index_pt_delta_g]-3*y[ppw->pv->index_pt_phi];//phi^us = psi^baumann
       R = 4./3. * ppw->pvecback[pba->index_bg_rho_g]/ppw->pvecback[pba->index_bg_rho_b];
       c_gamma_squared = 1/(3*(1+R));
       // printf("c_gamma_squared %e d_gamma %e \n",c_gamma_squared,d_gamma );
       phase_shift_total = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
+      amplitude_total = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2);
     }
 
     /* converting synchronous variables to newtonian ones */
@@ -7052,6 +7059,7 @@ int perturb_print_variables(double tau,
     class_store_double(dataptr, phase_shift_A, ppt->compute_phase_shift, storeidx);
     class_store_double(dataptr, phase_shift_B, ppt->compute_phase_shift, storeidx);
     class_store_double(dataptr, phase_shift_total, ppt->compute_phase_shift, storeidx);
+    class_store_double(dataptr, amplitude_total, ppt->compute_phase_shift, storeidx);
 
     //fprintf(ppw->perturb_output_file,"\n");
 
