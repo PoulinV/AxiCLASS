@@ -3527,9 +3527,9 @@ int perturb_vector_init(
 
       }
 
-      class_test(ppw->approx[ppw->index_ap_tca] == (int)tca_off,
-                 ppt->error_message,
-                 "scalar initial conditions assume tight-coupling approximation turned on");
+      // class_test(ppw->approx[ppw->index_ap_tca] == (int)tca_off,
+      //            ppt->error_message,
+      //            "scalar initial conditions assume tight-coupling approximation turned on");
 
     }
 
@@ -4756,8 +4756,10 @@ int perturb_initial_conditions(struct precision * ppr,
         // printf("tau %e k %e Phi_plus %e psi %e phi %e c_gamma_squared %e \n",tau,k,Phi_plus, pvecmetric[ppw->index_mt_psi],y[ppw->pv->index_pt_phi],c_gamma_squared);
         // ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = Phi_plus * sin(pow(c_gamma_squared,0.5)*tau*k);
         // ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus * cos(pow(c_gamma_squared,0.5)*tau*k);
-        ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = 0;
-        ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus;
+        // ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = Phi_plus*pow(c_gamma_squared,0.5)*tau*k;
+        // ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus*(1+pow(pow(c_gamma_squared,0.5)*tau*k,2)/2);
+        ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = -Phi_plus*cos(pow(c_gamma_squared,0.5)*tau*k);//assume Phi_plus is constant at early times
+        ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus*sin(pow(c_gamma_squared,0.5)*tau*k);
         ppw->pv->y[ppw->pv->index_pt_phase_shift] = 0;
     }
   }
@@ -6596,9 +6598,10 @@ int perturb_sources(
       // printf("c_gamma_squared %e d_gamm[43]a %e \n",c_gamma_squared,d_gamma );
       y[ppw->pv->index_pt_phase_shift]  = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
       // if(z>pth->z_rec){
-        if(k == ppt->k_max && z>pth->z_rec) {
+        if(k == ppt->k_max && z>1000) {
           ppt->phase_shift = y[ppw->pv->index_pt_phase_shift]  ;
           ppt->amplitude = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2)  ;
+          // printf("z %e ppt->phase_shift %e k %e\n",z, ppt->phase_shift,k);
         }
         _set_source_(ppt->index_tp_phase_shift) = y[ppw->pv->index_pt_phase_shift];
         _set_source_(ppt->index_tp_amplitude) = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2);
