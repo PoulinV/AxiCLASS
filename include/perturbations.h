@@ -290,6 +290,7 @@ struct perturbs
   int index_tp_delta_fld;  /**< index value for delta of dark energy */
   int index_tp_delta_scf;  /**< index value for delta of scalar field */
   int index_tp_phase_shift;  /**< index value for phase shift a la Baumann */
+  int index_tp_amplitude;  /**< index value for amplitude a la Baumann */
   int index_tp_delta_dr; /**< index value for delta of decay radiation */
   int index_tp_delta_ur; /**< index value for delta of ultra-relativistic neutrinos/relics */
   int index_tp_delta_ncdm1; /**< index value for delta of first non-cold dark matter species (e.g. massive neutrinos) */
@@ -379,7 +380,8 @@ struct perturbs
 
 
   //@}
-  double phase_shift; /** pahse shift a la Baumann */
+  double phase_shift; /** phase shift a la Baumann */
+  double amplitude; /** amplitude a la Baumann */
   /** @name - technical parameters */
 
   //@{
