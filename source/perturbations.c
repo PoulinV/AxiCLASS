@@ -2561,7 +2561,7 @@ int perturb_solve(
 
       /* f_nu = Omega_nu(t_i) / Omega_r(t_i) */
       // fracnu = rho_nu/rho_r;
-      if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("amplitude*epsX %e sin(theta) %e phase shift %e*Pi*epsX epsX %e\n", ppt->amplitude/(ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur])),ppt->phase_shift,asin(ppt->phase_shift)/_PI_/(ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur])),ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur]));
+      if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("delta_gamma= %e*epsX sin(theta) %e phase shift = %e*Pi*epsX epsX %e\n", (ppt->amplitude/3-1)/(ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur])),ppt->phase_shift,asin(ppt->phase_shift)/_PI_/(ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur])),ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur]));
   return _SUCCESS_;
 }
 
@@ -4751,16 +4751,19 @@ int perturb_initial_conditions(struct precision * ppr,
     }
     if(ppt->compute_phase_shift == _TRUE_){
         //psi = phi-4.5 * (a*a/k*k) * ppw->rho_plus_p_shear;
-        Phi_plus = 2*ppw->pv->y[ppw->pv->index_pt_phi] - 4.5 * (a*a/k*k) * ppw->rho_plus_p_shear;
+        // Phi_plus = 2*ppw->pv->y[ppw->pv->index_pt_phi] - 4.5 * (a*a/k*k) * ppw->rho_plus_p_shear;
+        Phi_plus = 4./3*ppr->curvature_ini*(1-1./15.*rho_nu/(rho_nu+rho_r));
         c_gamma_squared = 1./3.;
         // printf("tau %e k %e Phi_plus %e psi %e phi %e c_gamma_squared %e \n",tau,k,Phi_plus, pvecmetric[ppw->index_mt_psi],y[ppw->pv->index_pt_phi],c_gamma_squared);
         // ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = Phi_plus * sin(pow(c_gamma_squared,0.5)*tau*k);
         // ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus * cos(pow(c_gamma_squared,0.5)*tau*k);
         // ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = Phi_plus*pow(c_gamma_squared,0.5)*tau*k;
         // ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus*(1+pow(pow(c_gamma_squared,0.5)*tau*k,2)/2);
-        ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = -Phi_plus*cos(pow(c_gamma_squared,0.5)*tau*k);//assume Phi_plus is constant at early times
+        ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = Phi_plus*(1-cos(pow(c_gamma_squared,0.5)*tau*k));//assume Phi_plus is constant at early times
         ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus*sin(pow(c_gamma_squared,0.5)*tau*k);
-        ppw->pv->y[ppw->pv->index_pt_phase_shift] = 0;
+        // ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = 0;
+        // ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = 0;
+        ppw->pv->y[ppw->pv->index_pt_phase_shift] = ppw->pv->y[ppw->pv->index_pt_phase_shift_B]/pow(pow(ppw->pv->y[ppw->pv->index_pt_phase_shift_A]-1,2)+pow(ppw->pv->y[ppw->pv->index_pt_phase_shift_A],2),0.5);
     }
   }
   /** --> For tensors */
@@ -6598,14 +6601,15 @@ int perturb_sources(
       // printf("c_gamma_squared %e d_gamm[43]a %e \n",c_gamma_squared,d_gamma );
       y[ppw->pv->index_pt_phase_shift]  = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
       // if(z>pth->z_rec){
-        if(k == ppt->k_max && z>1000) {
+        if(k == ppt->k_max && z>pth->z_rec) {
+          //according to Baumann's appendix, z<zeq is negligible
           ppt->phase_shift = y[ppw->pv->index_pt_phase_shift]  ;
           ppt->amplitude = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2)  ;
           // printf("z %e ppt->phase_shift %e k %e\n",z, ppt->phase_shift,k);
         }
         _set_source_(ppt->index_tp_phase_shift) = y[ppw->pv->index_pt_phase_shift];
         _set_source_(ppt->index_tp_amplitude) = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2);
-        // printf("%e\n", y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),2));
+        // printf("k %e z %e shift %e\n",k,z,y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),2));
         // }
       // else{
       //   _set_source_(ppt->index_tp_phase_shift) = 0;
@@ -7587,11 +7591,13 @@ int perturb_derivs(double tau,
     }
     if(ppt->compute_phase_shift == _TRUE_){
       Phi_plus = pvecmetric[ppw->index_mt_psi] + y[ppw->pv->index_pt_phi]; //CAREFUL: different convention than Baumann. Phi^{Baumann} = - Psi^{us} and Psi^{Baumann}=Phi^{us}.
-      // c_gamma_squared = 1/(3*(1+1/R));
-      c_gamma_squared = 1./3.;
+      c_gamma_squared = 1/(3*(1+1/R));
+      // c_gamma_squared = 1./3.;
       // printf("tau %e k %e Phi_plus %e psi %e phi %e c_gamma_squared %e \n",tau,k,Phi_plus, pvecmetric[ppw->index_mt_psi],y[ppw->pv->index_pt_phi],c_gamma_squared);
       dy[pv->index_pt_phase_shift_A] = Phi_plus * sin(pow(c_gamma_squared,0.5)*tau*k)*c_gamma_squared*k;//last 2 terms from jacobian
       dy[pv->index_pt_phase_shift_B] = Phi_plus * cos(pow(c_gamma_squared,0.5)*tau*k)*c_gamma_squared*k;
+      // dy[pv->index_pt_phase_shift_A] = Phi_plus * sin(pow(c_gamma_squared,0.5)*tau*k)*1./3;//last 2 terms from jacobian
+      // dy[pv->index_pt_phase_shift_B] = Phi_plus * cos(pow(c_gamma_squared,0.5)*tau*k)*1./3;
       dy[pv->index_pt_phase_shift] = 0; //dummy: will be assigned later
 
     }
