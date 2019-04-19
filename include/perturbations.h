@@ -380,6 +380,7 @@ struct perturbs
 
 
   //@}
+  double d_gamma_ini;
   double phase_shift; /** phase shift a la Baumann */
   double amplitude; /** amplitude a la Baumann */
   /** @name - technical parameters */

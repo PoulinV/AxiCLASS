@@ -226,85 +226,6 @@ int input_init(
 
   struct fzerofun_workspace fzw;
 
-class_call(parser_read_list_of_doubles(pfc,
-                                     "scf_parameters",
-                                     &(fzw.scf_parameters_size),
-                                     &(fzw.scf_parameters),
-                                     &flag1,
-                                     errmsg),
-         errmsg,errmsg);
-
-class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
-               errmsg,
-               errmsg);
-     if (flag1 == _TRUE_) {
-
-       flag2=_FALSE_;
-       if (strcmp(string1,"pol_times_exp") == 0) {
-         fzw.scf_potential = pol_times_exp;
-         flag2 =_TRUE_;
-       }
-       if (strcmp(string1,"double_exp") == 0) {
-          fzw.scf_potential = double_exp;
-         flag2 =_TRUE_;
-       }
-       if (strcmp(string1,"axion") == 0) {
-          fzw.scf_potential = axion;
-          flag2 =_TRUE_;
-       }
-       if (strcmp(string1,"phi_2n") == 0) {
-          fzw.scf_potential = phi_2n;
-          flag2 =_TRUE_;
-       }
-       if (strcmp(string1,"ax_cos_cubed") == 0) {
-          fzw.scf_potential = ax_cos_cubed;
-         flag2 =_TRUE_;
-       }
-       if (strcmp(string1,"axionquad") == 0) {
-          fzw.scf_potential = axionquad;
-          flag2 =_TRUE_;
-       }
-
-   class_test(flag2==_FALSE_,
-                  errmsg,
-                  "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','axionquad','ax_cos_cubed'.");
-     }
-
-
-
-   class_call(parser_read_string(pfc,"scf_evolve_as_fluid",&string1,&flag1,errmsg),
-             errmsg,
-             errmsg);
-
-    if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
-    fzw.scf_evolve_as_fluid = _TRUE_;
-    class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
-    if(fzw.scf_potential == axionquad){
-      fzw.m_scf = fzw.scf_parameters[0];
-      fzw.w_scf = 0;
-      class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
-    }
-    else if(fzw.scf_potential == axion){
-      class_read_double("m_axion",fzw.m_scf);
-      class_read_double("f_axion",fzw.f_axion);
-      pba->Omega0_axion = 0.0;
-      pba->log10_axion_ac = 0.0;
-      class_read_int("n_axion",fzw.n_axion);
-      // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
-      class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
-    }
-    else if(fzw.scf_potential == phi_2n){
-      pba->Omega0_axion = 0.0;
-      pba->log10_axion_ac = 0.0;
-      class_read_int("n_axion",fzw.n_axion);
-    }
-    else{
-      class_stop("fluid approximation is not working for potential different than 'axion' and 'axionquad'!. Please switch scf_evolve_as_fluid to no.",errmsg);
-    }
-    }
-    else {
-      fzw.scf_evolve_as_fluid = _FALSE_;
-    }
 
 class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
              errmsg,
@@ -316,12 +237,13 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     else {
       fzw.do_shooting = _FALSE_;
     }
-class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
+
+    class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
 
     if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
-    fzw.do_shooting_scf = _TRUE_;
+      fzw.do_shooting_scf = _TRUE_;
     }
     else {
       fzw.do_shooting_scf = _FALSE_;
@@ -339,6 +261,88 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
 
   int input_verbose = 0, aux_flag, shooting_failed=_FALSE_;
 
+  if(fzw.do_shooting_scf == _TRUE_){
+
+    class_call(parser_read_list_of_doubles(pfc,
+                                         "scf_parameters",
+                                         &(fzw.scf_parameters_size),
+                                         &(fzw.scf_parameters),
+                                         &flag1,
+                                         errmsg),
+             errmsg,errmsg);
+
+    class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
+                   errmsg,
+                   errmsg);
+         if (flag1 == _TRUE_) {
+
+           flag2=_FALSE_;
+           if (strcmp(string1,"pol_times_exp") == 0) {
+             fzw.scf_potential = pol_times_exp;
+             flag2 =_TRUE_;
+           }
+           if (strcmp(string1,"double_exp") == 0) {
+              fzw.scf_potential = double_exp;
+             flag2 =_TRUE_;
+           }
+           if (strcmp(string1,"axion") == 0) {
+              fzw.scf_potential = axion;
+              flag2 =_TRUE_;
+           }
+           if (strcmp(string1,"phi_2n") == 0) {
+              fzw.scf_potential = phi_2n;
+              flag2 =_TRUE_;
+           }
+           if (strcmp(string1,"ax_cos_cubed") == 0) {
+              fzw.scf_potential = ax_cos_cubed;
+             flag2 =_TRUE_;
+           }
+           if (strcmp(string1,"axionquad") == 0) {
+              fzw.scf_potential = axionquad;
+              flag2 =_TRUE_;
+           }
+
+       class_test(flag2==_FALSE_,
+                      errmsg,
+                      "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','axionquad','ax_cos_cubed'.");
+         }
+
+
+
+       class_call(parser_read_string(pfc,"scf_evolve_as_fluid",&string1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+
+        if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+        fzw.scf_evolve_as_fluid = _TRUE_;
+        class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
+        if(fzw.scf_potential == axionquad){
+          fzw.m_scf = fzw.scf_parameters[0];
+          fzw.w_scf = 0;
+          class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
+        }
+        else if(fzw.scf_potential == axion){
+          class_read_double("m_axion",fzw.m_scf);
+          class_read_double("f_axion",fzw.f_axion);
+          pba->Omega0_axion = 0.0;
+          pba->log10_axion_ac = 0.0;
+          class_read_int("n_axion",fzw.n_axion);
+          // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
+          class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
+        }
+        else if(fzw.scf_potential == phi_2n){
+          pba->Omega0_axion = 0.0;
+          pba->log10_axion_ac = 0.0;
+          class_read_int("n_axion",fzw.n_axion);
+        }
+        else{
+          class_stop("fluid approximation is not working for potential different than 'axion' and 'axionquad'!. Please switch scf_evolve_as_fluid to no.",errmsg);
+        }
+        }
+        else {
+          fzw.scf_evolve_as_fluid = _FALSE_;
+        }
+  }
   class_read_int("input_verbose",input_verbose);
   if (input_verbose >0) printf("Reading input parameters\n");
 
@@ -534,7 +538,9 @@ class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
     free(unknown_parameter);
     free(fzw.unknown_parameters_index);
     free(fzw.target_name);
-    free(fzw.scf_parameters);
+    if(fzw.do_shooting_scf == _TRUE_){
+      free(fzw.scf_parameters);
+    }
     free(fzw.target_value);
   }
   /** - case with no unknown parameters */
@@ -853,6 +859,7 @@ int input_read_parameters(
   else {
 
     if (flag1 == _TRUE_) {
+      printf("here param1 %e\n", param1);
       pba->Omega0_ur = param1*7./8.*pow(4./11.,4./3.)*pba->Omega0_g;
     }
     if (flag2 == _TRUE_) {
@@ -4302,8 +4309,8 @@ int input_default_precision ( struct precision * ppr ) {
   ppr->ur_fluid_approximation = ufa_none;
   ppr->ur_fluid_trigger_tau_over_tau_k = 30.;
 
-  // ppr->ncdm_fluid_approximation = ncdmfa_CLASS;
-  ppr->ncdm_fluid_approximation = ncdmfa_none;
+  ppr->ncdm_fluid_approximation = ncdmfa_CLASS;
+  // ppr->ncdm_fluid_approximation = ncdmfa_none;
   ppr->ncdm_fluid_trigger_tau_over_tau_k = 31.;
 
   ppr->neglect_CMB_sources_below_visibility = 1.e-3;
@@ -5151,166 +5158,169 @@ int input_find_root(double *xzero,
   // if result 2 > result 1, x - dx.
   // if result 2 < result 1, x + dx
   // printf("pfzw->do_shooting_scf %d pfzw->do_shooting %d\n",pfzw->do_shooting_scf,pfzw->do_shooting);
-  if((pfzw->scf_potential == ax_cos_cubed ||   pfzw->scf_potential == axionquad) && pfzw->do_shooting_scf == _TRUE_){
-    if(pfzw->scf_potential == ax_cos_cubed)f_a = pfzw->scf_parameters[1];
-    else if(pfzw->scf_potential == axion){
-      if(pfzw->f_axion>0.0){
-        f_a = pfzw->f_axion;
+  if(pfzw->do_shooting_scf == _TRUE_){
+    if((pfzw->scf_potential == ax_cos_cubed ||   pfzw->scf_potential == axionquad)){
+      if(pfzw->scf_potential == ax_cos_cubed)f_a = pfzw->scf_parameters[1];
+      else if(pfzw->scf_potential == axion){
+        if(pfzw->f_axion>0.0){
+          f_a = pfzw->f_axion;
+        }
+        else{
+          f_a=1;
+        }
+        printf("fa %e\n", f_a);
       }
-      else{
-        f_a=1;
-      }
-      printf("fa %e\n", f_a);
-    }
-    else if(pfzw->scf_potential == axionquad)f_a = pfzw->scf_parameters[1];
-    if(pfzw->do_shooting == _TRUE_){
-      dx = f1/sqrt(f1*f1)*dxdy; //f1*dxdy;
-      // dx=0.5;
-      if(input_verbose>3){
-        printf("axion cubed root finding \n");
-        printf("dx = %e\n", dx);
-      }
-
-      /** - Do linear hunt for boundaries */
-      for (iter=1; iter<=20; iter++){
+      else if(pfzw->scf_potential == axionquad)f_a = pfzw->scf_parameters[1];
+      if(pfzw->do_shooting == _TRUE_){
+        dx = f1/sqrt(f1*f1)*dxdy; //f1*dxdy;
+        // dx=0.5;
         if(input_verbose>3){
-        printf("Root finding iteration: %d \n",iter);
-        }
-        if (x1 > 0){
-          if(input_verbose>3){
-          printf("x1 is positive: %e\n",x1);
-          }
-          if(f1 > 100){
-            if(input_verbose>3){
-            printf("f1 was way too high, x2 = x1/2: %e\n",x1/2);
-            }
-            x2 = (x1/(f1));
-          }
-          else if(f1 > 0 && f1 <= 100 && (x1-dx>0)){
-            if(input_verbose>3){
-            printf("f1 was slightly too high, x2 = x1 - dx is still positive, using this: %e\n", x1 - dx);
-            }
-             x2 = (x1 - dx);
-          }
-          else if(f1 > 0 && f1 <= 100 && (x1-dx<=0)){
-            if(input_verbose>3){
-            printf("f1 was slightly too high but x2 = x1 - dx goes negative, using x2 = x1 - (dx/n) with n such that x2 is positive\n");
-            }
-            dxtmp=dx/2;
-            x2=x1-dxtmp;
-            while(x2<=0){
-               dxtmp/=2;
-               x2=x1-dxtmp;
-               // printf("x2 %e\n", x2);
-             }
-             if(input_verbose>3){
-             printf("x2 is then %e \n", x2);
-            }
-          }
-          else if (f1 < -100){
-            if(input_verbose>3){
-            printf("f1 was way too low, x2 = 2x1: %e\n", (x1*2));
-            }
-            x2 = (x1*2);
-          }
-          else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<=_PI_) && (pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion)){
-          // else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<180) && (pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion)){
-            if(input_verbose>3){
-            printf("f1 was slightly too low, x2 = x1 + dx does not go above pi, using this: %e\n", x1 + dx);
-            }
-             x2 = (x1 + dx);
-          }
-          else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a>_PI_)){
-          // else if(f1 < 0 && f1 >= -100){
-            if(input_verbose>3){
-            printf("f1 was slightly too low, but x2 = x1 + dx goes above pi, using x2 = x1 + (dx/10) instead: %e\n", x1 + (dx/10));
-            }
-            dxtmp=dx/2;
-            x2=x1+dxtmp;
-            while(x2/f_a>_PI_){
-               dxtmp/=2;
-               x2=x1+dxtmp;
-               printf("x2/f_a %e dxtmp %e\n", x2/f_a,dxtmp);
-             }
-             if(input_verbose>3){
-             printf("x2 is then %e \n", x2);
-            }
-          }
-        }
-        if (x1 < 0 ){
-          if(input_verbose>3){
-          printf("x1 is negative: %e\n",x1);
-          }
-          if(x1+dx < 0){
-            if(input_verbose>3){
-            printf("x1+dx is negative: %e\n",x1+dx);
-            }
-            x2 = (x1 + dx);
-            if(input_verbose>3){
-              printf("x2 = %e\n",x2);
-            }
-          }
-          else if (x1+dx > 0){
-            if(input_verbose>3){
-            printf("x1+dx is positive, using x1/10 instead: %e\n", (x1/10));
-            }
-            x2 = (x1/10);
-            if(input_verbose>3){
-            printf("x2 = %e\n",x2);
-            }
-          }
-        }
-        for (iter2=1; iter2 <= 3; iter2++) {
-          return_function = input_fzerofun_1d(x2,pfzw,&f2,errmsg);
-          (*fevals)++;
-          if(input_verbose>3)printf("x2= %g, f2= %g\n",x2,f2);
-          if (return_function ==_SUCCESS_) {
-          if(input_verbose>3){
-            printf("Breaking because successful\n");
-            printf("f1 = %e, f2 = %e\n",f1,f2);
-            printf("f1+f2 = %e\n", f1+f2);
-            }
-            break;
-          }
-          else if (iter2 < 3) {
-            dxtmp=dx*0.5;
-            x2 = x1-dxtmp;
-            if(input_verbose>3)printf("initially x2 %e\n", x2);
-            while(x2<0){
-               dxtmp/=2;
-               x2=x1-dxtmp;
-               if(input_verbose>3)printf("x2 %e\n", x2);
-             }
-             if(input_verbose>3)printf("x2 is then %e \n", x2);
-          }
-          else {
-            //fprintf(stderr,"get here\n");
-            class_stop(errmsg,errmsg);
-          }
-        }
-        if (f1*f2<0.0){
-        // if(sqrt(f1*f1)<0.01*pfzw->target_value[0] && sqrt(f2*f2)<0.01*pfzw->target_value[0]){
-        // if(sqrt(f1*f1)<0.01*pfzw->target_value[0] && sqrt(f2*f2)<0.01*pfzw->target_value[0]){
-        // if (f1*f2<0.0 && sqrt(f1*f1)<0.01*pfzw->target_value[0] && sqrt(f2*f2)<0.01*pfzw->target_value[0]){
-        // if (f1+f2<0.01){
-        // if (f1+f2<0.000005 && f1+f1>-0.000005){//VP: why f1+f1<-0.000005?
-        // if (f1+f2<0.05){
-          /** - root has been bracketed */
-          if (0==0){
-            if(input_verbose>3)printf("Root has been bracketed after %d iterations: [%g, %g].\n",iter,x1,x2);
-            break;
-          }
+          printf("axion cubed root finding \n");
+          printf("dx = %e\n", dx);
         }
 
-        x1 = x2;
-        f1 = f2;
+        /** - Do linear hunt for boundaries */
+        for (iter=1; iter<=20; iter++){
+          if(input_verbose>3){
+          printf("Root finding iteration: %d \n",iter);
+          }
+          if (x1 > 0){
+            if(input_verbose>3){
+            printf("x1 is positive: %e\n",x1);
+            }
+            if(f1 > 100){
+              if(input_verbose>3){
+              printf("f1 was way too high, x2 = x1/2: %e\n",x1/2);
+              }
+              x2 = (x1/(f1));
+            }
+            else if(f1 > 0 && f1 <= 100 && (x1-dx>0)){
+              if(input_verbose>3){
+              printf("f1 was slightly too high, x2 = x1 - dx is still positive, using this: %e\n", x1 - dx);
+              }
+               x2 = (x1 - dx);
+            }
+            else if(f1 > 0 && f1 <= 100 && (x1-dx<=0)){
+              if(input_verbose>3){
+              printf("f1 was slightly too high but x2 = x1 - dx goes negative, using x2 = x1 - (dx/n) with n such that x2 is positive\n");
+              }
+              dxtmp=dx/2;
+              x2=x1-dxtmp;
+              while(x2<=0){
+                 dxtmp/=2;
+                 x2=x1-dxtmp;
+                 // printf("x2 %e\n", x2);
+               }
+               if(input_verbose>3){
+               printf("x2 is then %e \n", x2);
+              }
+            }
+            else if (f1 < -100){
+              if(input_verbose>3){
+              printf("f1 was way too low, x2 = 2x1: %e\n", (x1*2));
+              }
+              x2 = (x1*2);
+            }
+            else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<=_PI_) && (pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion)){
+            // else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a<180) && (pfzw->scf_potential == ax_cos_cubed || pfzw->scf_potential == axion)){
+              if(input_verbose>3){
+              printf("f1 was slightly too low, x2 = x1 + dx does not go above pi, using this: %e\n", x1 + dx);
+              }
+               x2 = (x1 + dx);
+            }
+            else if(f1 < 0 && f1 >= -100 && ((x1+dx)/f_a>_PI_)){
+            // else if(f1 < 0 && f1 >= -100){
+              if(input_verbose>3){
+              printf("f1 was slightly too low, but x2 = x1 + dx goes above pi, using x2 = x1 + (dx/10) instead: %e\n", x1 + (dx/10));
+              }
+              dxtmp=dx/2;
+              x2=x1+dxtmp;
+              while(x2/f_a>_PI_){
+                 dxtmp/=2;
+                 x2=x1+dxtmp;
+                 printf("x2/f_a %e dxtmp %e\n", x2/f_a,dxtmp);
+               }
+               if(input_verbose>3){
+               printf("x2 is then %e \n", x2);
+              }
+            }
+          }
+          if (x1 < 0 ){
+            if(input_verbose>3){
+            printf("x1 is negative: %e\n",x1);
+            }
+            if(x1+dx < 0){
+              if(input_verbose>3){
+              printf("x1+dx is negative: %e\n",x1+dx);
+              }
+              x2 = (x1 + dx);
+              if(input_verbose>3){
+                printf("x2 = %e\n",x2);
+              }
+            }
+            else if (x1+dx > 0){
+              if(input_verbose>3){
+              printf("x1+dx is positive, using x1/10 instead: %e\n", (x1/10));
+              }
+              x2 = (x1/10);
+              if(input_verbose>3){
+              printf("x2 = %e\n",x2);
+              }
+            }
+          }
+          for (iter2=1; iter2 <= 3; iter2++) {
+            return_function = input_fzerofun_1d(x2,pfzw,&f2,errmsg);
+            (*fevals)++;
+            if(input_verbose>3)printf("x2= %g, f2= %g\n",x2,f2);
+            if (return_function ==_SUCCESS_) {
+            if(input_verbose>3){
+              printf("Breaking because successful\n");
+              printf("f1 = %e, f2 = %e\n",f1,f2);
+              printf("f1+f2 = %e\n", f1+f2);
+              }
+              break;
+            }
+            else if (iter2 < 3) {
+              dxtmp=dx*0.5;
+              x2 = x1-dxtmp;
+              if(input_verbose>3)printf("initially x2 %e\n", x2);
+              while(x2<0){
+                 dxtmp/=2;
+                 x2=x1-dxtmp;
+                 if(input_verbose>3)printf("x2 %e\n", x2);
+               }
+               if(input_verbose>3)printf("x2 is then %e \n", x2);
+            }
+            else {
+              //fprintf(stderr,"get here\n");
+              class_stop(errmsg,errmsg);
+            }
+          }
+          if (f1*f2<0.0){
+          // if(sqrt(f1*f1)<0.01*pfzw->target_value[0] && sqrt(f2*f2)<0.01*pfzw->target_value[0]){
+          // if(sqrt(f1*f1)<0.01*pfzw->target_value[0] && sqrt(f2*f2)<0.01*pfzw->target_value[0]){
+          // if (f1*f2<0.0 && sqrt(f1*f1)<0.01*pfzw->target_value[0] && sqrt(f2*f2)<0.01*pfzw->target_value[0]){
+          // if (f1+f2<0.01){
+          // if (f1+f2<0.000005 && f1+f1>-0.000005){//VP: why f1+f1<-0.000005?
+          // if (f1+f2<0.05){
+            /** - root has been bracketed */
+            if (0==0){
+              if(input_verbose>3)printf("Root has been bracketed after %d iterations: [%g, %g].\n",iter,x1,x2);
+              break;
+            }
+          }
+
+          x1 = x2;
+          f1 = f2;
+        }
       }
-    }
-    else if(pfzw->do_shooting == _FALSE_){  //skip shooting if axion potential and evolving as KG
-      *xzero = 33.1;
-      printf("Skipping ridders method. phi_init is %e \n",xzero);
+      else if(pfzw->do_shooting == _FALSE_){  //skip shooting if axion potential and evolving as KG
+        *xzero = 33.1;
+        printf("Skipping ridders method. phi_init is %e \n",xzero);
+      }
     }
   }
+
 
   // else {
   // dx = 1.5*f1*dxdy;
