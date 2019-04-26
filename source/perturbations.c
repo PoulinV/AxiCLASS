@@ -4221,7 +4221,7 @@ int perturb_initial_conditions(struct precision * ppr,
   double velocity_tot;
   double s2_squared;
   double cs2_scf;
-  double c_gamma_squared,Phi_plus;
+  double c_gamma_squared,Phi_plus,phi;
   /** --> For scalars */
 
   if (_scalars_) {
@@ -4754,9 +4754,17 @@ int perturb_initial_conditions(struct precision * ppr,
     }
     if(ppt->compute_phase_shift == _TRUE_){
         //psi = phi-4.5 * (a*a/k/k) * ppw->rho_plus_p_shear;
-        Phi_plus = 2*ppw->pv->y[ppw->pv->index_pt_phi] - 4.5 * (a*a/k/k) * ppw->rho_plus_p_shear;
+        if(ppt->gauge == synchronous){
+          alpha_prime = - 2. * a_prime_over_a * alpha + eta - 4.5 * (a/a/k/k) * ppw->rho_plus_p_shear;
+          phi = eta - a_prime_over_a*alpha;
+          Phi_plus = eta + alpha_prime;//psi+phi=eta+alpha_prime.
+        }
+        else if(ppt->gauge == newtonian){
+          phi = ppw->pv->y[ppw->pv->index_pt_phi];
+          Phi_plus = 2*ppw->pv->y[ppw->pv->index_pt_phi] - 4.5 * (a*a/k/k) * ppw->rho_plus_p_shear;
+        }
         // printf(" Phi_plus %e Phi_plus_baumann %e \n", Phi_plus,4./3*ppr->curvature_ini*(1+3./15.*0.408)); //small difference w/r to Baumann eq. 2.53.... mistake found in Baumann's equation.
-        ppt->d_gamma_ini = 3./4*ppw->pv->y[ppw->pv->index_pt_delta_g] - 3*ppw->pv->y[ppw->pv->index_pt_phi];//slightly different definition of delta_g
+        ppt->d_gamma_ini = 3./4*ppw->pv->y[ppw->pv->index_pt_delta_g] - 3*phi;//slightly different definition of delta_g
         // Phi_plus = 4./3*ppr->curvature_ini*(1-1./15.*0.408);
         // printf("rho_nu/(rho_nu+rho_r) %e\n", );
         c_gamma_squared = 1./3.;
@@ -5805,8 +5813,6 @@ int perturb_total_stress_energy(
        from rho_plus_p_shear. So the contribution from the scalar field must be below all
        species with non-zero shear.
     */
-    if (ppt->perturbations_verbose>10)
-    fprintf(stdout,"scf section next. pba->scf_has_perturbations = %d. \n", pba->scf_has_perturbations);
 
     if (pba->has_scf == _TRUE_&& pba->scf_has_perturbations == _TRUE_) {
 
@@ -6604,8 +6610,8 @@ int perturb_sources(
 
       // printf("ppr->curvature_ini %e ppt->d_gamma_ini %e\n", ppr->curvature_ini,ppt->d_gamma_ini);
       R = 4./3. * pvecback[pba->index_bg_rho_g]/pvecback[pba->index_bg_rho_b];
-      c_gamma_squared = 1/(3*(1+1/R));//different definition of R
-      // c_gamma_squared = 1./3.;
+      // c_gamma_squared = 1/(3*(1+1/R));//different definition of R
+      c_gamma_squared = 1./3.;
       // printf("c_gamma_squared %e d_gamm[43]a %e \n",c_gamma_squared,d_gamma );
       y[ppw->pv->index_pt_phase_shift]  = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*ppt->d_gamma_ini,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
       // y[ppw->pv->index_pt_phase_shift]  = y[ppw->pv->index_pt_phase_shift_B];
@@ -6996,7 +7002,8 @@ int perturb_print_variables(double tau,
       // d_gamma = y[ppw->pv->index_pt_delta_g]-3*y[ppw->pv->index_pt_phi];//phi^us = psi^baumann
       // d_gamma = -3;//phi^us = psi^baumann
       R = 4./3. * ppw->pvecback[pba->index_bg_rho_g]/ppw->pvecback[pba->index_bg_rho_b];
-      c_gamma_squared = 1./(3*(1+1/R));
+      // c_gamma_squared = 1./(3*(1+1/R));
+      c_gamma_squared = 1./(3);
       // printf("c_gamma_squared %e d_gamma %e \n",c_gamma_squared,d_gamma );
       phase_shift_total = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*ppt->d_gamma_ini,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
       amplitude_total = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*ppt->d_gamma_ini,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2);
@@ -7344,7 +7351,7 @@ int perturb_derivs(double tau,
   double dmu_gcdm;
   double a_over_ac;
 
-  double Phi_plus,c_gamma_squared,d_gamma;
+  double Phi_plus,c_gamma_squared,d_gamma, psi, phi;
   /** - rename the fields of the input structure (just to avoid heavy notations) */
   pppaw = parameters_and_workspace;
 
@@ -7599,12 +7606,23 @@ int perturb_derivs(double tau,
 
     }
     if(ppt->compute_phase_shift == _TRUE_){
-      Phi_plus = pvecmetric[ppw->index_mt_psi] + y[ppw->pv->index_pt_phi]; //CAREFUL: different convention than Baumann. Phi^{Baumann} = - Psi^{us} and Psi^{Baumann}=Phi^{us}.
-      c_gamma_squared = 1/(3*(1+1/R));
-      // c_gamma_squared = 1./3.;
+      if(ppt->gauge == synchronous){
+        psi = pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a] * pvecmetric[ppw->index_mt_alpha] + pvecmetric[ppw->index_mt_alpha_prime];
+        phi = y[ppw->pv->index_pt_eta] - pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*pvecmetric[ppw->index_mt_alpha];
+        Phi_plus = psi + phi;
+      }
+      else if(ppt->gauge == newtonian){
+        Phi_plus = pvecmetric[ppw->index_mt_psi] + y[ppw->pv->index_pt_phi];
+      }
+      else{
+        //dummy, there is no other gauges.
+        Phi_plus = 0;
+      }
+      // c_gamma_squared = 1/(3*(1+1/R));
+      c_gamma_squared = 1./3.;
       // printf("tau %e k %e Phi_plus %e psi %e phi %e c_gamma_squared %e \n",tau,k,Phi_plus, pvecmetric[ppw->index_mt_psi],y[ppw->pv->index_pt_phi],c_gamma_squared);
-      dy[pv->index_pt_phase_shift_A] = Phi_plus * sin(pow(c_gamma_squared,0.5)*tau*k)*c_gamma_squared*k;//last 2 terms from jacobian
-      dy[pv->index_pt_phase_shift_B] = Phi_plus * cos(pow(c_gamma_squared,0.5)*tau*k)*c_gamma_squared*k;
+      dy[pv->index_pt_phase_shift_A] = Phi_plus * sin(pow(c_gamma_squared,0.5)*tau*k)*pow(c_gamma_squared,0.5)*k;//last 2 terms from jacobian
+      dy[pv->index_pt_phase_shift_B] = Phi_plus * cos(pow(c_gamma_squared,0.5)*tau*k)*pow(c_gamma_squared,0.5)*k;
       // dy[pv->index_pt_phase_shift_A] = Phi_plus * sin(pow(c_gamma_squared,0.5)*tau*k)*1./3;//last 2 terms from jacobian
       // dy[pv->index_pt_phase_shift_B] = Phi_plus * cos(pow(c_gamma_squared,0.5)*tau*k)*1./3;
       dy[pv->index_pt_phase_shift] = 0; //dummy: will be assigned later
@@ -7866,8 +7884,7 @@ int perturb_derivs(double tau,
       }
 
     }
-    if (ppt->perturbations_verbose>10)
-      fprintf(stdout,"Starting scf evolution in perturb_derivs. \n");
+
 
     /** - ---> scalar field (scf) */
     if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) {

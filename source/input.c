@@ -859,7 +859,6 @@ int input_read_parameters(
   else {
 
     if (flag1 == _TRUE_) {
-      printf("here param1 %e\n", param1);
       pba->Omega0_ur = param1*7./8.*pow(4./11.,4./3.)*pba->Omega0_g;
     }
     if (flag2 == _TRUE_) {
@@ -2376,7 +2375,7 @@ if(pth->PBH_low_mass > 0.){
     ppt->compute_phase_shift = _TRUE_;
 
   }
-  class_test(ppt->compute_phase_shift == _TRUE_ && ppt->gauge == synchronous, errmsg, "currently the phase shift can only be calculated in the newtonian gauge!! please adapt your ini file.");
+  // class_test(ppt->compute_phase_shift == _TRUE_ && ppt->gauge == synchronous, errmsg, "currently the phase shift can only be calculated in the newtonian gauge!! please adapt your ini file.");
   /** (d) define the primordial spectrum */
 
   class_call(parser_read_string(pfc,"P_k_ini type",&string1,&flag1,errmsg),
