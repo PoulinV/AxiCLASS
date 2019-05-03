@@ -843,6 +843,12 @@ cdef class Class:
     def log10_m_axion(self):
         return self.ba.log10_m_axion
 
+    def phase_shift(self):
+        return self.pt.phase_shift
+
+    def amplitude(self):
+        return self.pt.amplitude
+
     def omega_b(self):
         return self.ba.Omega0_b * self.ba.h * self.ba.h
 

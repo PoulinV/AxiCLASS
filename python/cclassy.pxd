@@ -139,6 +139,11 @@ cdef extern from "class.h":
         int size_vector_perturbation_data[_MAX_NUMBER_OF_K_FILES_]
         int size_tensor_perturbation_data[_MAX_NUMBER_OF_K_FILES_]
 
+        double phase_shift_A
+        double phase_shift_B
+        double phase_shift
+        double amplitude
+
     cdef struct transfers:
         ErrorMsg error_message
 
@@ -171,8 +176,8 @@ cdef extern from "class.h":
         double n_ad_niv
         double phi_min
         double phi_max
-
         int lnk_size
+
     cdef struct spectra:
         ErrorMsg error_message
         int has_tt
