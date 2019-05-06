@@ -316,6 +316,13 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
         if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
         fzw.scf_evolve_as_fluid = _TRUE_;
         class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
+        }
+        else {
+          fzw.scf_evolve_as_fluid = _FALSE_;
+        }
+
+
+
         if(fzw.scf_potential == axionquad){
           fzw.m_scf = fzw.scf_parameters[0];
           fzw.w_scf = 0;
@@ -324,24 +331,21 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
         else if(fzw.scf_potential == axion){
           class_read_double("m_axion",fzw.m_scf);
           class_read_double("f_axion",fzw.f_axion);
-          pba->Omega0_axion = 0.0;
-          pba->log10_axion_ac = 0.0;
+          fzw.Omega0_axion = 0.0;
+          fzw.log10_axion_ac = 0.0;
           class_read_int("n_axion",fzw.n_axion);
           // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
           class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
         }
         else if(fzw.scf_potential == phi_2n){
-          pba->Omega0_axion = 0.0;
-          pba->log10_axion_ac = 0.0;
+          fzw.Omega0_axion = 0.0;
+          fzw.log10_axion_ac = 0.0;
           class_read_int("n_axion",fzw.n_axion);
         }
-        else{
-          class_stop("fluid approximation is not working for potential different than 'axion' and 'axionquad'!. Please switch scf_evolve_as_fluid to no.",errmsg);
-        }
-        }
-        else {
-          fzw.scf_evolve_as_fluid = _FALSE_;
-        }
+        // else{
+        //   class_stop("fluid approximation is not working for potential different than 'axion' and 'axionquad'!. Please switch scf_evolve_as_fluid to no.",errmsg);
+        // }
+
   }
   class_read_int("input_verbose",input_verbose);
   if (input_verbose >0) printf("Reading input parameters\n");
@@ -1448,6 +1452,7 @@ int input_read_parameters(
                   errmsg,
                   "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','axionquad','ax_cos_cubed'.");
      }
+
     /** - Read parameters describing scalar field potential */
     class_call(parser_read_list_of_doubles(pfc,
                                            "scf_parameters",
@@ -1456,8 +1461,6 @@ int input_read_parameters(
                                            &flag1,
                                            errmsg),
                errmsg,errmsg);
-
-
 
     class_read_int("scf_tuning_index",pba->scf_tuning_index);
     class_test(pba->scf_tuning_index >= pba->scf_parameters_size,

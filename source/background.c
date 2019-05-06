@@ -891,7 +891,7 @@ int background_free_input(
       free(pba->ncdm_psd_parameters);
   }
 
-  if (pba->Omega0_scf != 0.){
+  if (pba->Omega0_scf != 0.  || pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0){
     if (pba->scf_parameters != NULL)
       free(pba->scf_parameters);
   }
