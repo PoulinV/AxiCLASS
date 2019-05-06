@@ -2375,6 +2375,9 @@ if(pth->PBH_low_mass > 0.){
     ppt->compute_phase_shift = _TRUE_;
 
   }
+  else{
+    ppt->compute_phase_shift = _FALSE_;
+  }
   // class_test(ppt->compute_phase_shift == _TRUE_ && ppt->gauge == synchronous, errmsg, "currently the phase shift can only be calculated in the newtonian gauge!! please adapt your ini file.");
   /** (d) define the primordial spectrum */
 
@@ -4299,13 +4302,13 @@ int input_default_precision ( struct precision * ppr ) {
   ppr->tol_perturb_integration=1.e-5;
   ppr->perturb_sampling_stepsize=0.10;
 
-  // ppr->radiation_streaming_approximation = rsa_MD_with_reio;
-  ppr->radiation_streaming_approximation = rsa_none;
+  ppr->radiation_streaming_approximation = rsa_MD_with_reio;
+  // ppr->radiation_streaming_approximation = rsa_none;
   ppr->radiation_streaming_trigger_tau_over_tau_k = 45.;
   ppr->radiation_streaming_trigger_tau_c_over_tau = 5.;
 
-  // ppr->ur_fluid_approximation = ufa_CLASS;
-  ppr->ur_fluid_approximation = ufa_none;
+  ppr->ur_fluid_approximation = ufa_CLASS;
+  // ppr->ur_fluid_approximation = ufa_none;
   ppr->ur_fluid_trigger_tau_over_tau_k = 30.;
 
   ppr->ncdm_fluid_approximation = ncdmfa_CLASS;
