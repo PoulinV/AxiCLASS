@@ -2564,7 +2564,7 @@ int perturb_solve(
       fracnu = ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur]);
       // fracnu = 0.408;
       // if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("delta_gamma= %e*epsX sin(theta) %e phase shift = %e*Pi*epsX epsX %e\n", (ppt->amplitude/3-1)/(fracnu),ppt->phase_shift,asin(ppt->phase_shift)/_PI_/(fracnu),fracnu);
-      if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("delta_gamma/delta_gamma_b&s = %e sin(theta) %e phase shift/phase_shift_b&s= %e epsX %e\n", (pow(ppt->amplitude,0.5)/3-1)/(-0.2683*fracnu),ppt->phase_shift,asin(ppt->phase_shift)/(0.191*_PI_*fracnu),fracnu);
+      if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("k_max %e delta_gamma/delta_gamma_b&s = %e sin(theta) %e phase shift/phase_shift_b&s= %e epsX %e\n",ppt->k_max,(pow(ppt->amplitude,0.5)/3-1)/(-0.2683*fracnu),ppt->phase_shift,asin(ppt->phase_shift)/(0.191*_PI_*fracnu),fracnu);
   return _SUCCESS_;
 }
 
