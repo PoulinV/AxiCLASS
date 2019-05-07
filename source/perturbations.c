@@ -2564,7 +2564,7 @@ int perturb_solve(
       fracnu = ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur]);
       // fracnu = 0.408;
       // if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("delta_gamma= %e*epsX sin(theta) %e phase shift = %e*Pi*epsX epsX %e\n", (ppt->amplitude/3-1)/(fracnu),ppt->phase_shift,asin(ppt->phase_shift)/_PI_/(fracnu),fracnu);
-      // if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("k_max %e delta_gamma/delta_gamma_b&s = %e sin(theta) %e phase shift/phase_shift_b&s= %e epsX %e\n",ppt->k_max,(pow(ppt->amplitude,0.5)/3-1)/(-0.2683*fracnu),ppt->phase_shift,asin(ppt->phase_shift)/(0.191*_PI_*fracnu),fracnu);
+      if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("k_max %e delta_gamma/delta_gamma_b&s = %e sin(theta) %e phase shift/phase_shift_b&s= %e epsX %e\n",ppt->k_max,(pow(ppt->amplitude,0.5)/3-1)/(-0.2683*fracnu),ppt->phase_shift,asin(ppt->phase_shift)/(0.191*_PI_*fracnu),fracnu);
   return _SUCCESS_;
 }
 
@@ -2628,6 +2628,9 @@ int perturb_prepare_output(struct background * pba,
       class_store_columntitle(ppt->scalar_titles, "shear_dr", pba->has_dr);
       /* Scalar field scf, initialised regardless of fluid flag. */
       if (pba->scf_has_perturbations == _TRUE_){
+      class_store_columntitle(ppt->scalar_titles, "delta_phi_scf", pba->has_scf);
+      class_store_columntitle(ppt->scalar_titles, "delta_phi_over_phi_scf", pba->has_scf);
+      class_store_columntitle(ppt->scalar_titles, "delta_phi_prime_scf", pba->has_scf);
       class_store_columntitle(ppt->scalar_titles, "delta_scf", pba->has_scf);
       if(ppt->use_big_theta_scf == _TRUE_){
         class_store_columntitle(ppt->scalar_titles, "big_theta_scf", pba->has_scf);
@@ -6748,7 +6751,7 @@ int perturb_print_variables(double tau,
   double delta_dr=0.,theta_dr=0.,shear_dr=0., f_dr=1.0;
   double delta_ur=0.,theta_ur=0.,shear_ur=0.,l4_ur=0.;
   double delta_rho_scf=0., rho_plus_p_theta_scf=0.;
-  double delta_scf=0., theta_scf=0.,big_theta_scf=0;
+  double delta_scf=0., theta_scf=0.,big_theta_scf=0, delta_phi_scf,delta_phi_over_phi_scf, delta_phi_prime_scf;
   /** - ncdm sector begins */
   int n_ncdm;
   double *delta_ncdm=NULL, *theta_ncdm=NULL, *shear_ncdm=NULL, *delta_p_over_delta_rho_ncdm=NULL;
@@ -6982,6 +6985,10 @@ int perturb_print_variables(double tau,
           delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
           theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
 
+          delta_phi_scf = y[ppw->pv->index_pt_phi_scf];
+          delta_phi_over_phi_scf = y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_scf];
+          delta_phi_prime_scf = y[ppw->pv->index_pt_phi_prime_scf];
+
       }
 
       //If we are behaving as a fluid, mimicking fld:
@@ -6993,6 +7000,9 @@ int perturb_print_variables(double tau,
         else {
           theta_scf = y[ppw->pv->index_pt_theta_scf];
         }
+        delta_phi_scf = 0;
+        delta_phi_over_phi_scf = 0;
+        delta_phi_prime_scf = 0;
       }
     }
 
@@ -7113,6 +7123,9 @@ int perturb_print_variables(double tau,
     class_store_double(dataptr, shear_dr, pba->has_dr, storeidx);
     /* Scalar field scf*/
     if (pba->scf_has_perturbations == _TRUE_){
+    class_store_double(dataptr, delta_phi_scf, pba->has_scf, storeidx);
+    class_store_double(dataptr, delta_phi_over_phi_scf, pba->has_scf, storeidx);
+    class_store_double(dataptr, delta_phi_prime_scf, pba->has_scf, storeidx);
     class_store_double(dataptr, delta_scf, pba->has_scf, storeidx);
     if(ppt->use_big_theta_scf == _TRUE_){
       class_store_double(dataptr, big_theta_scf, pba->has_scf, storeidx);
