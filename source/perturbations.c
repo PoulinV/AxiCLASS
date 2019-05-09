@@ -780,6 +780,9 @@ int perturb_indices_of_perturbs(
       class_define_index(ppt->index_tp_delta_dcdm, ppt->has_source_delta_dcdm,index_type,1);
       class_define_index(ppt->index_tp_delta_fld,  ppt->has_source_delta_fld, index_type,1);
       class_define_index(ppt->index_tp_delta_scf,  ppt->has_source_delta_scf, index_type,1);
+      class_define_index(ppt->index_tp_delta_phi_scf,  ppt->has_scf, index_type,1);
+      class_define_index(ppt->index_tp_delta_phi_over_phi_scf,  ppt->has_scf, index_type,1);
+      class_define_index(ppt->index_tp_delta_phi_prime_scf,  ppt->has_scf, index_type,1);
       class_define_index(ppt->index_tp_delta_dr,   ppt->has_source_delta_dr, index_type,1);
       class_define_index(ppt->index_tp_delta_ur,   ppt->has_source_delta_ur,  index_type,1);
       class_define_index(ppt->index_tp_delta_ncdm1,ppt->has_source_delta_ncdm,index_type,pba->N_ncdm);
@@ -6527,6 +6530,20 @@ int perturb_sources(
         _set_source_(ppt->index_tp_delta_scf) = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
       }
     }
+
+    if (ppt->has_scf == _TRUE_) {
+      if (ppt->scf_kg_eq[index_md][index_k] == 0){ //evolve as fluid
+      _set_source_(ppt->index_tp_delta_phi_scf) = 0;
+      _set_source_(ppt->index_tp_delta_phi_over_phi_scf) = 0;
+      _set_source_(ppt->index_tp_delta_phi_prime_scf) = 0;
+      }
+      else{ //evolve as KG
+          _set_source_(ppt->index_tp_delta_phi_scf) = y[ppw->pv->index_pt_phi_scf];
+          _set_source_(ppt->index_tp_delta_phi_over_phi_scf) = y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_scf];
+          _set_source_(ppt->index_tp_delta_phi_prime_scf) = y[ppw->pv->index_pt_phi_prime_scf];
+      }
+    }
+
 
     /* delta_dr */
     if (ppt->has_source_delta_dr == _TRUE_) {

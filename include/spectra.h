@@ -197,6 +197,9 @@ struct spectra {
   int index_tr_theta_cdm;      /**< index of cold dark matter velocity transfer function */
   int index_tr_theta_dcdm;     /**< index of decaying cold dark matter velocity transfer function */
   int index_tr_theta_scf;      /**< index of derivative of scalar field phi transfer function */
+  int index_tr_delta_phi_scf;    /**< index  */
+  int index_tr_delta_phi_over_phi_scf;    /**< index  */
+  int index_tr_delta_phi_prime_scf;    /**< index  */
   int index_tr_phase_shift;    /**< index of phase shift a la Baumann */
   int index_tr_amplitude;      /**< index of amplitude a la Baumann */
   int index_tr_theta_fld;      /**< index of dark energy fluid velocity transfer function */

@@ -54,6 +54,7 @@ cdef extern from "class.h":
         double * m_ncdm_in_eV
         double Neff
         double Omega0_b
+        double Omega0_g
         double Omega0_cdm
         double Omega0_dcdm
         double Omega0_ncdm_tot

@@ -830,7 +830,8 @@ cdef class Class:
 
     def Omega_b(self):
         return self.ba.Omega0_b
-
+    def Omega_g(self):
+        return self.ba.Omega0_g
     def fEDE(self):
         return self.ba.f_ede
 
