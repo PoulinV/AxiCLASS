@@ -293,6 +293,8 @@ struct perturbs
   int index_tp_delta_phi_over_phi_scf;  /**< index value  */
   int index_tp_delta_phi_prime_scf;  /**< index value  */
   int index_tp_phase_shift;  /**< index value for phase shift a la Baumann */
+  int index_tp_phase_shift_A;  /**< index value for phase shift a la Baumann */
+  int index_tp_phase_shift_B;  /**< index value for phase shift a la Baumann */
   int index_tp_amplitude;  /**< index value for amplitude a la Baumann */
   int index_tp_delta_dr; /**< index value for delta of decay radiation */
   int index_tp_delta_ur; /**< index value for delta of ultra-relativistic neutrinos/relics */

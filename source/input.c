@@ -885,21 +885,21 @@ int input_read_parameters(
   Omega_tot += pba->Omega0_ur;
 
   /** - Omega_0_cdm (CDM) */
-  // class_call(parser_read_double(pfc,"Omega_cdm",&param1,&flag1,errmsg),
-  //            errmsg,
-  //            errmsg);
-  // class_call(parser_read_double(pfc,"omega_cdm",&param2,&flag2,errmsg),
-  //            errmsg,
-  //            errmsg);
-  // class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
-  //            errmsg,
-  //            "In input file, you can only enter one of Omega_cdm or omega_cdm, choose one");
-  // if (flag1 == _TRUE_)
-  //   pba->Omega0_cdm = param1;
-  // if (flag2 == _TRUE_)
-  //   pba->Omega0_cdm = param2/pba->h/pba->h;
+  class_call(parser_read_double(pfc,"Omega_cdm",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+  class_call(parser_read_double(pfc,"omega_cdm",&param2,&flag2,errmsg),
+             errmsg,
+             errmsg);
+  class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+             errmsg,
+             "In input file, you can only enter one of Omega_cdm or omega_cdm, choose one");
+  if (flag1 == _TRUE_)
+    pba->Omega0_cdm = param1;
+  if (flag2 == _TRUE_)
+    pba->Omega0_cdm = param2/pba->h/pba->h;
 
-  // Omega_tot += pba->Omega0_cdm; //COcdmchange - commented out here, it is now read in on line 1076 as an option for filling.
+  Omega_tot += pba->Omega0_cdm; //COcdmchange - commented out here, it is now read in on line 1076 as an option for filling.
 
 
   /** - Omega_0_dcdmdr (DCDM) */
@@ -1139,12 +1139,12 @@ int input_read_parameters(
   class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
              errmsg,
              errmsg);
-  class_call(parser_read_double(pfc,"Omega_cdm",&param4,&flag4,errmsg),
-             errmsg,
-             errmsg); //COcdmchange
-  class_call(parser_read_double(pfc,"omega_cdm",&param5,&flag5,errmsg),
-             errmsg,
-             errmsg); //COcdmchange
+  // class_call(parser_read_double(pfc,"Omega_cdm",&param4,&flag4,errmsg),
+  //            errmsg,
+  //            errmsg); //COcdmchange
+  // class_call(parser_read_double(pfc,"omega_cdm",&param5,&flag5,errmsg),
+  //            errmsg,
+  //            errmsg); //COcdmchange
 
   class_test((flag1 == _TRUE_) && (flag2 == _TRUE_) && (flag4 == _TRUE_ || flag5 == _TRUE_) && ((flag3 == _FALSE_) || (param3 >= 0.)),
              errmsg,
@@ -1161,7 +1161,6 @@ int input_read_parameters(
    *  2) go through the components in order {lambda, fld, scf} and
    *     fill using first unspecified component.
   */
-
   /* Step 1 */
   if (flag1 == _TRUE_){
     pba->Omega0_lambda = param1;
@@ -1177,14 +1176,14 @@ int input_read_parameters(
     Omega_tot += pba->Omega0_scf;
     // printf("Omega0_scf (added in 'output') = %e \n", pba->Omega0_scf); //Sets Omega_scf today equal to users input
   }
-  if (flag4 == _TRUE_){
-    pba->Omega0_cdm = param4;
-    Omega_tot += pba->Omega0_cdm;
-  }  //COcdmchange
-  if (flag5 == _TRUE_){
-    pba->Omega0_cdm = param5/pba->h/pba->h;
-    Omega_tot += pba->Omega0_cdm;
-  }   //COcdmchange
+  // if (flag4 == _TRUE_){
+  //   pba->Omega0_cdm = param4;
+  //   Omega_tot += pba->Omega0_cdm;
+  // }  //COcdmchange
+  // if (flag5 == _TRUE_){
+  //   pba->Omega0_cdm = param5/pba->h/pba->h;
+  //   Omega_tot += pba->Omega0_cdm;
+  // }   //COcdmchange
 
   if (flag1 == _FALSE_) {
     //Fill with Lambda
@@ -1201,12 +1200,11 @@ int input_read_parameters(
     pba->Omega0_scf = 1. - pba->Omega0_k - Omega_tot;
     if (input_verbose > 0) printf(" -> matched budget equations by adjusting Omega_scf = %e\n",pba->Omega0_scf);
   }
-  else if (flag4 == _FALSE_ || flag5 == _FALSE_) {
-    // Fill up with cdm
-    pba->Omega0_cdm = 1. - pba->Omega0_k - Omega_tot;
-    if (input_verbose > 0) printf(" -> matched budget equations by adjusting Omega_cdm = %e\n",pba->Omega0_cdm);
-  } //COcdmchange
-
+  // else if (flag4 == _FALSE_ || flag5 == _FALSE_) {
+  //   // Fill up with cdm
+  //   pba->Omega0_cdm = 1. - pba->Omega0_k - Omega_tot;
+  //   if (input_verbose > 0) printf(" -> matched budget equations by adjusting Omega_cdm = %e\n",pba->Omega0_cdm);
+  // } //COcdmchange
   // fprintf(stderr,"%e %e %e %e %e\n",
   //         pba->Omega0_lambda,
   //         pba->Omega0_fld,
@@ -4692,6 +4690,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     switch (pfzw->target_name[i]) {
     case theta_s:
       output[i] = 100.*th.rs_rec/th.ra_rec-pfzw->target_value[i];
+      if(input_verbose>10)printf(" pfzw->target_value[i] %e output[i] %e\n", pfzw->target_value[i],100.*th.rs_rec/th.ra_rec);
       break;
     case Omega_dcdmdr:
       rho_dcdm_today = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_dcdm];
@@ -4711,12 +4710,12 @@ int input_try_unknown_parameters(double * unknown_parameter,
       break;
     case log10_fraction_axion_ac: // TLS where to print out log10_fraction_axion_ac and axion_ac
       output[i] = log10(ba.f_ede)-pfzw->target_value[i];
-       // printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
+      if(input_verbose>10)printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
       break;
     case log10_axion_ac:
       ac = 1./(pow(10,ba.log10_z_c)+1);
       output[i] = log10(ac)-pfzw->target_value[i];
-       // printf("ac %e  pfzw->target_value[i] %e output[i] %e\n", log10(ac),pfzw->target_value[i],output[i]);
+       if(input_verbose>10)printf("ac %e  pfzw->target_value[i] %e output[i] %e\n", log10(ac),pfzw->target_value[i],output[i]);
       break;
     case log10_fraction_axion_ac_phi2n: // TLS where to print out log10_fraction_axion_ac and axion_ac
       output[i] = log10(ba.f_ede)-pfzw->target_value[i];

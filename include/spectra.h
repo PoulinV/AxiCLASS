@@ -201,6 +201,8 @@ struct spectra {
   int index_tr_delta_phi_over_phi_scf;    /**< index  */
   int index_tr_delta_phi_prime_scf;    /**< index  */
   int index_tr_phase_shift;    /**< index of phase shift a la Baumann */
+  int index_tr_phase_shift_A;    /**< index of phase shift a la Baumann */
+  int index_tr_phase_shift_B;    /**< index of phase shift a la Baumann */
   int index_tr_amplitude;      /**< index of amplitude a la Baumann */
   int index_tr_theta_fld;      /**< index of dark energy fluid velocity transfer function */
   int index_tr_theta_ur;       /**< index of ultra-relativistic neutrinos/relics velocity transfer function */

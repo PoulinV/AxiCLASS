@@ -271,11 +271,11 @@ int perturb_init(
                ppt->z_max_pk,
                pth->z_rec);
 
-        class_test(ppt->has_source_delta_m == _TRUE_,
-               ppt->error_message,
-               "You requested a very high z_pk=%e, higher than z_rec=%e. This works very well when you ask only transfer functions, e.g. with 'output=mTk' or 'output=mTk,vTk'. But if you need the total matter (e.g. with 'mPk', 'dCl', etc.) there is an issue with the calculation of delta_m at very early times. By default, delta_m is a gauge-invariant variable (the density fluctuation in comoving gauge) and this quantity is hard to get accurately at very early times. The solution is to define delta_m as the density fluctuation in the current gauge, synchronous or newtonian. For the moment this must be done manually by commenting the line 'ppw->delta_m += 3. *ppw->pvecback[pba->index_bg_a]*ppw->pvecback[pba->index_bg_H] * ppw->theta_m/k2;' in perturb_sources(). In the future there will be an option for doing it in an easier way.",
-               ppt->z_max_pk,
-               pth->z_rec);
+        // class_test(ppt->has_source_delta_m == _TRUE_,
+        //        ppt->error_message,
+        //        "You requested a very high z_pk=%e, higher than z_rec=%e. This works very well when you ask only transfer functions, e.g. with 'output=mTk' or 'output=mTk,vTk'. But if you need the total matter (e.g. with 'mPk', 'dCl', etc.) there is an issue with the calculation of delta_m at very early times. By default, delta_m is a gauge-invariant variable (the density fluctuation in comoving gauge) and this quantity is hard to get accurately at very early times. The solution is to define delta_m as the density fluctuation in the current gauge, synchronous or newtonian. For the moment this must be done manually by commenting the line 'ppw->delta_m += 3. *ppw->pvecback[pba->index_bg_a]*ppw->pvecback[pba->index_bg_H] * ppw->theta_m/k2;' in perturb_sources(). In the future there will be an option for doing it in an easier way.",
+        //        ppt->z_max_pk,
+        //        pth->z_rec);
 
   }
 
@@ -805,6 +805,8 @@ int perturb_indices_of_perturbs(
       class_define_index(ppt->index_tp_eta,        ppt->has_source_eta,       index_type,1);
       class_define_index(ppt->index_tp_eta_prime,  ppt->has_source_eta_prime, index_type,1);
       class_define_index(ppt->index_tp_phase_shift,  ppt->compute_phase_shift, index_type,1);
+      class_define_index(ppt->index_tp_phase_shift_A,  ppt->compute_phase_shift, index_type,1);
+      class_define_index(ppt->index_tp_phase_shift_B,  ppt->compute_phase_shift, index_type,1);
       class_define_index(ppt->index_tp_amplitude,  ppt->compute_phase_shift, index_type,1);
 
       ppt->tp_size[index_md] = index_type;
@@ -2567,7 +2569,7 @@ int perturb_solve(
       fracnu = ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur]);
       // fracnu = 0.408;
       // if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("delta_gamma= %e*epsX sin(theta) %e phase shift = %e*Pi*epsX epsX %e\n", (ppt->amplitude/3-1)/(fracnu),ppt->phase_shift,asin(ppt->phase_shift)/_PI_/(fracnu),fracnu);
-      if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("k_max %e delta_gamma/delta_gamma_b&s = %e sin(theta) %e phase shift/phase_shift_b&s= %e epsX %e\n",ppt->k_max,(pow(ppt->amplitude,0.5)/3-1)/(-0.2683*fracnu),ppt->phase_shift,asin(ppt->phase_shift)/(0.191*_PI_*fracnu),fracnu);
+      if(k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("here k_max %e delta_gamma/delta_gamma_b&s = %e sin(theta) %e phase shift/phase_shift_b&s= %e epsX %e\n",ppt->k_max,(pow(ppt->amplitude,0.5)/3-1)/(-0.2683*fracnu),ppt->phase_shift,asin(ppt->phase_shift)/(0.191*_PI_*fracnu),fracnu);
   return _SUCCESS_;
 }
 
@@ -4779,10 +4781,10 @@ int perturb_initial_conditions(struct precision * ppr,
         // ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus * cos(pow(c_gamma_squared,0.5)*tau*k);
         // ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = Phi_plus*pow(c_gamma_squared,0.5)*tau*k;
         // ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus*(1+pow(pow(c_gamma_squared,0.5)*tau*k,2)/2);
-        ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = Phi_plus*(1-cos(pow(c_gamma_squared,0.5)*tau*k));//assume Phi_plus is constant at early times
-        ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus*sin(pow(c_gamma_squared,0.5)*tau*k);
-        // ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = 0;
-        // ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = 0;
+        // ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = Phi_plus*(1-cos(pow(c_gamma_squared,0.5)*tau*k));//assume Phi_plus is constant at early times
+        // ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = Phi_plus*sin(pow(c_gamma_squared,0.5)*tau*k);
+        ppw->pv->y[ppw->pv->index_pt_phase_shift_A] = 0;
+        ppw->pv->y[ppw->pv->index_pt_phase_shift_B] = 0;
         ppw->pv->y[ppw->pv->index_pt_phase_shift] = ppw->pv->y[ppw->pv->index_pt_phase_shift_B]/pow(pow(ppw->pv->y[ppw->pv->index_pt_phase_shift_A]-1,2)+pow(ppw->pv->y[ppw->pv->index_pt_phase_shift_A],2),0.5);
     }
   }
@@ -6637,12 +6639,15 @@ int perturb_sources(
       // y[ppw->pv->index_pt_phase_shift]  = y[ppw->pv->index_pt_phase_shift_B];
       // if(z>pth->z_rec){
         if(k == ppt->k_max && z>pth->z_rec) {
+        // if(k == ppt->k_max) {
           //according to Baumann's appendix, z<zeq is negligible
           ppt->phase_shift = y[ppw->pv->index_pt_phase_shift]  ;
           ppt->amplitude = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*ppt->d_gamma_ini,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2)  ;
           // printf("z %e ppt->phase_shift %e k %e\n",z, ppt->phase_shift,k);
         }
         _set_source_(ppt->index_tp_phase_shift) = y[ppw->pv->index_pt_phase_shift];
+        _set_source_(ppt->index_tp_phase_shift_A) = y[ppw->pv->index_pt_phase_shift_A];
+        _set_source_(ppt->index_tp_phase_shift_B) = y[ppw->pv->index_pt_phase_shift_B];
         _set_source_(ppt->index_tp_amplitude) = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*ppt->d_gamma_ini,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2);
         // printf("k %e z %e shift %e\n",k,z,y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*d_gamma,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),2));
         // }
@@ -7034,6 +7039,9 @@ int perturb_print_variables(double tau,
       // printf("c_gamma_squared %e d_gamma %e \n",c_gamma_squared,d_gamma );
       phase_shift_total = y[ppw->pv->index_pt_phase_shift_B]/pow(pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*ppt->d_gamma_ini,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2),0.5);
       amplitude_total = pow(y[ppw->pv->index_pt_phase_shift_A]+c_gamma_squared*ppt->d_gamma_ini,2)+pow(y[ppw->pv->index_pt_phase_shift_B],2);
+      // if( 1/a-1 == pth->z_rec && k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose > 0) printf("k_max %e delta_gamma/delta_gamma_b&s = %e sin(theta) %e phase shift/phase_shift_b&s= %e epsX %e\n",ppt->k_max,(pow(amplitude_total,0.5)/3-1)/(-0.2683*ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur])),phase_shift_total,asin(phase_shift_total)/(0.191*_PI_*ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur])),ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur]));
+      if( 1/a-1 > pth->z_rec && 1/a-1 < pth->z_rec+0.3 && k==ppt->k_max && ppt->compute_phase_shift == _TRUE_ && ppt->perturbations_verbose >0) printf("k_max %e delta_gamma/delta_gamma_b&s = %e sin(theta) %e phase shift/phase_shift_b&s= %e epsX %e\n",ppt->k_max,(pow(amplitude_total,0.5)/3-1)/(-0.2683*ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur])),phase_shift_total,asin(phase_shift_total)/(0.191*_PI_*ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur])),ppw->pvecback[pba->index_bg_rho_ur]/(ppw->pvecback[pba->index_bg_rho_g]+ppw->pvecback[pba->index_bg_rho_ur]));
+
     }
 
     /* converting synchronous variables to newtonian ones */
@@ -7425,7 +7433,6 @@ int perturb_derivs(double tau,
                                  pvecthermo),
              pth->error_message,
              error_message);
-
   //printf("Finished calling thermodynamics_at_z. \n");
 
     if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){

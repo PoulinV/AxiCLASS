@@ -1781,6 +1781,8 @@ int spectra_indices(
   class_define_index(psp->index_tr_eta_prime,ppt->has_source_eta_prime,index_tr,1);
   class_define_index(psp->index_tr_phase_shift,ppt->compute_phase_shift,index_tr,1);
   class_define_index(psp->index_tr_amplitude,ppt->compute_phase_shift,index_tr,1);
+  class_define_index(psp->index_tr_phase_shift_A,ppt->compute_phase_shift,index_tr,1);
+  class_define_index(psp->index_tr_phase_shift_B,ppt->compute_phase_shift,index_tr,1);
 
   /* indices for species associated with a velocity transfer function in Fourier space */
 
@@ -3284,6 +3286,12 @@ int spectra_matter_transfers(
           psp->matter_transfer[((index_tau*psp->ln_k_size + index_k) * psp->ic_size[index_md] + index_ic) * psp->tr_size + psp->index_tr_phase_shift] = ppt->sources[index_md]
             [index_ic * ppt->tp_size[index_md] + ppt->index_tp_phase_shift]
             [(index_tau-psp->ln_tau_size+ppt->tau_size) * ppt->k_size[index_md] + index_k];
+          psp->matter_transfer[((index_tau*psp->ln_k_size + index_k) * psp->ic_size[index_md] + index_ic) * psp->tr_size + psp->index_tr_phase_shift_A] = ppt->sources[index_md]
+            [index_ic * ppt->tp_size[index_md] + ppt->index_tp_phase_shift_A]
+            [(index_tau-psp->ln_tau_size+ppt->tau_size) * ppt->k_size[index_md] + index_k];
+          psp->matter_transfer[((index_tau*psp->ln_k_size + index_k) * psp->ic_size[index_md] + index_ic) * psp->tr_size + psp->index_tr_phase_shift_B] = ppt->sources[index_md]
+            [index_ic * ppt->tp_size[index_md] + ppt->index_tp_phase_shift_B]
+            [(index_tau-psp->ln_tau_size+ppt->tau_size) * ppt->k_size[index_md] + index_k];
           psp->matter_transfer[((index_tau*psp->ln_k_size + index_k) * psp->ic_size[index_md] + index_ic) * psp->tr_size + psp->index_tr_amplitude] = ppt->sources[index_md]
             [index_ic * ppt->tp_size[index_md] + ppt->index_tp_amplitude]
             [(index_tau-psp->ln_tau_size+ppt->tau_size) * ppt->k_size[index_md] + index_k];
@@ -3386,7 +3394,8 @@ int spectra_output_tk_titles(struct background *pba,
       class_store_columntitle(titles,"delta_phi_prime_scf",ppt->has_scf);
       class_store_columntitle(titles,"amplitude",ppt->compute_phase_shift);
       class_store_columntitle(titles,"phase shift",ppt->compute_phase_shift);
-      class_store_columntitle(titles,"amplitude",ppt->compute_phase_shift);
+      class_store_columntitle(titles,"phase_shift_A",ppt->compute_phase_shift);
+      class_store_columntitle(titles,"phase_shift_B",ppt->compute_phase_shift);
 
     }
     if (ppt->has_velocity_transfers == _TRUE_) {
@@ -3525,8 +3534,10 @@ int spectra_output_tk_data(
             class_store_double(dataptr,tk[psp->index_tr_delta_phi_over_phi_scf],ppt->has_scf,storeidx);
             class_store_double(dataptr,tk[psp->index_tr_delta_phi_prime_scf],ppt->has_scf,storeidx);
             if(ppt->compute_phase_shift == _TRUE_){
-              class_store_double(dataptr,tk[psp->index_tr_phase_shift],_TRUE_,storeidx);
               class_store_double(dataptr,tk[psp->index_tr_amplitude],_TRUE_,storeidx);
+              class_store_double(dataptr,tk[psp->index_tr_phase_shift],_TRUE_,storeidx);
+              class_store_double(dataptr,tk[psp->index_tr_phase_shift_A],_TRUE_,storeidx);
+              class_store_double(dataptr,tk[psp->index_tr_phase_shift_B],_TRUE_,storeidx);
             }
           }
           if (ppt->has_velocity_transfers == _TRUE_) {
