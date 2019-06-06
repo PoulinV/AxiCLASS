@@ -5836,7 +5836,12 @@ int perturb_total_stress_energy(
           (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
            - ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
            // printf("delta_rho_scf %e delta_p_scf %e a %e %e %e\n", delta_rho_scf,delta_p_scf,a,ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf],ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
-
+           if(ppw->pvecback[pba->index_bg_Omega_scf]<pba->security_small_Omega_scf){
+           // if(pow(delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf],2)>1){
+             // printf("ppw->pvecback[pba->index_bg_Omega_scf]* %e %e\n", ppw->pvecback[pba->index_bg_Omega_scf],delta_rho_scf);
+             delta_rho_scf=0;
+             delta_p_scf=0;
+           }
         }
         else {
           if(pba->scf_potential == axionquad){
@@ -5848,6 +5853,7 @@ int perturb_total_stress_energy(
           }
         delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to fld above
         delta_p_scf = cs2_scf * delta_rho_scf;
+
         // printf("delta_rho_scf FL %e delta_p_scf %e\n", delta_rho_scf,delta_p_scf);
         // y[ppw->pv->index_pt_phi_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf]; //CO 23.01.18 keep evolving phi even though using fluid eqs        }
         // if(ppt->scf_fluid_flag_perts == _TRUE_){
@@ -5885,14 +5891,20 @@ int perturb_total_stress_energy(
         }
       }
 
+      // delta_rho_scf=0;
+      // delta_p_scf=0;
       ppw->delta_rho += delta_rho_scf;
 
       ppw->delta_p += delta_p_scf; // an important difference from CDM because if SCF evolving via KG then pressure is not necessarily zero.
 
       if (ppt->scf_kg_eq[index_md][index_k] == 1){ //evolving via KG
-        ppw->rho_plus_p_theta +=  1./3.*
-          k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
-        rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
+        // if(pow(delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf],2)<1){
+        if(ppw->pvecback[pba->index_bg_Omega_scf]>pba->security_small_Omega_scf){
+          ppw->rho_plus_p_theta +=  1./3.*
+            k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
+          rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
+        }
+
       }
       else { //evolving via fluid mimicking fld
         rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
@@ -6533,7 +6545,7 @@ int perturb_sources(
       }
     }
 
-    if (ppt->has_scf == _TRUE_) {
+    if (ppt->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) {
       if (ppt->scf_kg_eq[index_md][index_k] == 0){ //evolve as fluid
       _set_source_(ppt->index_tp_delta_phi_scf) = 0;
       _set_source_(ppt->index_tp_delta_phi_over_phi_scf) = 0;
@@ -7466,7 +7478,6 @@ int perturb_derivs(double tau,
         }
       }
       // if(index_k==0)printf("ppt->scf_kg_eq[%d][%d] %d tau %e\n",index_md,index_k,ppt->scf_kg_eq[index_md][index_k],tau);
-      ppt->scf_kg_eq[index_md][index_k] = 1;
       // pba->scf_fluid_eq = _FALSE_; //that is the standard case, we never follow the fluid equations
       // ppt->scf_kg_eq = _TRUE_;
 
@@ -7953,8 +7964,10 @@ int perturb_derivs(double tau,
 
       }
       else if(ppt->scf_kg_eq[index_md][index_k] == 0 && pba->scf_evolve_like_axionCAMB == _FALSE_){
-        dy[pv->index_pt_phi_prime_scf] =y[pv->index_pt_phi_prime_scf];
-        dy[pv->index_pt_phi_scf] = - 2.*a_prime_over_a*y[pv->index_pt_phi_prime_scf]; //VP: if we have declared these variables we follow their evolution eventhough we have switched to fluid equations otherwise the code is blocked.
+        // dy[pv->index_pt_phi_prime_scf] =y[pv->index_pt_phi_prime_scf];
+        dy[pv->index_pt_phi_prime_scf] = 0;
+        // dy[pv->index_pt_phi_scf] = - 2.*a_prime_over_a*y[pv->index_pt_phi_prime_scf]; //VP: if we have declared these variables we follow their evolution eventhough we have switched to fluid equations otherwise the code is blocked.
+        dy[pv->index_pt_phi_scf] = 0; //VP: if we have declared these variables we follow their evolution eventhough we have switched to fluid equations otherwise the code is blocked.
         // printf("KG is 0 %e %e \n",dy[pv->index_pt_phi_prime_scf],dy[pv->index_pt_phi_scf]);
 
       }
@@ -8070,7 +8083,7 @@ int perturb_derivs(double tau,
           // if(index_k==0)printf("k  %e a %e ddelta %e dtheta %e metric_continuity %e\n",k, a, dy[pv->index_pt_delta_scf],dy[pv->index_pt_theta_scf],metric_continuity);
 
       }
-      // else if(pba->scf_fluid_eq == _FALSE_ && pba->scf_evolve_like_axionCAMB == _FALSE_){
+      // else if(ppt->scf_kg_eq[index_md][index_k] == 0 && pba->scf_evolve_like_axionCAMB == _FALSE_){
       //   //VP: if we have declared these variables we follow their evolution eventhough we have switched to KG equations otherwise the code is blocked.
       //   dy[pv->index_pt_delta_scf] =0;
       //   if(ppt->use_big_theta_scf == _TRUE_){

@@ -112,6 +112,7 @@ struct background
   double w_scf;
   double cs2_scf;
   double threshold_scf_fluid_m_over_H;
+  double security_small_Omega_scf;
   short scf_kg_eq;    /**< evolve scalar field with KG equations */
   short scf_fluid_eq;    /**< evolve scalar field with KG equations */
   short scf_evolve_like_axionCAMB; /**< evolve scalar field perturbations like axionCAMB */

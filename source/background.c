@@ -374,6 +374,7 @@ int background_functions(
 
     /****THE REAL QUANTITIES ARE ASSIGNED HERE****/
     //pvecback[pba->index_bg_rho_scf] = pba->Omega0_scf * pow(pba->H0,2) / pow(a_rel,3);
+
     pvecback[pba->index_bg_rho_scf] = pvecback_B[pba->index_bi_rho_scf];
     pvecback[pba->index_bg_p_scf] = pba->w_scf*pvecback_B[pba->index_bi_rho_scf];
     if(pba->log10_axion_ac > -30){
@@ -478,7 +479,10 @@ int background_functions(
 
   if(pba->has_scf == _TRUE_){
     pvecback[pba->index_bg_Omega_scf] = pvecback[pba->index_bg_rho_scf] / rho_tot;
-
+        // if(pvecback[pba->index_bg_Omega_scf] < pba->security_small_Omega_scf){
+        //   pvecback[pba->index_bg_Omega_scf] = 1e-15;
+        //   pvecback[pba->index_bg_rho_scf] = 1e-15*pvecback[pba->index_bg_rho_scf];
+        // }
   }
   /** - compute other quantities in the exhaustive, redundant format */
   if (return_format == pba->long_info) {
