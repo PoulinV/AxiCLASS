@@ -7964,10 +7964,10 @@ int perturb_derivs(double tau,
 
       }
       else if(ppt->scf_kg_eq[index_md][index_k] == 0 && pba->scf_evolve_like_axionCAMB == _FALSE_){
-        // dy[pv->index_pt_phi_prime_scf] =y[pv->index_pt_phi_prime_scf];
-        dy[pv->index_pt_phi_prime_scf] = 0;
-        // dy[pv->index_pt_phi_scf] = - 2.*a_prime_over_a*y[pv->index_pt_phi_prime_scf]; //VP: if we have declared these variables we follow their evolution eventhough we have switched to fluid equations otherwise the code is blocked.
-        dy[pv->index_pt_phi_scf] = 0; //VP: if we have declared these variables we follow their evolution eventhough we have switched to fluid equations otherwise the code is blocked.
+        dy[pv->index_pt_phi_prime_scf] = - 2.*a_prime_over_a*y[pv->index_pt_phi_prime_scf];
+        // dy[pv->index_pt_phi_prime_scf] = 0;
+        // dy[pv->index_pt_phi_scf] = ; //VP: if we have declared these variables we follow their evolution eventhough we have switched to fluid equations otherwise the code is blocked.
+        dy[pv->index_pt_phi_scf] = y[pv->index_pt_phi_prime_scf]; //VP: if we have declared these variables we follow their evolution eventhough we have switched to fluid equations otherwise the code is blocked.
         // printf("KG is 0 %e %e \n",dy[pv->index_pt_phi_prime_scf],dy[pv->index_pt_phi_scf]);
 
       }
