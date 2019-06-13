@@ -1901,7 +1901,6 @@ int spectra_cls(
 #ifdef _OPENMP
             tstart = omp_get_wtime();
 #endif
-
             class_alloc_parallel(cl_integrand,
                                  ptr->q_size*cl_integrand_num_columns*sizeof(double),
                                  psp->error_message);

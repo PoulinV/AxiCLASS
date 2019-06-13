@@ -5836,7 +5836,7 @@ int perturb_total_stress_energy(
           (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
            - ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
            // printf("delta_rho_scf %e delta_p_scf %e a %e %e %e\n", delta_rho_scf,delta_p_scf,a,ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf],ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
-           if(ppw->pvecback[pba->index_bg_Omega_scf]<pba->security_small_Omega_scf){
+           if(ppw->pvecback[pba->index_bg_Omega_scf]<pba->security_small_Omega_scf && a>pow(10,pba->log10_axion_ac)){
            // if(pow(delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf],2)>1){
              // printf("ppw->pvecback[pba->index_bg_Omega_scf]* %e %e\n", ppw->pvecback[pba->index_bg_Omega_scf],delta_rho_scf);
              delta_rho_scf=0;
@@ -5899,7 +5899,10 @@ int perturb_total_stress_energy(
 
       if (ppt->scf_kg_eq[index_md][index_k] == 1){ //evolving via KG
         // if(pow(delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf],2)<1){
-        if(ppw->pvecback[pba->index_bg_Omega_scf]>pba->security_small_Omega_scf){
+        if(ppw->pvecback[pba->index_bg_Omega_scf]<pba->security_small_Omega_scf && a>pow(10,pba->log10_axion_ac)){
+          //do nothing
+        }
+        else{
           ppw->rho_plus_p_theta +=  1./3.*
             k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
           rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];

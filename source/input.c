@@ -333,14 +333,14 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
           class_read_double("f_axion",fzw.f_axion);
           fzw.Omega0_axion = 0.0;
           fzw.log10_axion_ac = 0.0;
-          class_read_int("n_axion",fzw.n_axion);
+          class_read_double("n_axion",fzw.n_axion);
           // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
           class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
         }
         else if(fzw.scf_potential == phi_2n){
           fzw.Omega0_axion = 0.0;
           fzw.log10_axion_ac = 0.0;
-          class_read_int("n_axion",fzw.n_axion);
+          class_read_double("n_axion",fzw.n_axion);
         }
         // else{
         //   class_stop("fluid approximation is not working for potential different than 'axion' and 'axionquad'!. Please switch scf_evolve_as_fluid to no.",errmsg);
@@ -1349,14 +1349,14 @@ int input_read_parameters(
        if (strcmp(string1,"axion") == 0) {
          flag1=_FALSE_;
          pba->scf_potential = axion;
-         class_call(parser_read_int(pfc,"n_axion",&int1,&flag1,errmsg),
+         class_call(parser_read_double(pfc,"n_axion",&param1,&flag1,errmsg),
                     errmsg,
                     errmsg);
         if(flag1 == _TRUE_){
-         pba->n_axion = int1;
+         pba->n_axion = param1;
         }
         else{
-          class_stop(errmsg,"incomprehensible input '%d' for the field 'n_axion'",int1);
+          class_stop(errmsg,"incomprehensible input '%d' for the field 'n_axion'",param1);
         }
          class_call(parser_read_double(pfc,"f_axion",&param1,&flag1,errmsg),
                     errmsg,
@@ -1411,14 +1411,14 @@ int input_read_parameters(
        if (strcmp(string1,"phi_2n") == 0) {
          pba->scf_potential = phi_2n;
          flag1=_FALSE_;
-         class_call(parser_read_int(pfc,"n_axion",&int1,&flag1,errmsg),
+         class_call(parser_read_double(pfc,"n_axion",&param1,&flag1,errmsg),
                     errmsg,
                     errmsg);
         if(flag1 == _TRUE_){
-         pba->n_axion = int1;
+         pba->n_axion = param1;
         }
         else{
-          class_stop(errmsg,"incomprehensible input '%d' for the field 'n_axion'",int1);
+          class_stop(errmsg,"incomprehensible input '%d' for the field 'n_axion'",param1);
         }
         class_call(parser_read_double(pfc,"log10_fraction_axion_ac_phi2n",&param1,&flag1,errmsg),
                    errmsg,

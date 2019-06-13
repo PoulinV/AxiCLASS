@@ -108,7 +108,7 @@ struct background
   double log10_z_c; //
   double f_ede; // TK added doubles to fill with values of the exact z_c and fraction_ede eventually
   double phi_scf_c; // Added for debugging. Trying to see whether the value of phi at z_c is really 7/8 phi_ini
-  int n_axion;
+  double n_axion;
   double w_scf;
   double cs2_scf;
   double threshold_scf_fluid_m_over_H;

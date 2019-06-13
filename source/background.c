@@ -331,6 +331,80 @@ int background_functions(
     rho_r += pvecback[pba->index_bg_rho_dr];
   }
 
+
+
+    /* ncdm */
+    if (pba->has_ncdm == _TRUE_) {
+
+      /* Loop over species: */
+      for(n_ncdm=0; n_ncdm<pba->N_ncdm; n_ncdm++){
+
+        /* function returning background ncdm[n_ncdm] quantities (only
+           those for which non-NULL pointers are passed) */
+        class_call(background_ncdm_momenta(
+                                           pba->q_ncdm_bg[n_ncdm],
+                                           pba->w_ncdm_bg[n_ncdm],
+                                           pba->q_size_ncdm_bg[n_ncdm],
+                                           pba->M_ncdm[n_ncdm],
+                                           pba->factor_ncdm[n_ncdm],
+                                           1./a_rel-1.,
+                                           NULL,
+                                           &rho_ncdm,
+                                           &p_ncdm,
+                                           NULL,
+                                           &pseudo_p_ncdm),
+                   pba->error_message,
+                   pba->error_message);
+
+        pvecback[pba->index_bg_rho_ncdm1+n_ncdm] = rho_ncdm;
+        rho_tot += rho_ncdm;
+        pvecback[pba->index_bg_p_ncdm1+n_ncdm] = p_ncdm;
+        p_tot += p_ncdm;
+        pvecback[pba->index_bg_pseudo_p_ncdm1+n_ncdm] = pseudo_p_ncdm;
+
+        /* (3 p_ncdm1) is the "relativistic" contribution to rho_ncdm1 */
+        rho_r += 3.* p_ncdm;
+
+        /* (rho_ncdm1 - 3 p_ncdm1) is the "non-relativistic" contribution
+           to rho_ncdm1 */
+        rho_m += rho_ncdm - 3.* p_ncdm;
+      }
+    }
+
+    /* Lambda */
+    if (pba->has_lambda == _TRUE_) {
+      pvecback[pba->index_bg_rho_lambda] = pba->Omega0_lambda * pow(pba->H0,2);
+      rho_tot += pvecback[pba->index_bg_rho_lambda];
+      p_tot -= pvecback[pba->index_bg_rho_lambda];
+    }
+
+    /* fluid with w(a) and constant cs2 */
+    if (pba->has_fld == _TRUE_) {
+
+      /* get rho_fld from vector of integrated variables */
+      pvecback[pba->index_bg_rho_fld] = pvecback_B[pba->index_bi_rho_fld];
+
+      /* get w_fld from dedicated function */
+      class_call(background_w_fld(pba,a,&w_fld,&dw_over_da,&integral_fld), pba->error_message, pba->error_message);
+      pvecback[pba->index_bg_w_fld] = w_fld;
+
+      // Obsolete: at the beginning, we had here the analytic integral solution corresponding to the case w=w0+w1(1-a/a0):
+      // pvecback[pba->index_bg_rho_fld] = pba->Omega0_fld * pow(pba->H0,2) / pow(a_rel,3.*(1.+pba->w0_fld+pba->wa_fld)) * exp(3.*pba->wa_fld*(a_rel-1.));
+      // But now everthing is integrated numerically for a given w_fld(a) defined in the function background_w_fld.
+
+      rho_tot += pvecback[pba->index_bg_rho_fld];
+      p_tot += w_fld * pvecback[pba->index_bg_rho_fld];
+    }
+
+    /* relativistic neutrinos (and all relativistic relics) */
+    if (pba->has_ur == _TRUE_) {
+      pvecback[pba->index_bg_rho_ur] = pba->Omega0_ur * pow(pba->H0,2) / pow(a_rel,4);
+      rho_tot += pvecback[pba->index_bg_rho_ur];
+      p_tot += (1./3.) * pvecback[pba->index_bg_rho_ur];
+      rho_r += pvecback[pba->index_bg_rho_ur];
+    }
+
+
   //printf("Scalar field? %f \n", pba->has_scf);//print_trigger
   /* Scalar field */
   if (pba->has_scf == _TRUE_ && pba->scf_kg_eq == _TRUE_) {
@@ -345,16 +419,20 @@ int background_functions(
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
     pvecback[pba->index_bg_rho_scf] = (phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
-    pvecback[pba->index_bg_p_scf] =(phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
+    pvecback[pba->index_bg_p_scf] = (phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     // pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
     // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
     pvecback_B[pba->index_bi_rho_scf] = pvecback[pba->index_bg_rho_scf];
-    rho_tot += pvecback[pba->index_bg_rho_scf];
-    p_tot += pvecback[pba->index_bg_p_scf];
-    //divide relativistic & nonrelativistic (not very meaningful for oscillatory models)
-    rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
-    rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+    if(pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
+    }
+    else{
+      rho_tot += pvecback[pba->index_bg_rho_scf];
+      p_tot += pvecback[pba->index_bg_p_scf];
+      //divide relativistic & nonrelativistic (not very meaningful for oscillatory models)
+      rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
+      rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+    }
     // printf("here KG equation, phi: %e, phi': %e rho_scf: %e \n", pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
     // printf("%e %e %e %e\n",a,phi,phi_prime,V_scf(pba,phi));
     //printf("3H = %e \n", 3*pvecback[pba->index_bg_H]);
@@ -383,10 +461,16 @@ int background_functions(
     else{
       pvecback[pba->index_bg_w_scf] = pba->w_scf;
     }
-    rho_tot += pvecback[pba->index_bg_rho_scf];
-    p_tot += pvecback[pba->index_bg_p_scf];
-    rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
-    rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+
+    if(pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
+    }
+    else{
+
+      rho_tot += pvecback[pba->index_bg_rho_scf];
+      p_tot += pvecback[pba->index_bg_p_scf];
+      rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
+      rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+    }
     // printf("now fluid equation %e rho %e \n",3*pvecback[pba->index_bg_H],pvecback[pba->index_bg_rho_scf]);
     // printf("phi is %e\n rho_scf is %e \n", phi, pvecback[pba->index_bg_rho_scf]);
 
@@ -394,76 +478,6 @@ int background_functions(
   //printf("Scalar field? %f \n", pba->has_scf); //print_trigger
 
 
-  /* ncdm */
-  if (pba->has_ncdm == _TRUE_) {
-
-    /* Loop over species: */
-    for(n_ncdm=0; n_ncdm<pba->N_ncdm; n_ncdm++){
-
-      /* function returning background ncdm[n_ncdm] quantities (only
-         those for which non-NULL pointers are passed) */
-      class_call(background_ncdm_momenta(
-                                         pba->q_ncdm_bg[n_ncdm],
-                                         pba->w_ncdm_bg[n_ncdm],
-                                         pba->q_size_ncdm_bg[n_ncdm],
-                                         pba->M_ncdm[n_ncdm],
-                                         pba->factor_ncdm[n_ncdm],
-                                         1./a_rel-1.,
-                                         NULL,
-                                         &rho_ncdm,
-                                         &p_ncdm,
-                                         NULL,
-                                         &pseudo_p_ncdm),
-                 pba->error_message,
-                 pba->error_message);
-
-      pvecback[pba->index_bg_rho_ncdm1+n_ncdm] = rho_ncdm;
-      rho_tot += rho_ncdm;
-      pvecback[pba->index_bg_p_ncdm1+n_ncdm] = p_ncdm;
-      p_tot += p_ncdm;
-      pvecback[pba->index_bg_pseudo_p_ncdm1+n_ncdm] = pseudo_p_ncdm;
-
-      /* (3 p_ncdm1) is the "relativistic" contribution to rho_ncdm1 */
-      rho_r += 3.* p_ncdm;
-
-      /* (rho_ncdm1 - 3 p_ncdm1) is the "non-relativistic" contribution
-         to rho_ncdm1 */
-      rho_m += rho_ncdm - 3.* p_ncdm;
-    }
-  }
-
-  /* Lambda */
-  if (pba->has_lambda == _TRUE_) {
-    pvecback[pba->index_bg_rho_lambda] = pba->Omega0_lambda * pow(pba->H0,2);
-    rho_tot += pvecback[pba->index_bg_rho_lambda];
-    p_tot -= pvecback[pba->index_bg_rho_lambda];
-  }
-
-  /* fluid with w(a) and constant cs2 */
-  if (pba->has_fld == _TRUE_) {
-
-    /* get rho_fld from vector of integrated variables */
-    pvecback[pba->index_bg_rho_fld] = pvecback_B[pba->index_bi_rho_fld];
-
-    /* get w_fld from dedicated function */
-    class_call(background_w_fld(pba,a,&w_fld,&dw_over_da,&integral_fld), pba->error_message, pba->error_message);
-    pvecback[pba->index_bg_w_fld] = w_fld;
-
-    // Obsolete: at the beginning, we had here the analytic integral solution corresponding to the case w=w0+w1(1-a/a0):
-    // pvecback[pba->index_bg_rho_fld] = pba->Omega0_fld * pow(pba->H0,2) / pow(a_rel,3.*(1.+pba->w0_fld+pba->wa_fld)) * exp(3.*pba->wa_fld*(a_rel-1.));
-    // But now everthing is integrated numerically for a given w_fld(a) defined in the function background_w_fld.
-
-    rho_tot += pvecback[pba->index_bg_rho_fld];
-    p_tot += w_fld * pvecback[pba->index_bg_rho_fld];
-  }
-
-  /* relativistic neutrinos (and all relativistic relics) */
-  if (pba->has_ur == _TRUE_) {
-    pvecback[pba->index_bg_rho_ur] = pba->Omega0_ur * pow(pba->H0,2) / pow(a_rel,4);
-    rho_tot += pvecback[pba->index_bg_rho_ur];
-    p_tot += (1./3.) * pvecback[pba->index_bg_rho_ur];
-    rho_r += pvecback[pba->index_bg_rho_ur];
-  }
 
   /** - compute expansion rate H from Friedmann equation: this is the
       only place where the Friedmann equation is assumed. Remember
@@ -479,10 +493,6 @@ int background_functions(
 
   if(pba->has_scf == _TRUE_){
     pvecback[pba->index_bg_Omega_scf] = pvecback[pba->index_bg_rho_scf] / rho_tot;
-        // if(pvecback[pba->index_bg_Omega_scf] < pba->security_small_Omega_scf){
-        //   pvecback[pba->index_bg_Omega_scf] = 1e-15;
-        //   pvecback[pba->index_bg_rho_scf] = 1e-15*pvecback[pba->index_bg_rho_scf];
-        // }
   }
   /** - compute other quantities in the exhaustive, redundant format */
   if (return_format == pba->long_info) {
@@ -2047,7 +2057,7 @@ int background_solve(
       }
       if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
-      printf("n = %d m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion);
+      printf("n = %e m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion);
       printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
       if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e\n", log10(1/pow(10,pba->log10_axion_ac)-1));
       printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
@@ -2726,7 +2736,7 @@ double V_axion_scf(
                   struct background *pba,
                   double phi){
     // int n = pba->scf_parameters[0];
-    int n = pba->n_axion;
+    double n = pba->n_axion;
     // double fa = pba->scf_parameters[2];
     double fa = pba->f_axion;
     double m = pba->m_scf*pba->H0;
@@ -2743,7 +2753,7 @@ double dV_axion_scf(
                   struct background *pba,
                   double phi){
     // int n = pba->scf_parameters[0];
-    int n = pba->n_axion;
+    double n = pba->n_axion;
     // double fa = pba->scf_parameters[2];
     double fa = pba->f_axion;
     double m = pba->m_scf*pba->H0;
@@ -2760,7 +2770,7 @@ double ddV_axion_scf(
                   double phi){
 
      // int n = pba->scf_parameters[0];
-     int n = pba->n_axion;
+     double n = pba->n_axion;
      // double fa = pba->scf_parameters[2];
      double fa = pba->f_axion;
      double m = pba->m_scf*pba->H0;
@@ -2778,7 +2788,7 @@ double V_phi_2n_scf(
                   struct background *pba,
                   double phi){
     // int n = pba->scf_parameters[0];
-    int n = pba->n_axion;
+    double n = pba->n_axion;
     double result;
 
     result = pba->V0_phi2n*pow((phi),2*n);
@@ -2791,7 +2801,7 @@ double dV_phi_2n_scf(
                   struct background *pba,
                   double phi){
     // int n = pba->scf_parameters[0];
-    int n = pba->n_axion;
+    double n = pba->n_axion;
     double result;
 
     result = pba->V0_phi2n*2*n*pow((phi),2*n-1);
@@ -2805,7 +2815,7 @@ double ddV_phi_2n_scf(
                   double phi){
 
      // int n = pba->scf_parameters[0];
-     int n = pba->n_axion;
+     double n = pba->n_axion;
      double result;
      if(n==1) result=pba->V0_phi2n*2;
      else result = pba->V0_phi2n*2*n*(2*n-1)*pow((phi),2*n-2);
