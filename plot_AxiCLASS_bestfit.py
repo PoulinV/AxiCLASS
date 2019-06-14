@@ -31,7 +31,9 @@ plt.rcParams["figure.figsize"] = [8.0,6.0]
 
 
 l_TT_low,Dl_TT_low,err_TT_low= np.loadtxt("/Users/poulin/Dropbox/Labo/ProgrammeDarkAges/error_Planck/COM_PowerSpect_CMB-TT-loL-full_R2.02.txt",unpack=True,usecols=(0,1,2))
+l_TE_low,Dl_TE_low,err_TE_low= np.loadtxt("/Users/poulin/Dropbox/Labo/ProgrammeDarkAges/error_Planck/COM_PowerSpect_CMB-TE-loL-full_R2.02.txt",unpack=True,usecols=(0,1,2))
 l_TT_high,Dl_TT_high,err_TT_high= np.loadtxt("/Users/poulin/Dropbox/Labo/ProgrammeDarkAges/error_Planck/COM_PowerSpect_CMB-TT-hiL-binned_R2.02.txt",unpack=True,usecols=(0,3,4))
+l_TE_high,Dl_TE_high,err_TE_high= np.loadtxt("/Users/poulin/Dropbox/Labo/ProgrammeDarkAges/error_Planck/COM_PowerSpect_CMB-TE-hiL-binned_R2.02.txt",unpack=True,usecols=(0,3,4))
 l_EE_low,Dl_EE_low,err_EE_low= np.loadtxt("/Users/poulin/Dropbox/Labo/ProgrammeDarkAges/error_Planck/COM_PowerSpect_CMB-EE-loL-full_R2.02.txt",unpack=True,usecols=(0,1,2))
 l_EE_high,Dl_EE_high,err_EE_high= np.loadtxt("/Users/poulin/Dropbox/Labo/ProgrammeDarkAges/error_Planck/COM_PowerSpect_CMB-EE-hiL-binned_R2.02.txt",unpack=True,usecols=(0,3,4))
 lmin_phiphi,lmax_phiphi,cl_phiphi,err_phiphi= np.loadtxt("/Users/poulin/Dropbox/Labo/ProgrammeDarkAges/error_Planck/agressive_lensing.csv",unpack=True)
@@ -75,8 +77,9 @@ var_num = 2
 # legend_name= [r'$a_c =0.1$',r'$a_c =10^{-3}$',r'$a_c =10^{-5}$',r'$a_c =10^{-5}$',r'$a_c =10^{-5}$',r'$a_c =10^{-5}$']
 # legend_name= [r'$N_{\rm eff}$',r'$n=2$',r'$n=3$',r'$n=\infty$']
 # legend_name= [r'$n=2$',r'$n=3$',r'$n=\infty$']
-legend_name= [r'$\theta_i=0.1$',r'$\theta_i$ bestfit',r'$n=\infty$']
-alpha = [0.8,0.5]
+# legend_name= [r'$\theta_i=0.1$',r'$\theta_i$ bestfit',r'$n=\infty$']
+legend_name= [r'$\theta_i$ bestfit',r'$\theta_i=3$',]
+alpha = [0.5,0.3]
 # legend_name= ['TT','TTTEEE']
 var_figname = 'nalp'
 dashes_array = [[10,0.0000000000001,10,0.0000000000001],[3,1,3,1],[5,2,1,2],[5,2,1,2],[5,2,1,2],[5,2,1,2]]
@@ -169,22 +172,33 @@ if plot_pk == True:
     ax_Pk.set_xlabel(r'$k \,\,\,\, [h/\mathrm{Mpc}]$',fontsize=15)
     ax_Pk.set_ylabel(r'$\frac{\Delta P(k)}{P(k)^{\Lambda{\rm CDM}}}$',fontsize=15)
 if plot_pk == False:
-    ax_EE_log = plt.subplot(212)
-    ax_TT_log = plt.subplot(211)
+    ax_EE_log = plt.subplot(313)
+    ax_TE_log = plt.subplot(312)
+    ax_TT_log = plt.subplot(311)
 
+plt.subplots_adjust(hspace=0.4)
 plt.setp(ax_TT_log.get_xticklabels(), fontsize=15)
+plt.setp(ax_TE_log.get_xticklabels(), fontsize=15)
 plt.setp(ax_EE_log.get_xticklabels(), fontsize=15)
 plt.setp(ax_TT_log.get_yticklabels(), fontsize=15)
+plt.setp(ax_TE_log.get_yticklabels(), fontsize=15)
 plt.setp(ax_EE_log.get_yticklabels(), fontsize=15)
 # plt.subplots_adjust(hspace=0)
 divider = make_axes_locatable(ax_TT_log)
 ax_TT_lin = divider.append_axes("right", size=5, pad=0)
 
+divider = make_axes_locatable(ax_TE_log)
+ax_TE_lin = divider.append_axes("right", size=5, pad=0)
+
 divider = make_axes_locatable(ax_EE_log)
 ax_EE_lin = divider.append_axes("right", size=5, pad=0)
+
+
 plt.setp(ax_TT_lin.get_yticklabels(), fontsize=15)
+plt.setp(ax_TE_lin.get_yticklabels(), fontsize=15)
 plt.setp(ax_EE_lin.get_yticklabels(), fontsize=15)
 plt.setp(ax_TT_lin.get_xticklabels(), fontsize=15)
+plt.setp(ax_TE_lin.get_xticklabels(), fontsize=15)
 plt.setp(ax_EE_lin.get_xticklabels(), fontsize=15)
 
 M = Class()
@@ -232,6 +246,7 @@ clM = M.lensed_cl(2500)
 ll_LCDM = clM['ell'][2:]
 clTT_LCDM = clM['tt'][2:]
 clEE_LCDM = clM['ee'][2:]
+clTE_LCDM = clM['te'][2:]
 clPP_LCDM = clM['pp'][2:]
 # ax_TT.semilogx(ll_LCDM,(ll_LCDM)*(ll_LCDM+1)/(2*np.pi)*(clTT_LCDM),'k',lw=5)
 # ax_EE.semilogx(ll_LCDM,(ll_LCDM)*(ll_LCDM+1)/(2*np.pi)*(clEE_LCDM),'k',lw=5)
@@ -246,6 +261,7 @@ for k in kvec:
 #     i=i+1
 fTT = interp1d(ll_LCDM,clTT_LCDM)
 fEE = interp1d(ll_LCDM,clEE_LCDM)
+fTE = interp1d(ll_LCDM,clTE_LCDM)
 
 M.struct_cleanup()
 for i in range(var_num):
@@ -310,27 +326,28 @@ for i in range(var_num):
     	# 		'adptative_stepsize':100,
     	# 		'scf_evolve_as_fluid':'no'})
         #Theta large
-        # M.set({'scf_potential' : 'axion',
-        #         'n_axion' : 2,
-        #         'scf_parameters' : '2.11954,0',
-    	# 		'scf_tuning_index':0,
-        #         'log10_fraction_axion_ac':-0.9298,
-        #         'log10_axion_ac':-3.50979,
-        #         'omega_cdm':0.131354,
-        #         'omega_b': 2.23759e-2,
-        #         '100*theta_s':1.04119,
-        #         'H0':72.4265,
-        #         'tau_reio':0.0795046,
-        #         'A_s':2.24017e-9,
-        #         'n_s':0.976422,
-    	# 		'scf_evolve_like_axionCAMB':'no',
-    	# 		'do_shooting':'yes',
-    	# 		'do_shooting_scf':'yes',
-    	# 		'use_big_theta_scf':'yes',
-    	# 		'scf_has_perturbations':'yes',
-    	# 		'attractor_ic_scf':'no',
-    	# 		'adptative_stepsize':100,
-    	# 		'scf_evolve_as_fluid':'no'})
+        M.set({'scf_potential' : 'axion',
+                'n_axion' : 2,
+                'scf_parameters' : '2.11954,0',
+    			'scf_tuning_index':0,
+                'log10_fraction_axion_ac':-0.9298,
+                'log10_axion_ac':-3.50979,
+                'omega_cdm':0.131354,
+                'omega_b': 2.23759e-2,
+                # '100*theta_s':1.04119,
+                'H0':72.4265,
+                'tau_reio':0.0795046,
+                'A_s':2.24017e-9,
+                'n_s':0.976422,
+    			'scf_evolve_like_axionCAMB':'no',
+    			'do_shooting':'yes',
+    			'do_shooting_scf':'yes',
+    			'use_big_theta_scf':'yes',
+    			'scf_has_perturbations':'yes',
+    			'attractor_ic_scf':'no',
+    			'adptative_stepsize':100,
+    			'scf_evolve_as_fluid':'no',
+                'security_small_Omega_scf':1e-3})
         #small Theta
         # M.set({'scf_potential' : 'axion',
         #         'n_axion' : 3,
@@ -352,27 +369,27 @@ for i in range(var_num):
     	# 		'attractor_ic_scf':'no',
     	# 		'adptative_stepsize':100,
     	# 		'scf_evolve_as_fluid':'no'})
-        M.set({'scf_potential' : 'axion',
-                'n_axion' : 3,
-                'scf_parameters' : '0.1,0',
-                'scf_tuning_index':0,
-                'log10_fraction_axion_ac':-0.8788,
-                'log10_axion_ac':-3.55314,
-                'omega_cdm':0.132745,
-                'omega_b': 2.26145e-02,
-                # '100*theta_s':1.04262e+00,
-                'H0':73.4205,
-                'tau_reio':0.075,
-                'A_s':2.23266e-9,
-                'n_s':0.988002,
-                'scf_evolve_like_axionCAMB':'no',
-                'do_shooting':'yes',
-                'do_shooting_scf':'yes',
-                'use_big_theta_scf':'yes',
-                'scf_has_perturbations':'yes',
-                'attractor_ic_scf':'no',
-                'adptative_stepsize':500,
-                'scf_evolve_as_fluid':'no'})
+        # M.set({'scf_potential' : 'axion',
+        #         'n_axion' : 3,
+        #         'scf_parameters' : '0.1,0',
+        #         'scf_tuning_index':0,
+        #         'log10_fraction_axion_ac':-0.8788,
+        #         'log10_axion_ac':-3.55314,
+        #         'omega_cdm':0.132745,
+        #         'omega_b': 2.26145e-02,
+        #         # '100*theta_s':1.04262e+00,
+        #         'H0':73.4205,
+        #         'tau_reio':0.075,
+        #         'A_s':2.23266e-9,
+        #         'n_s':0.988002,
+        #         'scf_evolve_like_axionCAMB':'no',
+        #         'do_shooting':'yes',
+        #         'do_shooting_scf':'yes',
+        #         'use_big_theta_scf':'yes',
+        #         'scf_has_perturbations':'yes',
+        #         'attractor_ic_scf':'no',
+        #         'adptative_stepsize':500,
+        #         'scf_evolve_as_fluid':'no'})
     elif i == 1:
         #small Theta
         # M.set({'scf_potential' : 'axion',
@@ -396,28 +413,50 @@ for i in range(var_num):
     	# 		'adptative_stepsize':100,
     	# 		'scf_evolve_as_fluid':'no'})
         # #large Theta
+        # M.set({'scf_potential' : 'axion',
+        #         'n_axion' : 3,
+        #         'scf_parameters' : '2.74031,0',
+        #         'scf_tuning_index':0,
+        #         'log10_fraction_axion_ac':-0.8788,
+        #         'log10_axion_ac':-3.55314,
+        #         'omega_cdm':0.132745,
+        #         'omega_b': 2.26145e-02,
+        #         # '100*theta_s':1.04262e+00,
+        #         # '100*theta_s':1.04262e+00,
+        #         'H0':72.2205,
+        #         'tau_reio':0.075,
+        #         'A_s':2.23266e-9,
+        #         'n_s':0.988002,
+        #         'scf_evolve_like_axionCAMB':'no',
+        #         'do_shooting':'yes',
+        #         'do_shooting_scf':'yes',
+        #         'use_big_theta_scf':'yes',
+        #         'scf_has_perturbations':'yes',
+        #         'attractor_ic_scf':'no',
+        #         'adptative_stepsize':500,
+        #         'scf_evolve_as_fluid':'no'})
         M.set({'scf_potential' : 'axion',
-                'n_axion' : 3,
-                'scf_parameters' : '2.74031,0',
-                'scf_tuning_index':0,
-                'log10_fraction_axion_ac':-0.8788,
-                'log10_axion_ac':-3.55314,
-                'omega_cdm':0.132745,
-                'omega_b': 2.26145e-02,
-                # '100*theta_s':1.04262e+00,
-                # '100*theta_s':1.04262e+00,
-                'H0':72.2205,
-                'tau_reio':0.075,
-                'A_s':2.23266e-9,
-                'n_s':0.988002,
-                'scf_evolve_like_axionCAMB':'no',
-                'do_shooting':'yes',
-                'do_shooting_scf':'yes',
-                'use_big_theta_scf':'yes',
-                'scf_has_perturbations':'yes',
-                'attractor_ic_scf':'no',
-                'adptative_stepsize':500,
-                'scf_evolve_as_fluid':'no'})
+                'n_axion' : 2,
+                'scf_parameters' : '3,0',
+    			'scf_tuning_index':0,
+                'log10_fraction_axion_ac':-0.9298,
+                'log10_axion_ac':-3.50979,
+                'omega_cdm':0.131354,
+                'omega_b': 2.23759e-2,
+                # '100*theta_s':1.04119,
+                'H0':72.4265,
+                'tau_reio':0.0795046,
+                'A_s':2.24017e-9,
+                'n_s':0.976422,
+    			'scf_evolve_like_axionCAMB':'no',
+    			'do_shooting':'yes',
+    			'do_shooting_scf':'yes',
+    			'use_big_theta_scf':'yes',
+    			'scf_has_perturbations':'yes',
+    			'attractor_ic_scf':'no',
+    			'adptative_stepsize':100,
+    			'scf_evolve_as_fluid':'no',
+                'security_small_Omega_scf':1e-3})
                 # 2.258053e-02	 1.298650e-01	 9.880137e-01	 2.176655e-09	 6.833666e-02	 1.041246e+00	-3.736778e+00 4.717743e-09	 2.791761e+00
 
 
@@ -429,6 +468,7 @@ for i in range(var_num):
     clM = M.lensed_cl(2500)
     ll = clM['ell'][2:]
     clTT = clM['tt'][2:]
+    clTE = clM['te'][2:]
     clEE = clM['ee'][2:]
     bg = M.get_background()
     Omega_scf = bg['(.)Omega_scf']
@@ -445,20 +485,32 @@ for i in range(var_num):
             k = H[j]/(1+z[j])
             # l.append(k*Da[j])
             l.append(k*(tau_0-tau_rec))
+    print 450./(tau_0-tau_rec)
     #    store P(k) for common k values
+    lmax = max(l)
+    lmin = min(l)
+    l=[]
+    l.append(lmin)
+    l.append(2*lmax)
     if plot_pk == True:
         pkM = []
         for k in kvec:
             pkM.append(M.pk(k,0.))
         ax_Pk.semilogx(kvec,(np.array(pkM)-np.array(pkM_LCDM))/np.array(pkM_LCDM),var_color,lw=2,dashes=dashes,label=var_legend)
-    # print l
-    ax_TT_lin.fill_between(l,-2,2,alpha=var_alpha, facecolor=var_color,
-                     linewidth=0)
-    ax_EE_lin.fill_between(l,-2,2,alpha=var_alpha, facecolor=var_color,
-                     linewidth=0)
+    print l,(clTE)-(clTE_LCDM)
+    # ax_TT_lin.fill_between(l,-2,2,alpha=var_alpha, facecolor=var_color,
+    #                  linewidth=0)
+    # ax_TE_lin.fill_between(l,-2,2,alpha=var_alpha, facecolor=var_color,
+    #                  linewidth=0)
+    # ax_EE_lin.fill_between(l,-2,2,alpha=var_alpha, facecolor=var_color,
+    #                  linewidth=0)
+    sigma_CV = np.sqrt(clTT_LCDM*clEE_LCDM+clTE_LCDM**2)
+    print ((clTE)-(clTE_LCDM))/sigma_CV,np.sqrt(1/(2*ll+1)),np.sqrt(clTT_LCDM*clEE_LCDM+clTE_LCDM**2)
     ax_TT_lin.plot(ll,(clTT-clTT_LCDM)/clTT_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
+    ax_TE_lin.plot(ll,((clTE)-(clTE_LCDM))/sigma_CV,var_color,lw=2,dashes=dashes,label=var_legend)
     ax_EE_lin.plot(ll,(clEE-clEE_LCDM)/clEE_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
     ax_TT_log.plot(ll,(clTT-clTT_LCDM)/clTT_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
+    ax_TE_log.plot(ll,((clTE)-(clTE_LCDM))/sigma_CV,var_color,lw=2,dashes=dashes,label=var_legend)
     ax_EE_log.plot(ll,(clEE-clEE_LCDM)/clEE_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
     M.struct_cleanup()
 
@@ -532,21 +584,29 @@ ax_TT_log.set_ylim((-1.5,1.5))
 ax_EE_log.set_xscale('linear')
 ax_EE_log.set_xlim((1,29))
 ax_EE_log.set_ylim((-10,10))
+ax_TE_log.set_xscale('linear')
+ax_TE_log.set_xlim((1,29))
+# ax_TE_log.set_ylim((-10,10))
 
 ax_TT_log.set_xticks([2., 10.])
 ax_EE_log.set_xticks([2., 10.])
+ax_TE_log.set_xticks([2., 10.])
 ax_TT_log.set_yticks([-0.8,-0.4,0.,0.4,0.8])
 ax_EE_log.set_yticks([-7.5,-5,-2.5,0.0,2.5,5,7.5])
+ax_TE_log.set_yticks([-5,-2.5,0.0,2.5,5])
 
 ax_TT_log.spines['right'].set_visible(False)
 ax_EE_log.yaxis.set_ticks_position('left')
+ax_TE_log.yaxis.set_ticks_position('left')
 ax_TT_log.spines['right'].set_visible(False)
 ax_EE_log.yaxis.set_ticks_position('left')
-
+ax_TE_log.yaxis.set_ticks_position('left')
 ax_TT_log.tick_params('both', length=10, width=1, which='major')
 ax_TT_log.tick_params('both', length=5, width=1, which='minor')
 ax_EE_log.tick_params('both', length=10, width=1, which='major')
 ax_EE_log.tick_params('both', length=5, width=1, which='minor')
+ax_TE_log.tick_params('both', length=10, width=1, which='major')
+ax_TE_log.tick_params('both', length=5, width=1, which='minor')
 
 # axLin.plot(ellCIP, CIPTT,color="cyan", linestyle='-',lw=2)
 # axLin.plot(ellCIP, CIPTT2,color="red", linestyle='-',lw=2)
@@ -561,6 +621,12 @@ ax_EE_lin.set_xlim((30, 2010))
 ax_EE_lin.set_ylim((-0.12,0.12))
 ax_EE_lin.tick_params('both', length=10, width=1, which='major',labelsize=15)
 ax_EE_lin.tick_params('both', length=5, width=1, which='minor',labelsize=15)
+ax_TE_lin.set_xscale('linear')
+# ax_TE_lin.set_yscale('log')
+ax_TE_lin.set_xlim((30, 2010))
+ax_TE_lin.set_ylim((-0.12,0.12))
+ax_TE_lin.tick_params('both', length=10, width=1, which='major',labelsize=15)
+ax_TE_lin.tick_params('both', length=5, width=1, which='minor',labelsize=15)
 
 major_ticks = [30, 500, 1000, 1500, 2000,2500]
 
@@ -581,6 +647,14 @@ ax_EE_lin.spines['left'].set_visible(False)
 ax_EE_lin.yaxis.set_ticks_position('right')
 
 ax_EE_lin.axvline(30, color='black', linestyle='--',lw=2)
+ax_TE_lin.set_xticks(major_ticks)
+ax_TE_lin.set_yticks([-0.08,-0.04,0,0.04,0.08])
+
+# Removes bottom axis line
+ax_TE_lin.spines['left'].set_visible(False)
+ax_TE_lin.yaxis.set_ticks_position('right')
+
+ax_TE_lin.axvline(30, color='black', linestyle='--',lw=2)
 #
 # ###############
 # ###############
@@ -707,11 +781,18 @@ factor3 = l_EE_high*(l_EE_high+1)/2./np.pi;
 conversion3 = 1/(factor3*(T_cmb*1.e6)**2)
 factor4 = l_EE_low*(l_EE_low+1)/2./np.pi;
 conversion4 = 1/(factor4*(T_cmb*1.e6)**2)
+factor5 = l_TE_high*(l_TE_high+1)/2./np.pi;
+conversion5 = 1/(factor3*(T_cmb*1.e6)**2)
+factor6 = l_TE_low*(l_TE_low+1)/2./np.pi;
+conversion6 = 1/(factor4*(T_cmb*1.e6)**2)
+
 print Dl_TT_high*conversion, fTT(l_TT_high)
 ax_TT_lin.errorbar(l_TT_high, Dl_TT_high*conversion1/fTT(l_TT_high)-1, yerr=err_TT_high*conversion1/fTT(l_TT_high), fmt='.')
 ax_TT_log.errorbar(l_TT_low, Dl_TT_low*conversion2/fTT(l_TT_low)-1, yerr=err_TT_low*conversion2/fTT(l_TT_low), fmt='.')
 ax_EE_lin.errorbar(l_EE_high, Dl_EE_high*conversion3/fEE(l_EE_high)-1, yerr=err_EE_high*conversion3/fEE(l_EE_high), fmt='.')
 ax_EE_log.errorbar(l_EE_low, Dl_EE_low*conversion4/fEE(l_EE_low)-1, yerr=err_EE_low*conversion4/fEE(l_EE_low), fmt='.')
+ax_TE_lin.errorbar(l_TE_high, (Dl_TE_high*conversion5-fTE(l_TE_high))/np.sqrt(fTT(l_TE_high)*fEE(l_TE_high)+fTE(l_TE_high)**2), yerr=err_TE_high*conversion5/np.sqrt(fTT(l_TE_high)*fEE(l_TE_high)+fTE(l_TE_high)**2), fmt='.')
+ax_TE_log.errorbar(l_TE_low, (Dl_TE_low*conversion6-fTE(l_TE_low))/np.sqrt(fEE(l_TE_low)*fTT(l_TE_low)+fTE(l_TE_low)**2), yerr=err_TE_low*conversion6/np.sqrt(fTT(l_TE_low)*fEE(l_TE_low)+fTE(l_TE_low)**2), fmt='.')
 
 
 
@@ -721,16 +802,26 @@ ax_EE_log.errorbar(l_EE_low, Dl_EE_low*conversion4/fEE(l_EE_low)-1, yerr=err_EE_
 # ax_TT.axis([2,2500,-0.06,0.06])
 # ax_TT.set_xlabel(r'$\ell$',fontsize=35)
 # ax_TT_lin.text(1050,0.02,r'$\frac{\Delta C_\ell^\mathrm{TT}}{C_\ell^\mathrm{TT}(\Lambda{\rm CDM})}$',fontsize=20)
-ax_TT_log.set_ylabel(r'$\Delta C_\ell^\mathrm{TT}/C_\ell^\mathrm{TT}(\Lambda{\rm CDM})$',fontsize=17)
+# ax_TT_log.set_ylabel(r'$\Delta C_\ell^\mathrm{TT}/C_\ell^\mathrm{TT}(\Lambda{\rm CDM})$',fontsize=17)
+ax_TT_log.set_ylabel(r'$\frac{\Delta C_\ell^\mathrm{TT}}{C_\ell^\mathrm{TT}}$',fontsize=19)
 
 # ax_Pk.legend(frameon=False,prop={'size':30},loc='upper left',borderaxespad=0.)
-ax_TT_lin.set_xlabel(r'$\ell$',fontsize=20)
+ax_TT_lin.set_xlabel(r'$\ell$',fontsize=20,labelpad=-20)
 ax_EE_lin.legend(frameon=False,prop={'size':12},loc='upper right',borderaxespad=0.)
 
 # ax_EE.axis([2,2500,-0.06,0.06])
 ax_EE_lin.set_xlabel(r'$\ell$',fontsize=20,labelpad=-20)
 # ax_EE_lin.text(200,-0.1,r'$\frac{\Delta C_\ell^\mathrm{EE}}{C_\ell^\mathrm{EE}(\Lambda{\rm CDM})}$',fontsize=20)
-ax_EE_log.set_ylabel(r'$\Delta C_\ell^\mathrm{EE}/C_\ell^\mathrm{EE}(\Lambda{\rm CDM})$',fontsize=17)
+# ax_EE_log.set_ylabel(r'$\Delta C_\ell^\mathrm{EE}/C_\ell^\mathrm{EE}(\Lambda{\rm CDM})$',fontsize=19)
+ax_EE_log.set_ylabel(r'$\frac{\Delta C_\ell^\mathrm{EE}}{C_\ell^\mathrm{EE}}$',fontsize=19)
+
+ax_TE_lin.legend(frameon=False,prop={'size':12},loc='upper right',borderaxespad=0.)
+
+# ax_TE.axis([2,2500,-0.06,0.06])
+ax_TE_lin.set_xlabel(r'$\ell$',fontsize=20,labelpad=-20)
+# ax_TE_lin.text(200,-0.1,r'$\frac{\Delta C_\ell^\mathrm{TE}}{C_\ell^\mathrm{TE}(\Lambda{\rm CDM})}$',fontsize=20)
+# ax_TE_log.set_ylabel(r'$\Delta C_\ell^\mathrm{TE}/C_\ell^\mathrm{TE}(\Lambda{\rm CDM})$',fontsize=19)
+ax_TE_log.set_ylabel(r'$\frac{\Delta C_\ell^\mathrm{TE}}{\sqrt{C_\ell^\mathrm{EE}*C_\ell^\mathrm{TT}+(C_\ell^\mathrm{TE})^2}}$',fontsize=19)
 
 
 # fig_TT.savefig('spectra_nalp_zc1e3_ErrorPlanck.pdf')
@@ -815,6 +906,24 @@ while step < l_max:
             )
         )
         ax_EE_log.add_patch(
+            patches.Rectangle(
+                (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
+                width,          # width
+                2*binned_cosmic_variance(result,int(step),width),          # height
+                color='r',
+                alpha=0.1
+            )
+        )
+        ax_TE_lin.add_patch(
+            patches.Rectangle(
+                (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
+                width,          # width
+                2*binned_cosmic_variance(result,int(step),width),          # height
+                color='r',
+                alpha=0.1
+            )
+        )
+        ax_TE_log.add_patch(
             patches.Rectangle(
                 (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
                 width,          # width
