@@ -424,15 +424,15 @@ int background_functions(
     // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
     pvecback_B[pba->index_bi_rho_scf] = pvecback[pba->index_bg_rho_scf];
-    if(pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
-    }
-    else{
+    // if(pba->n_axion < pba->n_axion_security && pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
+    // }
+    // else{
       rho_tot += pvecback[pba->index_bg_rho_scf];
       p_tot += pvecback[pba->index_bg_p_scf];
       //divide relativistic & nonrelativistic (not very meaningful for oscillatory models)
       rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
       rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
-    }
+    // }
     // printf("here KG equation, phi: %e, phi': %e rho_scf: %e \n", pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
     // printf("%e %e %e %e\n",a,phi,phi_prime,V_scf(pba,phi));
     //printf("3H = %e \n", 3*pvecback[pba->index_bg_H]);
@@ -462,15 +462,15 @@ int background_functions(
       pvecback[pba->index_bg_w_scf] = pba->w_scf;
     }
 
-    if(pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
-    }
-    else{
+    // if(pba->n_axion < pba->n_axion_security && pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
+    // }
+    // else{
 
       rho_tot += pvecback[pba->index_bg_rho_scf];
       p_tot += pvecback[pba->index_bg_p_scf];
       rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
       rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
-    }
+    // }
     // printf("now fluid equation %e rho %e \n",3*pvecback[pba->index_bg_H],pvecback[pba->index_bg_rho_scf]);
     // printf("phi is %e\n rho_scf is %e \n", phi, pvecback[pba->index_bg_rho_scf]);
 
