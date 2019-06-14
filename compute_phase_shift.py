@@ -8,6 +8,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from sys import exit
 import matplotlib
 from matplotlib import rc
+from scipy.interpolate import interp1d
 
 rc('font',**{'family':'serif','serif':['Times']})
 rc('text', usetex=True)
@@ -74,10 +75,20 @@ start = time()
 
 
 params = { 'compute_phase_shift':'yes',
-			'output':'tCl,mPk,dTk',
-			'start_small_k_at_tau_c_over_tau_h':1e-07,
-			'start_large_k_at_tau_h_over_tau_k':1e-07,
-			'P_k_max_h/Mpc':5}
+			# 'start_small_k_at_tau_c_over_tau_h':1e-07,
+			# 'start_large_k_at_tau_h_over_tau_k':1e-07,
+			# 'k_per_decade_for_bao':50,
+			# 'k_per_decade_for_pk':50,         # LambdaCDM parameters
+            'h':0.67556,
+            'omega_b':0.022032,
+            'omega_cdm':0.12038,
+            'A_s':2.215e-9,
+            'n_s':0.9619,
+            'tau_reio':0.0925,
+            # Take fixed value for primordial Helium (instead of automatic BBN adjustment)
+            # 'YHe':0.246,
+            # other output and precision parameters
+            'gauge':'synchronous'}
 			# 'input_verbose':1,
 			# 'background_verbose':1,
 			# 'thermodynamics_verbose':1,
@@ -111,7 +122,7 @@ om_cdm_min = 0.01
 om_cdm_max = 0.3
 
 A = 7./8.*(4./11.)**(4./3.)
-
+version = 'v2'
 # Contours_at = (71.5,73.24,74.98) # This must be a tuple with a at least one value and a comma. That is, must have at least one comma
 # # 					 # Can define just one value as (5. , )
 # # 					 # Leave as None if don't want contours
@@ -132,81 +143,187 @@ Contours_alpha = (-1.5,-1,-0.5) # This must be a tuple with a at least one value
 
 # T_b_redshift = 20 # redshift at which we want gas temperature to be plot
 
+
+
+
+
+# fig, (ax1,ax2) = plt.subplots() # new plot
+fig, (ax1,ax2) = plt.subplots(1,2, sharex=False,gridspec_kw=dict(height_ratios=[1]),figsize=(15,15))
+# fig_Pk, ax_Pk = plt.subplots()
+# fig.subplots_adjust(hspace=0)
+ax1.tick_params(axis='x',labelsize=23)
+ax1.tick_params(axis='y',labelsize=23)
+ax2.tick_params(axis='x',labelsize=23)
+ax2.tick_params(axis='y',labelsize=23)
+# ax3.tick_params(axis='y',labelsize=23)
+ax1.set_xlim(0,100)
+ax2.set_xlim(0,100)
+# ax3.set_xlim(0,100)
+ax1.set_xlabel(r'$k*r_s(z_{\rm rec})/\pi$', fontsize = 23)
+ax1.set_ylabel(r'$(\theta-\theta_{\Lambda{\rm CDM}})/\pi$', fontsize = 23)
+ax2.set_xlabel(r'$k*r_s(z_{\rm rec})/\pi$', fontsize = 23)
+ax2.set_ylabel(r'$A^2 - A^2_{\Lambda{\rm CDM}}$', fontsize = 23)
+# ax3.set_xlabel(r'$z$', fontsize = 23)
+# ax3.set_ylabel(r'$\rho$', fontsize = 23)
+# ax3.set_xscale('log')
+# ax3.set_yscale('log')
+# ax2.set_xlabel(r'$\epsilon_X$', fontsize = 23)
 ###############################################################################################################################################
 # RUN CLASS / FETCH OUTPUT
 ###############################################################################################################################################
-
+log10_axion_ac = -3.6
+n_axion = 3
+Theta_initial = 3
+log10_fraction_axion_ac = -1
+color=['r','b']
+label=[r'$\Delta N_{\rm eff} = 0.5$',r'$f_{\rm EDE}(a_c) = 10\%,~a_c = 0.0002$']
+k_array = np.logspace(-3,1,1000)
 if (output_file != None and load_from_file == True):
 	exit('Error: Only have functionality for T_b and H_0 built in. Pick one. Type it correctly.')
 
 elif load_from_file == False:
 	# if we're calculating things now and not loading from a file
+	if 'v1' in version:
+		# Eps_x = np.linspace(Eps_min, Eps_max, N, endpoint = True)
+		# print Eps_x
 
-	# Eps_x = np.linspace(Eps_min, Eps_max, N, endpoint = True)
-	# print Eps_x
+		om_cdm = np.linspace(om_cdm_min, om_cdm_max, N, endpoint = True)
 
-	om_cdm = np.linspace(om_cdm_min, om_cdm_max, N, endpoint = True)
-
-	cosmo = Class() # Create an instance of the CLASS wrapper
+		cosmo = Class() # Create an instance of the CLASS wrapper
 
 
-	phase_shift = np.zeros((N)) # initialise H0 as an array of zeroes
-	amplitude = np.zeros((N)) # initialise H0 as an array of zeroes
+		phase_shift = np.zeros((N)) # initialise H0 as an array of zeroes
+		amplitude = np.zeros((N)) # initialise H0 as an array of zeroes
 
-	for i in range(N):
-		# params['N_ur'] = Eps_x[i]/(A*(1-Eps_x[i]))
-		params['omega_cdm'] = om_cdm[i]
-		print  om_cdm[i]
-		# print Eps_x[i]/(A*(1-Eps_x[i]))
-		# params['m_axion'] = 10**mu[i]
+		for i in range(N):
+			# params['N_ur'] = Eps_x[i]/(A*(1-Eps_x[i]))
+			params['omega_cdm'] = om_cdm[i]
+			print  om_cdm[i]
+			# print Eps_x[i]/(A*(1-Eps_x[i]))
+			# params['m_axion'] = 10**mu[i]
+			cosmo.empty()
+			cosmo.struct_cleanup()
+			# ensuring memory isn't being eaten up
+
+			# try to solve with a certain cosmology, no worries if it cannot
+			try:
+				cosmo.set(params) # Set the parameters to the cosmological code
+				cosmo.compute() # solve physics
+				#amplitude and phase shift at zdec for k->infty
+				phase_shift[i] = (cosmo.phase_shift())
+				amplitude[i] =(cosmo.amplitude())
+				# #amplitude and phase shift at zdec for all k
+				# one_time = cosmo.get_transfer(z_rec)
+				# k = one_time['k (h/Mpc)']
+				# phase_shift = one_time['phase shift']
+				# amplitude = one_time['amplitude']
+				# zc[i][j] = np.log10(cosmo.zc())
+				# print cosmo.phase_shift()
+
+			except CosmoComputationError: # this happens when CLASS fails
+				pass # eh, don't do anything
 		cosmo.empty()
 		cosmo.struct_cleanup()
-		# ensuring memory isn't being eaten up
+# ensuring memory isn't being eaten up
 
-		# try to solve with a certain cosmology, no worries if it cannot
-		try:
-			cosmo.set(params) # Set the parameters to the cosmological code
-			cosmo.compute() # solve physics
+# try to solve with a certain cosmology, no worries if it cannot
+	if 'v2' in version:
+		for i in range(3):
+			cosmo = Class() # Create an instance of the CLASS wrapper
+			try:
+				cosmo.set(params) # Set the parameters to the cosmological code
+				if i == 1:
+					cosmo.set({'N_eff':3.5})
+				if i == 2:
+					cosmo.set({'scf_potential': 'axion',
+                    'n_axion': n_axion,
+                    'log10_axion_ac': log10_axion_ac, # Must input log10(axion_ac)
+                    # log10_fraction_axion_ac': -1.922767 # Must input log10(fraction_axion_ac)
+                    'log10_fraction_axion_ac': log10_fraction_axion_ac, # Must input log10(fraction_axion_ac)
+                    # m_axion': 1.811412e+06
+                    # f_axion': 1
+                    'scf_parameters':'%.2f,0.0'%(Theta_initial), #phi_i,phi_dot_i //dummy: phi_i will be updated.
+                    'adptative_stepsize': 100,
+                    'scf_tuning_index': 0,
+                    'do_shooting': 'yes',
+                    'do_shooting_scf': 'yes',
+                    # back_integration_stepsize':1'e-4
+                    'use_big_theta_scf': 'yes',
+                    'scf_has_perturbations': 'yes',
+                    'attractor_ic_scf': 'no'})
+				cosmo.compute() # solve physics
+				derived = cosmo.get_current_derived_parameters(['z_rec','tau_rec','conformal_age'])
+				#print derived.viewkeys()
+				z_rec = derived['z_rec']
+				z_rec = int(1000.*z_rec)/1000. # round down at 4 digits after coma
+				cosmo.empty()
+				cosmo.struct_cleanup()
+				cosmo.set(params) # Set the parameters to the cosmological code
+				cosmo.set({'output':'tCl,mPk,dTk',
+				            # 'l_max_scalars':5000,
+				            'P_k_max_1/Mpc':1.0,
+							'radiation_streaming_approximation':3,
+							'ur_fluid_approximation':3}) # Set the parameters to the cosmological code
+				cosmo.set({'z_pk':z_rec})
+				if i == 1:
+					cosmo.set({'N_ur':3.5})
+				if i == 2:
+					cosmo.set({'scf_potential': 'axion',
+                    'n_axion': n_axion,
+                    'log10_axion_ac': log10_axion_ac, # Must input log10(axion_ac)
+                    # log10_fraction_axion_ac': -1.922767 # Must input log10(fraction_axion_ac)
+                    'log10_fraction_axion_ac': log10_fraction_axion_ac, # Must input log10(fraction_axion_ac)
+                    # m_axion': 1.811412e+06
+                    # f_axion': 1
+                    'scf_parameters':'%.2f,0.0'%(Theta_initial), #phi_i,phi_dot_i //dummy: phi_i will be updated.
+                    'adptative_stepsize': 100,
+                    'scf_tuning_index': 0,
+                    'do_shooting': 'yes',
+                    'do_shooting_scf': 'yes',
+                    # back_integration_stepsize':1'e-4
+                    'use_big_theta_scf': 'yes',
+                    'scf_has_perturbations': 'yes',
+                    'attractor_ic_scf': 'no'})
+				cosmo.compute() # solve physics
+				#amplitude and phase shift at zdec for all k
+				one_time = cosmo.get_transfer(z_rec)
+				k = one_time['k (h/Mpc)']
+				phase_shift = one_time['phase shift']
+				amplitude = one_time['amplitude']
+				if i == 0:
+					one_time_LCDM = one_time
+					amplitude_LCDM = amplitude
+				background = cosmo.get_background() # load background table
+				# if i == 0:
+				#  background_density = background['(.)rho_ur'] # load background table
+				# if i == 1:
+				#  background_density = background['(.)rho_scf'] # load background table
+				rs_at_z = interp1d(background['z'],background['comov.snd.hrz.'])
+				print i, rs_at_z(z_rec)
+				if i == 0:
+					phase_shift_LCDM = interp1d(one_time_LCDM['k (h/Mpc)'],one_time_LCDM['phase shift'])
+					amplitude_LCDM = interp1d(one_time_LCDM['k (h/Mpc)'],one_time_LCDM['amplitude'])
+				else:
+					phase_shift_interp = interp1d(one_time['k (h/Mpc)'],one_time['phase shift'])
+					amplitude_interp = interp1d(one_time['k (h/Mpc)'],one_time['amplitude'])
+				if i > 0:
+					# ax1.plot(k_array*rs_at_z(z_rec)/np.pi,(np.arcsin(phase_shift_interp(k_array))-np.arcsin(phase_shift_LCDM(k_array)))/np.pi,color=color[i-1],label=label[i-1])
+					# ax2.plot(k_array*rs_at_z(z_rec)/np.pi,(amplitude_interp(k_array)-amplitude_LCDM(k_array)),color=color[i-1],label=label[i-1])
+					ax1.plot(k*rs_at_z(z_rec)/np.pi,(one_time['phi']+one_time['d_g']),color=color[i-1],label=label[i-1])
+					ax2.plot(k*rs_at_z(z_rec)/np.pi,(one_time['phi']+one_time['psi']),color=color[i-1],label=label[i-1])
+				# ax3.plot(background['z'],background_density,color=color[i],label=label[i])
 
-			phase_shift[i] = (cosmo.phase_shift())
-			amplitude[i] =(cosmo.amplitude())
-			# zc[i][j] = np.log10(cosmo.zc())
-			# print cosmo.phase_shift()
-
-		except CosmoComputationError: # this happens when CLASS fails
-			pass # eh, don't do anything
+			except CosmoComputationError: # this happens when CLASS fails
+				pass # eh, don't do anything
+			cosmo.empty()
+			cosmo.struct_cleanup()
 
 
-		# print('Nur = %e \t EpsX = %e \t phase_shift = %e \t amplitude = %e\n' %(Eps_x[i]/(A*(1-Eps_x[i])), Eps_x[i],  phase_shift[i], amplitude[i]))
-		print('om_cdm = %e \t phase_shift = %e \t amplitude = %e\n' %(om_cdm[i],  phase_shift[i], amplitude[i]))
-		# print('fEDE = %e \t mu = %e \t alpha = %.5f \t zc = %.5f\n' %(fEDE[i], mu[j], alpha[i][j], zc[i][j]))
-
-		# # test that stuff is working by plotting the fluid energy density
-		# bg = cosmo.get_background()
-		# plt.loglog( bg['z'], bg['(.)rho_fld[0]'])
-		# plt.show()
-
+ax1.legend(prop={'size':18},loc='upper right',numpoints=1,frameon=False,handlelength=1.5)
 
 ###############################################################################################################################################
 # PLOT THINGS
 ###############################################################################################################################################
-
-end = time()
-print('\n\nTime taken for everything but plot = %.2f seconds' %(end - start))
-
-
-if make_plot == True:
-
-
-
-	# fig, (ax1,ax2) = plt.subplots() # new plot
-	fig, (ax1,ax2) = plt.subplots(1,2, sharex=False,gridspec_kw=dict(height_ratios=[1]),figsize=(12,12))
-	# fig_Pk, ax_Pk = plt.subplots()
-	# fig.subplots_adjust(hspace=0)
-	ax1.tick_params(axis='x',labelsize=23)
-	ax1.tick_params(axis='y',labelsize=23)
-	ax2.tick_params(axis='x',labelsize=23)
-	ax2.tick_params(axis='y',labelsize=23)
 
 
 	# The following code based on imshow doesn't altogether work
@@ -219,20 +336,16 @@ if make_plot == True:
 	# 				origin = 'lower', # same as transpose, to get pixels to go in the correct places
 	# 				aspect = 'auto'
 	# 				)
-	# ax1.plot(Eps_x,np.arcsin(phase_shift),'r')
+
 	# ax1.plot(Eps_x,0.191*3.14157*Eps_x,'b--')
 	# ax2.plot(Eps_x,amplitude,'r')
-	ax1.plot(om_cdm,np.arcsin(phase_shift),'r')
+	# ax1.plot(om_cdm,np.arcsin(phase_shift),'r')
 	# ax1.plot(Eps_x,0.191*3.14157*Eps_x,'b--')
 	# ax2.plot(om_cdm,amplitude,'r')
 
-	ax1.set_xlabel(r'$\epsilon_X$', fontsize = 23)
-	ax1.set_ylabel(r'$\Delta\phi$', fontsize = 23)
-	# ax2.set_xlabel(r'$\epsilon_X$', fontsize = 23)
+	# ax1.set_xlabel(r'$\epsilon_X$', fontsize = 23)
+	# ax1.set_ylabel(r'$\Delta\phi$', fontsize = 23)
+
 	# ax2.set_ylabel(r'Amplitude', fontsize = 23)
-	plt.savefig(output_file + '.png',bbox_inches='tight')
-	plt.show()
-
-
-else:
-	print('You did not request a plot. Plot is skipped. ')
+plt.savefig(output_file + '.png',bbox_inches='tight')
+plt.show()
