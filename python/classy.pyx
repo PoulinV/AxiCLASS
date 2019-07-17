@@ -817,7 +817,7 @@ cdef class Class:
 
     def h(self):
         return self.ba.h
-
+        
     def n_s(self):
         return self.pm.n_s
 
@@ -834,6 +834,8 @@ cdef class Class:
         return self.ba.Omega0_g
     def fEDE(self):
         return self.ba.f_ede
+    def omega_axion(self):
+        return self.ba.omega_axion
 
     def zc(self):
         return 10**self.ba.log10_z_c
@@ -875,7 +877,7 @@ cdef class Class:
     def da_rec(self):
         self.compute(["thermodynamics"])
         return self.th.da_rec
-        
+
     def z_rec(self):
         self.compute(["thermodynamics"])
         return self.th.z_rec
@@ -1407,6 +1409,8 @@ cdef class Class:
                 value = self.ba.log10_axion_ac
             elif name == 'f_axion':
                 value = self.ba.f_axion
+            elif name == 'omega_axion':
+                value = self.ba.omega_axion
             elif name == 'm_axion':
                 value = self.ba.m_scf
             elif name == 'log10_m_axion':

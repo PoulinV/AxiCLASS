@@ -188,22 +188,22 @@ plt.setp(ax_TT_log.get_yticklabels(), fontsize=15)
 plt.setp(ax_TE_log.get_yticklabels(), fontsize=15)
 plt.setp(ax_EE_log.get_yticklabels(), fontsize=15)
 # plt.subplots_adjust(hspace=0)
-divider = make_axes_locatable(ax_TT_log)
-ax_TT_lin = divider.append_axes("right", size=5, pad=0)
+# divider = make_axes_locatable(ax_TT_log)
+# ax_TT_lin = divider.append_axes("right", size=5, pad=0)
+#
+# divider = make_axes_locatable(ax_TE_log)
+# ax_TE_lin = divider.append_axes("right", size=5, pad=0)
+#
+# divider = make_axes_locatable(ax_EE_log)
+# ax_EE_lin = divider.append_axes("right", size=5, pad=0)
 
-divider = make_axes_locatable(ax_TE_log)
-ax_TE_lin = divider.append_axes("right", size=5, pad=0)
 
-divider = make_axes_locatable(ax_EE_log)
-ax_EE_lin = divider.append_axes("right", size=5, pad=0)
-
-
-plt.setp(ax_TT_lin.get_yticklabels(), fontsize=15)
-plt.setp(ax_TE_lin.get_yticklabels(), fontsize=15)
-plt.setp(ax_EE_lin.get_yticklabels(), fontsize=15)
-plt.setp(ax_TT_lin.get_xticklabels(), fontsize=15)
-plt.setp(ax_TE_lin.get_xticklabels(), fontsize=15)
-plt.setp(ax_EE_lin.get_xticklabels(), fontsize=15)
+# plt.setp(ax_TT_lin.get_yticklabels(), fontsize=15)
+# plt.setp(ax_TE_lin.get_yticklabels(), fontsize=15)
+# plt.setp(ax_EE_lin.get_yticklabels(), fontsize=15)
+# plt.setp(ax_TT_lin.get_xticklabels(), fontsize=15)
+# plt.setp(ax_TE_lin.get_xticklabels(), fontsize=15)
+# plt.setp(ax_EE_lin.get_xticklabels(), fontsize=15)
 
 M = Class()
 M.set(common_settings)
@@ -399,7 +399,7 @@ for i in range(var_num):
         #         'attractor_ic_scf':'no',
         #         'adptative_stepsize':500,
         #         'scf_evolve_as_fluid':'no'})
-    elif i == 0:
+    elif i == 1:
         #small Theta
         # M.set({'scf_potential' : 'axion',
         #         'n_axion' : 3,
@@ -424,18 +424,18 @@ for i in range(var_num):
         # #large Theta, TTTEEE, n3
         M.set({'scf_potential' : 'axion',
                 'n_axion' : 3,
-                'scf_parameters' : '2.828200e+00,0',
+                'scf_parameters' : '2.800061e+00,0',
                 'scf_tuning_index':0,
-                'log10_fraction_axion_ac':-0.913,
-                'log10_axion_ac':-3.561702e+00,
-                'omega_cdm':1.305773e-01,
-                'omega_b': 2.253289e-02,
+                'log10_fraction_axion_ac':-0.8769,
+                'log10_axion_ac':-3.587553e+0,
+                'omega_cdm':1.320351e-01,
+                'omega_b': 2.263127e-02,
                 # '100*theta_s':1.04262e+00,
                 # '100*theta_s':1.04262e+00,
-                'H0':7.218689e+01,
-                'tau_reio':7.207344e-02,
-                'A_s':2.214957e-09,
-                'n_s':9.888658e-01,
+                'H0':7.238797e+01,
+                'tau_reio':6.402188e-02,
+                'A_s':2.178373e-09,
+                'n_s':9.917292e-01,
                 'scf_evolve_like_axionCAMB':'no',
                 'do_shooting':'yes',
                 'do_shooting_scf':'yes',
@@ -466,7 +466,7 @@ for i in range(var_num):
     	# 		'adptative_stepsize':100,
     	# 		'scf_evolve_as_fluid':'no',
         #         'security_small_Omega_scf':1e-3})
-    elif i == 1:
+    elif i == 0:
          #theta_free n=2 TTTEEE
         # M.set({'scf_potential' : 'axion',
         #         'n_axion' : 2,
@@ -560,24 +560,13 @@ for i in range(var_num):
     # ax_EE_lin.fill_between(l,-2,2,alpha=var_alpha, facecolor=var_color,
     #                  linewidth=0)
     sigma_CV = np.sqrt(clTT_LCDM*clEE_LCDM+clTE_LCDM**2)
-    # if i == 0:
-    #     sigma_CV = np.sqrt(clTT*clEE+clTE**2)
-    #     fTT = interp1d(ll,clTT)
-    #     fEE = interp1d(ll,clEE)
-    #     fTE = interp1d(ll,clTE)
     print ((clTE)-(clTE_LCDM))/sigma_CV,np.sqrt(1/(2*ll+1)),np.sqrt(clTT_LCDM*clEE_LCDM+clTE_LCDM**2)
-    ax_TT_lin.plot(ll,(clTT-clTT_LCDM)/clTT_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
-    ax_TE_lin.plot(ll,((clTE)-(clTE_LCDM))/sigma_CV,var_color,lw=2,dashes=dashes,label=var_legend)
-    ax_EE_lin.plot(ll,(clEE-clEE_LCDM)/clEE_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
     ax_TT_log.plot(ll,(clTT-clTT_LCDM)/clTT_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
     ax_TE_log.plot(ll,((clTE)-(clTE_LCDM))/sigma_CV,var_color,lw=2,dashes=dashes,label=var_legend)
     ax_EE_log.plot(ll,(clEE-clEE_LCDM)/clEE_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
-    # ax_TT_lin.plot(ll,(clTT-fTT(ll))/fTT(ll),var_color,lw=2,dashes=dashes,label=var_legend)
-    # ax_TE_lin.plot(ll,((clTE)-(fTE(ll)))/sigma_CV,var_color,lw=2,dashes=dashes,label=var_legend)
-    # ax_EE_lin.plot(ll,(clEE-fEE(ll))/fEE(ll),var_color,lw=2,dashes=dashes,label=var_legend)
-    # ax_TT_log.plot(ll,(clTT-fTT(ll))/fTT(ll),var_color,lw=2,dashes=dashes,label=var_legend)
-    # ax_TE_log.plot(ll,((clTE)-(fTE(ll)))/sigma_CV,var_color,lw=2,dashes=dashes,label=var_legend)
-    # ax_EE_log.plot(ll,(clEE-fEE(ll))/fEE(ll),var_color,lw=2,dashes=dashes,label=var_legend)
+    # ax_TT_log.plot(ll,(clTT-clTT_LCDM)/clTT_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
+    # ax_TE_log.plot(ll,((clTE)-(clTE_LCDM))/sigma_CV,var_color,lw=2,dashes=dashes,label=var_legend)
+    # ax_EE_log.plot(ll,(clEE-clEE_LCDM)/clEE_LCDM,var_color,lw=2,dashes=dashes,label=var_legend)
     M.struct_cleanup()
 
 #######TRIS SCRIPT####
@@ -644,22 +633,22 @@ for i in range(var_num):
 
 
 ###NEW SCALES###
-ax_TT_log.set_xscale('linear')
-ax_TT_log.set_xlim((1,29))
-ax_TT_log.set_ylim((-1.5,1.5))
+ax_TT_log.set_yscale('linear')
+ax_TT_log.set_xlim((2,30))
+# ax_TT_log.set_ylim((-0.12,0.12))
 ax_EE_log.set_xscale('linear')
-ax_EE_log.set_xlim((1,29))
-ax_EE_log.set_ylim((-1,1))
+ax_EE_log.set_xlim((2,30))
+# ax_EE_log.set_ylim((-0.12,0.12))
 ax_TE_log.set_xscale('linear')
-ax_TE_log.set_xlim((1,29))
-# ax_TE_log.set_ylim((-10,10))
+ax_TE_log.set_xlim((2,30))
+# ax_TE_log.set_ylim((-0.12,0.12))
 
-ax_TT_log.set_xticks([2., 10.])
-ax_EE_log.set_xticks([2., 10.])
-ax_TE_log.set_xticks([2., 10.])
-ax_TT_log.set_yticks([-0.8,-0.4,0.,0.4,0.8])
-ax_EE_log.set_yticks([-7.5,-5,-2.5,0.0,2.5,5,7.5])
-ax_TE_log.set_yticks([-5,-2.5,0.0,2.5,5])
+# ax_TT_log.set_xticks([2., 10.])
+# ax_EE_log.set_xticks([2., 10.])
+# ax_TE_log.set_xticks([2., 10.])
+# ax_TT_log.set_yticks([-0.8,-0.4,0.,0.4,0.8])
+# ax_EE_log.set_yticks([-7.5,-5,-2.5,0.0,2.5,5,7.5])
+# ax_TE_log.set_yticks([-5,-2.5,0.0,2.5,5])
 
 ax_TT_log.spines['right'].set_visible(False)
 ax_EE_log.yaxis.set_ticks_position('left')
@@ -676,51 +665,51 @@ ax_TE_log.tick_params('both', length=5, width=1, which='minor')
 
 # axLin.plot(ellCIP, CIPTT,color="cyan", linestyle='-',lw=2)
 # axLin.plot(ellCIP, CIPTT2,color="red", linestyle='-',lw=2)
-
-ax_TT_lin.set_xscale('linear')
-ax_TT_lin.set_xlim((30, 2510))
-ax_TT_lin.set_ylim((-0.12,0.12))
-ax_TT_lin.tick_params('both', length=10, width=1, which='major',labelsize=15)
-ax_TT_lin.tick_params('both', length=5, width=1, which='minor',labelsize=15)
-ax_EE_lin.set_xscale('linear')
-ax_EE_lin.set_xlim((30, 2010))
-ax_EE_lin.set_ylim((-0.12,0.12))
-ax_EE_lin.tick_params('both', length=10, width=1, which='major',labelsize=15)
-ax_EE_lin.tick_params('both', length=5, width=1, which='minor',labelsize=15)
-ax_TE_lin.set_xscale('linear')
-# ax_TE_lin.set_yscale('log')
-ax_TE_lin.set_xlim((30, 2010))
-ax_TE_lin.set_ylim((-0.12,0.12))
-ax_TE_lin.tick_params('both', length=10, width=1, which='major',labelsize=15)
-ax_TE_lin.tick_params('both', length=5, width=1, which='minor',labelsize=15)
-
-major_ticks = [30, 500, 1000, 1500, 2000,2500]
-
-ax_TT_lin.set_yticks([-0.08,-0.04,0,0.04,0.08])
-
-# Removes bottom axis line
-ax_TT_lin.spines['left'].set_visible(False)
-ax_TT_lin.yaxis.set_ticks_position('right')
-
-ax_TT_lin.axvline(30, color='black', linestyle='--',lw=2)
-
-ax_TT_lin.set_xticks(major_ticks)
-ax_EE_lin.set_xticks(major_ticks)
-ax_EE_lin.set_yticks([-0.08,-0.04,0,0.04,0.08])
-
-# Removes bottom axis line
-ax_EE_lin.spines['left'].set_visible(False)
-ax_EE_lin.yaxis.set_ticks_position('right')
-
-ax_EE_lin.axvline(30, color='black', linestyle='--',lw=2)
-ax_TE_lin.set_xticks(major_ticks)
-ax_TE_lin.set_yticks([-0.08,-0.04,0,0.04,0.08])
-
-# Removes bottom axis line
-ax_TE_lin.spines['left'].set_visible(False)
-ax_TE_lin.yaxis.set_ticks_position('right')
-
-ax_TE_lin.axvline(30, color='black', linestyle='--',lw=2)
+#
+# ax_TT_lin.set_xscale('linear')
+# ax_TT_lin.set_xlim((2, 500))
+# ax_TT_lin.set_ylim((-0.12,0.12))
+# ax_TT_lin.tick_params('both', length=10, width=1, which='major',labelsize=15)
+# ax_TT_lin.tick_params('both', length=5, width=1, which='minor',labelsize=15)
+# ax_EE_lin.set_xscale('linear')
+# ax_EE_lin.set_xlim((2, 500))
+# ax_EE_lin.set_ylim((-0.12,0.12))
+# ax_EE_lin.tick_params('both', length=10, width=1, which='major',labelsize=15)
+# ax_EE_lin.tick_params('both', length=5, width=1, which='minor',labelsize=15)
+# ax_TE_lin.set_xscale('linear')
+# # ax_TE_lin.set_yscale('log')
+# ax_TE_lin.set_xlim((2, 500))
+# ax_TE_lin.set_ylim((-0.12,0.12))
+# ax_TE_lin.tick_params('both', length=10, width=1, which='major',labelsize=15)
+# ax_TE_lin.tick_params('both', length=5, width=1, which='minor',labelsize=15)
+#
+# major_ticks = [30, 500, 1000, 1500, 2000,2500]
+#
+# ax_TT_lin.set_yticks([-0.08,-0.04,0,0.04,0.08])
+#
+# # Removes bottom axis line
+# ax_TT_lin.spines['left'].set_visible(False)
+# ax_TT_lin.yaxis.set_ticks_position('right')
+#
+# ax_TT_lin.axvline(30, color='black', linestyle='--',lw=2)
+#
+# ax_TT_lin.set_xticks(major_ticks)
+# ax_EE_lin.set_xticks(major_ticks)
+# ax_EE_lin.set_yticks([-0.08,-0.04,0,0.04,0.08])
+#
+# # Removes bottom axis line
+# ax_EE_lin.spines['left'].set_visible(False)
+# ax_EE_lin.yaxis.set_ticks_position('right')
+#
+# ax_EE_lin.axvline(30, color='black', linestyle='--',lw=2)
+# ax_TE_lin.set_xticks(major_ticks)
+# ax_TE_lin.set_yticks([-0.08,-0.04,0,0.04,0.08])
+#
+# # Removes bottom axis line
+# ax_TE_lin.spines['left'].set_visible(False)
+# ax_TE_lin.yaxis.set_ticks_position('right')
+#
+# ax_TE_lin.axvline(30, color='black', linestyle='--',lw=2)
 #
 # ###############
 # ###############
@@ -853,12 +842,12 @@ factor6 = l_TE_low*(l_TE_low+1)/2./np.pi;
 conversion6 = 1/(factor4*(T_cmb*1.e6)**2)
 
 print Dl_TT_high*conversion, fTT(l_TT_high)
-ax_TT_lin.errorbar(l_TT_high, Dl_TT_high*conversion1/fTT(l_TT_high)-1, yerr=err_TT_high*conversion1/fTT(l_TT_high), fmt='.')
-ax_TT_log.errorbar(l_TT_low, Dl_TT_low*conversion2/fTT(l_TT_low)-1, yerr=err_TT_low*conversion2/fTT(l_TT_low), fmt='.')
-ax_EE_lin.errorbar(l_EE_high, Dl_EE_high*conversion3/fEE(l_EE_high)-1, yerr=err_EE_high*conversion3/fEE(l_EE_high), fmt='.')
-ax_EE_log.errorbar(l_EE_low, Dl_EE_low*conversion4/fEE(l_EE_low)-1, yerr=err_EE_low*conversion4/fEE(l_EE_low), fmt='.')
-ax_TE_lin.errorbar(l_TE_high, (Dl_TE_high*conversion5-fTE(l_TE_high))/np.sqrt(fTT(l_TE_high)*fEE(l_TE_high)+fTE(l_TE_high)**2), yerr=err_TE_high*conversion5/np.sqrt(fTT(l_TE_high)*fEE(l_TE_high)+fTE(l_TE_high)**2), fmt='.')
-ax_TE_log.errorbar(l_TE_low, (Dl_TE_low*conversion6-fTE(l_TE_low))/np.sqrt(fEE(l_TE_low)*fTT(l_TE_low)+fTE(l_TE_low)**2), yerr=err_TE_low*conversion6/np.sqrt(fTT(l_TE_low)*fEE(l_TE_low)+fTE(l_TE_low)**2), fmt='.')
+ax_TT_log.errorbar(l_TT_high, Dl_TT_high*conversion1/fTT(l_TT_high)-1, yerr=err_TT_high*conversion1/fTT(l_TT_high), fmt='.',color='blue')
+ax_TT_log.errorbar(l_TT_low, Dl_TT_low*conversion2/fTT(l_TT_low)-1, yerr=err_TT_low*conversion2/fTT(l_TT_low), fmt='.',color='blue')
+ax_EE_log.errorbar(l_EE_high, Dl_EE_high*conversion3/fEE(l_EE_high)-1, yerr=err_EE_high*conversion3/fEE(l_EE_high), fmt='.',color='blue')
+ax_EE_log.errorbar(l_EE_low, Dl_EE_low*conversion4/fEE(l_EE_low)-1, yerr=err_EE_low*conversion4/fEE(l_EE_low), fmt='.',color='blue')
+ax_TE_log.errorbar(l_TE_high, (Dl_TE_high*conversion5-fTE(l_TE_high))/np.sqrt(fTT(l_TE_high)*fEE(l_TE_high)+fTE(l_TE_high)**2), yerr=err_TE_high*conversion5/np.sqrt(fTT(l_TE_high)*fEE(l_TE_high)+fTE(l_TE_high)**2), fmt='.',color='blue')
+ax_TE_log.errorbar(l_TE_low, (Dl_TE_low*conversion6-fTE(l_TE_low))/np.sqrt(fEE(l_TE_low)*fTT(l_TE_low)+fTE(l_TE_low)**2), yerr=err_TE_low*conversion6/np.sqrt(fTT(l_TE_low)*fEE(l_TE_low)+fTE(l_TE_low)**2), fmt='.',color='blue')
 
 
 
@@ -872,19 +861,19 @@ ax_TE_log.errorbar(l_TE_low, (Dl_TE_low*conversion6-fTE(l_TE_low))/np.sqrt(fEE(l
 ax_TT_log.set_ylabel(r'$\frac{\Delta C_\ell^\mathrm{TT}}{C_\ell^\mathrm{TT}}$',fontsize=19)
 
 # ax_Pk.legend(frameon=False,prop={'size':30},loc='upper left',borderaxespad=0.)
-ax_TT_lin.set_xlabel(r'$\ell$',fontsize=20,labelpad=-20)
+ax_TT_log.set_xlabel(r'$\ell$',fontsize=20,labelpad=-20)
 # ax_EE_lin.legend(frameon=False,prop={'size':12},loc='upper right',borderaxespad=0.)
 
 # ax_EE.axis([2,2500,-0.06,0.06])
-ax_EE_lin.set_xlabel(r'$\ell$',fontsize=20,labelpad=-20)
+ax_EE_log.set_xlabel(r'$\ell$',fontsize=20,labelpad=-20)
 # ax_EE_lin.text(200,-0.1,r'$\frac{\Delta C_\ell^\mathrm{EE}}{C_\ell^\mathrm{EE}(\Lambda{\rm CDM})}$',fontsize=20)
 # ax_EE_log.set_ylabel(r'$\Delta C_\ell^\mathrm{EE}/C_\ell^\mathrm{EE}(\Lambda{\rm CDM})$',fontsize=19)
 ax_EE_log.set_ylabel(r'$\frac{\Delta C_\ell^\mathrm{EE}}{C_\ell^\mathrm{EE}}$',fontsize=19)
 
-ax_TT_lin.legend(frameon=False,prop={'size':12},loc='upper center',borderaxespad=0.)
+ax_TT_log.legend(frameon=False,prop={'size':12},loc='upper center',borderaxespad=0.)
 
 # ax_TE.axis([2,2500,-0.06,0.06])
-ax_TE_lin.set_xlabel(r'$\ell$',fontsize=20,labelpad=-20)
+ax_TE_log.set_xlabel(r'$\ell$',fontsize=20,labelpad=-20)
 # ax_TE_lin.text(200,-0.1,r'$\frac{\Delta C_\ell^\mathrm{TE}}{C_\ell^\mathrm{TE}(\Lambda{\rm CDM})}$',fontsize=20)
 # ax_TE_log.set_ylabel(r'$\Delta C_\ell^\mathrm{TE}/C_\ell^\mathrm{TE}(\Lambda{\rm CDM})$',fontsize=19)
 ax_TE_log.set_ylabel(r'$\frac{\Delta C_\ell^\mathrm{TE}}{\sqrt{C_\ell^\mathrm{EE}C_\ell^\mathrm{TT}+(C_\ell^\mathrm{TE})^2}}$',fontsize=19)
@@ -944,15 +933,15 @@ while step < l_max:
         # print step
         # print int(step), int(step_plus_1)
         # width = (step_plus_1) - (step)
-        ax_TT_lin.add_patch(
-            patches.Rectangle(
-                (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
-                width,          # width
-                2*binned_cosmic_variance(result,int(step),width),          # height
-                color='r',
-                alpha=0.1
-            )
-        )
+        # ax_TT_lin.add_patch(
+        #     patches.Rectangle(
+        #         (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
+        #         width,          # width
+        #         2*binned_cosmic_variance(result,int(step),width),          # height
+        #         color='r',
+        #         alpha=0.1
+        #     )
+        # )
         ax_TT_log.add_patch(
             patches.Rectangle(
                 (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
@@ -962,15 +951,15 @@ while step < l_max:
                 alpha=0.1
             )
         )
-        ax_EE_lin.add_patch(
-            patches.Rectangle(
-                (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
-                width,          # width
-                2*binned_cosmic_variance(result,int(step),width),          # height
-                color='r',
-                alpha=0.1
-            )
-        )
+        # ax_EE_lin.add_patch(
+        #     patches.Rectangle(
+        #         (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
+        #         width,          # width
+        #         2*binned_cosmic_variance(result,int(step),width),          # height
+        #         color='r',
+        #         alpha=0.1
+        #     )
+        # )
         ax_EE_log.add_patch(
             patches.Rectangle(
                 (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
@@ -980,15 +969,15 @@ while step < l_max:
                 alpha=0.1
             )
         )
-        ax_TE_lin.add_patch(
-            patches.Rectangle(
-                (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
-                width,          # width
-                2*binned_cosmic_variance(result,int(step),width),          # height
-                color='r',
-                alpha=0.1
-            )
-        )
+        # ax_TE_lin.add_patch(
+        #     patches.Rectangle(
+        #         (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
+        #         width,          # width
+        #         2*binned_cosmic_variance(result,int(step),width),          # height
+        #         color='r',
+        #         alpha=0.1
+        #     )
+        # )
         ax_TE_log.add_patch(
             patches.Rectangle(
                 (int(step), -1*binned_cosmic_variance(result,int(step),width)),   # (x,y)
@@ -1000,7 +989,7 @@ while step < l_max:
         )
         # print j, step
 # plt.savefig('AxiCLASS_n2_TTTEEE_LargevsbestfitTheta.pdf', bbox_inches='tight')
-plt.savefig('AxiCLASS_n3_smallTT_vs_largeTTTEEE.pdf', bbox_inches='tight')
+plt.savefig('AxiCLASS_n3_v3.pdf', bbox_inches='tight')
 
 
 # In[ ]:

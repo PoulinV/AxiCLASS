@@ -46,12 +46,12 @@ tau_label_kd = 230.    # value of time at which we want to place the label on da
 # Cosmological parameters and other CLASS parameters
 #
 K_star = 0.05
-log10_axion_ac = -3.6008
+log10_axion_ac = -3.55
 n_axion = 3
 wn = (n_axion-1)/(n_axion+1)
 A_s = 2.22343e-9
 n_s = 0.989476
-Theta_initial = 2.72803
+Theta_initial = 2.8
 common_settings = {# which output? transfer functions only
                    'output':'mTk',
                    # LambdaCDM parameters
@@ -66,8 +66,8 @@ common_settings = {# which output? transfer functions only
                    # other output and precision parameters
                    'z_max_pk':z_max_pk,
                    'recfast_z_initial':z_max_pk,
-                   'start_small_k_at_tau_c_over_tau_h':5e-08,
-                   'start_large_k_at_tau_h_over_tau_k':5e-08,
+                   # 'start_small_k_at_tau_c_over_tau_h':5e-08,
+                   # 'start_large_k_at_tau_h_over_tau_k':5e-08,
                    #'k_step_sub':'0.01',
                    'k_per_decade_for_pk':k_per_decade,
                    'k_per_decade_for_bao':k_per_decade,
@@ -80,7 +80,7 @@ common_settings = {# which output? transfer functions only
                    'n_axion': n_axion,
                    'log10_axion_ac': log10_axion_ac, # Must input log10(axion_ac)
                    # log10_fraction_axion_ac': -1.922767 # Must input log10(fraction_axion_ac)
-                   'log10_fraction_axion_ac': -1.0013, # Must input log10(fraction_axion_ac)
+                   'log10_fraction_axion_ac': -0.966, # Must input log10(fraction_axion_ac)
                    # m_axion': 1.811412e+06
                    # f_axion': 1
                    'scf_parameters':'%.2f,0.0'%(Theta_initial), #phi_i,phi_dot_i //dummy: phi_i will be updated.
@@ -232,7 +232,7 @@ background_phi_scf.invert_yaxis()
 # fig_delta_phi_scf = ax_delta_phi_scf.pcolormesh(K,T,np.log10(delta_phi_scf*delta_phi_scf*K*K*K/2/np.pi/np.pi*A_s*(K/K_star)**(n_s-1)),cmap='coolwarm',vmin=np.log10(delta_phi_scf.min()*delta_phi_scf.min()*K.min()*K.min()*K.min()/2/np.pi*A_s*(K.min()/K_star)**(n_s-1)), vmax=np.log10(delta_phi_scf.max()*delta_phi_scf.max()*K.max()*K.max()*K.max()/2/np.pi*A_s*(K.max()/K_star)**(n_s-1))) #,shading='gouraud')
 # fig_delta_phi_scf = ax_delta_phi_scf.pcolormesh(K,T,np.log10(delta_phi_scf*delta_phi_scf*A_s*(K/K_star)**(n_s-1)),cmap='coolwarm',vmin=np.log10(delta_phi_scf.min()*delta_phi_scf.min()*A_s*(K.min()/K_star)**(n_s-1)), vmax=np.log10(delta_phi_scf.max()*delta_phi_scf.max()*A_s*(K.max()/K_star)**(n_s-1))) #,shading='gouraud')
 # ##delta_phi power spectrum
-phi_enveloppe = Theta_initial*10**M.log10_f_axion()*(2/(10**log10_axion_ac*background_z_at_tau(T)))**(-3.*(1+wn)/2/n_axion)
+phi_enveloppe = Theta_initial*10**M.log10_f_axion()*(1.7/(10**log10_axion_ac*background_z_at_tau(T)))**(-3.*(1+wn)/2/n_axion)
 
 print 10**M.log10_f_axion(), 10**M.log10_m_axion(), Theta_initial*10**M.log10_f_axion()*2**(-3.*(1+wn)/2/n_axion)
 
@@ -240,7 +240,7 @@ background_phi_scf_v2 = background_phi_scf.twiny()
 background_phi_scf_v2.set_ylim(tau[0],tau[-1])
 # background_phi_scf_v2.set_xlim(phi_enveloppe[0],2*phi_enveloppe[-1])
 background_phi_scf_v2.plot(phi_enveloppe/(10**M.log10_f_axion()),tau,'r--',linewidth=2)
-background_phi_scf_v2.set_xlabel(r'$\phi/f_a$')
+background_phi_scf_v2.set_xlabel(r'$\Theta=\phi/f_a$',fontsize=18)
 # background_phi_scf_v2.set_xticks([0.0,0.5,1])
 background_phi_scf_v2.invert_yaxis()
 background_phi_scf_v2.plot(background_phi/(10**M.log10_f_axion()),background_tau,'r-',linewidth=2,label=r'$\phi$')
@@ -256,138 +256,139 @@ plt.gca().add_artist(leg_1)
 # plt.show()
 plt.savefig('amin_criterion_background.png',dpi=300, bbox_inches='tight')
 fig = plt.figure(figsize=(15,10))
-
-ax_delta_phi_scf = fig.add_subplot(121)
-print '> Plotting delta_phi_scf_0'
-
-fig_delta_phi_scf = ax_delta_phi_scf.pcolormesh(K,T,np.log10(np.sqrt(delta_phi_scf*delta_phi_scf*A_s*(K/K_star)**(n_s-1))/(phi_enveloppe)),cmap='coolwarm',vmin=-10) #,shading='gouraud')
-##fractional contribution to delta_tot_squared
-# fig_delta_phi_scf = ax_delta_phi_scf.pcolormesh(K,T,np.log10(delta_phi_scf/delta_tot),cmap='coolwarm',vmin=-14,vmax=0) #,shading='gouraud')
-
-print '> Done'
 #
-# plot lines (characteristic times and scales)
+# ax_delta_phi_scf = fig.add_subplot(121)
+# print '> Plotting delta_phi_scf_0'
 #
-# ax_delta_phi_scf.axhline(y=tau_rec,color='k',linestyle='-')
-ax_delta_phi_scf.axhline(y=background_tau_at_z(1./(10**log10_axion_ac)),color='black',linestyle='--')
-ax_delta_phi_scf.axhline(y=tau_eq,color='k',linestyle='-')
-ax_delta_phi_scf.axhline(y=tau_lambda,color='k',linestyle='-')
-ax_delta_phi_scf.plot(aH,tau,'r-',linewidth=2)
-# ax_delta_phi_scf.plot(ks,tau,color='#FFFF33',linestyle='-',linewidth=2)
-# ax_delta_phi_scf.plot(kd,tau,'b-',linewidth=2)
+# fig_delta_phi_scf = ax_delta_phi_scf.pcolormesh(K,T,np.log10(np.sqrt(delta_phi_scf*delta_phi_scf*A_s*(K/K_star)**(n_s-1))/(phi_enveloppe)),cmap='coolwarm',vmin=-10)
+# ##fractional contribution to delta_tot_squared
+# # fig_delta_phi_scf = ax_delta_phi_scf.pcolormesh(K,T,np.log10(delta_phi_scf/delta_tot),cmap='coolwarm',vmin=-14,vmax=0) #,shading='gouraud')
 #
-# dealing with labels
+# print '> Done'
+# #
+# # plot lines (characteristic times and scales)
+# #
+# # ax_delta_phi_scf.axhline(y=tau_rec,color='k',linestyle='-')
+# ax_delta_phi_scf.axhline(y=background_tau_at_z(1./(10**log10_axion_ac)),color='black',linestyle='--')
+# # ax_delta_phi_scf.axhline(y=tau_eq,color='k',linestyle='-')
+# # ax_delta_phi_scf.axhline(y=tau_lambda,color='k',linestyle='-')
+# ax_delta_phi_scf.plot(aH,tau,'w-',linewidth=2)
+# # ax_delta_phi_scf.plot(ks,tau,color='#FFFF33',linestyle='-',linewidth=2)
+# # ax_delta_phi_scf.plot(kd,tau,'b-',linewidth=2)
+# #
+# # dealing with labels
+# #
+# # ax_delta_phi_scf.set_title(r'${\rm Log}_{10}(A_s\left(\frac{k}{k_*}\right)^{n_s-1}\delta_\phi)$')
+# # ax_delta_phi_scf.set_title(r'${\rm Log}_{10}(\delta\rho_\phi/\delta\rho_{\rm tot})$')
+# ax_delta_phi_scf.set_title(r'${\rm Log}_{10}(\Delta_{\delta\phi}/\phi_{\rm env})$')
+# # ax_delta_phi_scf.text(1.5*k[0],0.9*tau_rec,r'$\mathrm{rec.}$')
+# ax_delta_phi_scf.text(1.5*k[0],0.9*background_tau_at_z(1./(10**log10_axion_ac)),r'$z_c$',color='black')
+# # ax_delta_phi_scf.text(1.5*k[0],1.3*tau_eq,r'$\mathrm{R/M} \,\, \mathrm{eq.}$')
+# # ax_delta_phi_scf.text(1.5*k[0],0.9*tau_lambda,r'$\mathrm{M/L} \,\, \mathrm{eq.}$')
+# ax_delta_phi_scf.annotate(r'$\mathrm{Hubble} \,\, \mathrm{cross.}$',
+#                   color='white',
+#                   xy=(background_aH_at_tau(tau_label_Hubble),tau_label_Hubble),
+#                   xytext=(0.05*background_aH_at_tau(tau_label_Hubble),0.8*tau_label_Hubble),
+#                   arrowprops=dict(facecolor='white',color='white', shrink=0.05, width=1, headlength=5, headwidth=5))
+# # ax_delta_phi_scf.annotate(r'$\mathrm{sound} \,\, \mathrm{horizon} \,\, \mathrm{cross.}$',
+# #                   xy=(background_ks_at_tau(tau_label_ks),tau_label_ks),
+# #                   xytext=(0.07*background_aH_at_tau(tau_label_ks),0.8*tau_label_ks),
+# #                   arrowprops=dict(facecolor='black', shrink=0.05, width=1, headlength=5, headwidth=5))
+# # ax_delta_phi_scf.annotate(r'$\mathrm{damping} \,\, \mathrm{scale} \,\, \mathrm{cross.}$',
+# #                   xy=(thermodynamics_kd_at_tau(tau_label_kd),tau_label_kd),
+# #                   xytext=(0.2*thermodynamics_kd_at_tau(tau_label_kd),2.0*tau_label_kd),
+# #                   arrowprops=dict(facecolor='black', shrink=0.05, width=1, headlength=5, headwidth=5))
 #
-# ax_delta_phi_scf.set_title(r'${\rm Log}_{10}(A_s\left(\frac{k}{k_*}\right)^{n_s-1}\delta_\phi)$')
-# ax_delta_phi_scf.set_title(r'${\rm Log}_{10}(\delta\rho_\phi/\delta\rho_{\rm tot})$')
-ax_delta_phi_scf.set_title(r'${\rm Log}_{10}(\Delta_{\delta\phi}/\phi_{\rm env})$')
-# ax_delta_phi_scf.text(1.5*k[0],0.9*tau_rec,r'$\mathrm{rec.}$')
-ax_delta_phi_scf.text(1.5*k[0],0.9*background_tau_at_z(1./(10**log10_axion_ac)),r'$z_c$',color='black')
-ax_delta_phi_scf.text(1.5*k[0],1.3*tau_eq,r'$\mathrm{R/M} \,\, \mathrm{eq.}$')
-ax_delta_phi_scf.text(1.5*k[0],0.9*tau_lambda,r'$\mathrm{M/L} \,\, \mathrm{eq.}$')
-ax_delta_phi_scf.annotate(r'$\mathrm{Hubble} \,\, \mathrm{cross.}$',
-                  xy=(background_aH_at_tau(tau_label_Hubble),tau_label_Hubble),
-                  xytext=(0.05*background_aH_at_tau(tau_label_Hubble),0.8*tau_label_Hubble),
-                  arrowprops=dict(facecolor='black', shrink=0.05, width=1, headlength=5, headwidth=5))
-# ax_delta_phi_scf.annotate(r'$\mathrm{sound} \,\, \mathrm{horizon} \,\, \mathrm{cross.}$',
-#                   xy=(background_ks_at_tau(tau_label_ks),tau_label_ks),
-#                   xytext=(0.07*background_aH_at_tau(tau_label_ks),0.8*tau_label_ks),
-#                   arrowprops=dict(facecolor='black', shrink=0.05, width=1, headlength=5, headwidth=5))
-# ax_delta_phi_scf.annotate(r'$\mathrm{damping} \,\, \mathrm{scale} \,\, \mathrm{cross.}$',
-#                   xy=(thermodynamics_kd_at_tau(tau_label_kd),tau_label_kd),
-#                   xytext=(0.2*thermodynamics_kd_at_tau(tau_label_kd),2.0*tau_label_kd),
-#                   arrowprops=dict(facecolor='black', shrink=0.05, width=1, headlength=5, headwidth=5))
-
-# dealing with axes
+# # dealing with axes
+# #
+# ax_delta_phi_scf.set_xlim(k[0],k[-1])
+# ax_delta_phi_scf.set_xscale('log')
+# ax_delta_phi_scf.set_yscale('log')
+# ax_delta_phi_scf.set_xlabel(r'$k  \,\,\, \mathrm{[h/Mpc]}$')
+# ax_delta_phi_scf.set_ylabel(r'$\tau   \,\,\, \mathrm{[Mpc]}$',labelpad=-20)
+# ax_delta_phi_scf.invert_yaxis()
+# #
+# # color legend
+# #
+# # axins = inset_axes(fig_delta_phi_scf,
+# #                    width="5%",  # width = 5% of parent_bbox width
+# #                    height="50%",  # height : 50%
+# #                    loc='lower right',
+# #                    bbox_to_anchor=(1.05, 0., 1, 1),
+# #                    # bbox_transform=fig_delta_phi_scf.transAxes,
+# #                    borderpad=0,
+# #                    )
+# fig.colorbar(fig_delta_phi_scf)
+# Contours_at = (0) # This must be a tuple with a at least one value and a comma. That is, must have at least one comma
+# # ax_delta_phi_scf.contour(K, T, np.log10(np.sqrt(delta_phi_scf*delta_phi_scf*A_s*(K/K_star)**(n_s-1))/(phi_enveloppe)), Contours_at,
+# #         # extent = ( min(z_c_p_1), max(z_c_p_1), min(Omega_fld), max(Omega_fld) ), # place colour map at correct a_c and Om_fld values
+# #         # origin = 'lower',
+# #         # corner_mask = True,
+# #         lw=0.1,
+# #         linestyle='--',
+# #         colors=('w'))
+#         # alpha = 0.5)
+#         # cmap = cm.Reds) # Greens seem to work well for the contour lines to be visible
 #
-ax_delta_phi_scf.set_xlim(k[0],k[-1])
-ax_delta_phi_scf.set_xscale('log')
-ax_delta_phi_scf.set_yscale('log')
-ax_delta_phi_scf.set_xlabel(r'$k  \,\,\, \mathrm{[h/Mpc]}$')
-ax_delta_phi_scf.set_ylabel(r'$\tau   \,\,\, \mathrm{[Mpc]}$',labelpad=-20)
-ax_delta_phi_scf.invert_yaxis()
 #
-# color legend
+# #
+# # plot phi(k,tau)
+# #
+# ax_delta_phi_scf_prime = fig.add_subplot(122)
+# ax_delta_phi_scf_prime.set_xlim(k[0],k[-1])
+# #ax_delta_phi_scf_prime.pcolor(K,T,phi,cmap='coolwarm')
+# print '> Plotting phi'
+# # fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_cdm*delta_cdm*A_s*(K/K_star)**(n_s-1)),cmap='coolwarm',vmin=np.log10(delta_cdm.min()*delta_cdm.min()*A_s*(K.min()/K_star)**(n_s-1)), vmax=np.log10(delta_cdm.max()*delta_cdm.max()*A_s*(K.max()/K_star)**(n_s-1))) #,shading='gouraud')
+# # fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_cdm*delta_cdm*A_s*(K/K_star)**(n_s-1)),cmap='coolwarm') #,shading='gouraud')
+# # fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_cdm*delta_cdm*A_s*(K/K_star)**(n_s-1)),cmap='coolwarm') #,shading='gouraud')
+# # fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_g/delta_tot),cmap='coolwarm',vmin=-14,vmax=0) #,shading='gouraud')
+# fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_rho_phi_scf/delta_tot),cmap='coolwarm',vmin=-5)#,shading='gouraud')
+# # fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_g/delta_tot),cmap='coolwarm',vmin=-14,vmax=0) #,shading='gouraud')
+# # fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,delta_phi_prime_scf,cmap='coolwarm',vmin=delta_phi_prime_scf.min(), vmax=delta_phi_prime_scf.max())
+# print '> Done'
+# #
+# # plot lines (characteristic times and scales)
+# #
+# # # ax_delta_phi_scf_prime.axhline(y=tau_rec,color='k',linestyle='-')
+# # ax_delta_phi_scf_prime.axhline(y=tau_eq,color='k',linestyle='-')
+# # ax_delta_phi_scf_prime.axhline(y=tau_lambda,color='k',linestyle='-')
+# ax_delta_phi_scf_prime.plot(aH,tau,'w-',linewidth=2)
+# # ax_delta_phi_scf_prime.plot(ks,tau,color='#FFFF33',linestyle='-',linewidth=2)
+# #
+# # dealing with labels
+# #
+# # ax_delta_phi_scf_prime.set_title(r'${\rm Log}_{10}(\delta\rho_g/\delta\rho_{\rm tot})$')
+# ax_delta_phi_scf_prime.set_title(r'${\rm Log}_{10}(\delta\rho_\phi/\delta\rho_{\rm tot})$')
 #
-# axins = inset_axes(fig_delta_phi_scf,
-#                    width="5%",  # width = 5% of parent_bbox width
-#                    height="50%",  # height : 50%
-#                    loc='lower right',
-#                    bbox_to_anchor=(1.05, 0., 1, 1),
-#                    # bbox_transform=fig_delta_phi_scf.transAxes,
-#                    borderpad=0,
-#                    )
-fig.colorbar(fig_delta_phi_scf)
-Contours_at = (0) # This must be a tuple with a at least one value and a comma. That is, must have at least one comma
-# ax_delta_phi_scf.contour(K, T, np.log10(np.sqrt(delta_phi_scf*delta_phi_scf*A_s*(K/K_star)**(n_s-1))/(phi_enveloppe)), Contours_at,
-#         # extent = ( min(z_c_p_1), max(z_c_p_1), min(Omega_fld), max(Omega_fld) ), # place colour map at correct a_c and Om_fld values
-#         # origin = 'lower',
-#         # corner_mask = True,
-#         lw=0.1,
-#         linestyle='--',
-#         colors=('w'))
-        # alpha = 0.5)
-        # cmap = cm.Reds) # Greens seem to work well for the contour lines to be visible
-
-
+# # ax_delta_phi_scf_prime.set_title(r'${\rm Log}_{10}(\delta\dot{\phi})$')
+# # ax_delta_phi_scf_prime.text(1.5*k[0],0.9*tau_rec,r'$\mathrm{rec.}$')
+# # ax_delta_phi_scf_prime.text(1.5*k[0],1.3*tau_eq,r'$\mathrm{R/M} \,\, \mathrm{eq.}$')
+# # ax_delta_phi_scf_prime.text(1.5*k[0],0.9*tau_lambda,r'$\mathrm{M/L} \,\, \mathrm{eq.}$')
+# ax_delta_phi_scf_prime.axhline(y=background_tau_at_z(1./(10**log10_axion_ac)),color='black',linestyle='--')
+# ax_delta_phi_scf_prime.text(1.5*k[0],0.9*background_tau_at_z(1./(10**log10_axion_ac)),r'$z_c$',color='black')
 #
-# plot phi(k,tau)
+# ax_delta_phi_scf_prime.annotate(r'$\mathrm{Hubble} \,\, \mathrm{cross.}$',color='white',
+#                   xy=(background_aH_at_tau(tau_label_Hubble),tau_label_Hubble),
+#                   xytext=(0.05*background_aH_at_tau(tau_label_Hubble),0.8*tau_label_Hubble),
+#                   arrowprops=dict(facecolor='white',color='white', shrink=0.05, width=1, headlength=5, headwidth=5))
+# # ax_delta_phi_scf_prime.annotate(r'$\mathrm{sound} \,\, \mathrm{horizon} \,\, \mathrm{cross.}$',
+# #                   xy=(background_ks_at_tau(tau_label_ks),tau_label_ks),
+# #                   xytext=(0.07*background_aH_at_tau(tau_label_ks),0.8*tau_label_ks),
+# #                   arrowprops=dict(facecolor='black', shrink=0.05, width=1, headlength=5, headwidth=5))
+# #
+# # dealing with axes
 #
-ax_delta_phi_scf_prime = fig.add_subplot(122)
-ax_delta_phi_scf_prime.set_xlim(k[0],k[-1])
-#ax_delta_phi_scf_prime.pcolor(K,T,phi,cmap='coolwarm')
-print '> Plotting phi'
-# fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_cdm*delta_cdm*A_s*(K/K_star)**(n_s-1)),cmap='coolwarm',vmin=np.log10(delta_cdm.min()*delta_cdm.min()*A_s*(K.min()/K_star)**(n_s-1)), vmax=np.log10(delta_cdm.max()*delta_cdm.max()*A_s*(K.max()/K_star)**(n_s-1))) #,shading='gouraud')
-# fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_cdm*delta_cdm*A_s*(K/K_star)**(n_s-1)),cmap='coolwarm') #,shading='gouraud')
-# fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_cdm*delta_cdm*A_s*(K/K_star)**(n_s-1)),cmap='coolwarm') #,shading='gouraud')
-# fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_g/delta_tot),cmap='coolwarm',vmin=-14,vmax=0) #,shading='gouraud')
-fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_rho_phi_scf/delta_tot),cmap='coolwarm',vmin=-10,vmax=0) #,shading='gouraud')
-# fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,np.log10(delta_g/delta_tot),cmap='coolwarm',vmin=-14,vmax=0) #,shading='gouraud')
-# fig_phi = ax_delta_phi_scf_prime.pcolormesh(K,T,delta_phi_prime_scf,cmap='coolwarm',vmin=delta_phi_prime_scf.min(), vmax=delta_phi_prime_scf.max())
-print '> Done'
-#
-# plot lines (characteristic times and scales)
-#
-# ax_delta_phi_scf_prime.axhline(y=tau_rec,color='k',linestyle='-')
-ax_delta_phi_scf_prime.axhline(y=tau_eq,color='k',linestyle='-')
-ax_delta_phi_scf_prime.axhline(y=tau_lambda,color='k',linestyle='-')
-ax_delta_phi_scf_prime.plot(aH,tau,'r-',linewidth=2)
-# ax_delta_phi_scf_prime.plot(ks,tau,color='#FFFF33',linestyle='-',linewidth=2)
-#
-# dealing with labels
-#
-# ax_delta_phi_scf_prime.set_title(r'${\rm Log}_{10}(\delta\rho_g/\delta\rho_{\rm tot})$')
-ax_delta_phi_scf_prime.set_title(r'${\rm Log}_{10}(\delta\rho_\phi/\delta\rho_{\rm tot})$')
-
-# ax_delta_phi_scf_prime.set_title(r'${\rm Log}_{10}(\delta\dot{\phi})$')
-# ax_delta_phi_scf_prime.text(1.5*k[0],0.9*tau_rec,r'$\mathrm{rec.}$')
-ax_delta_phi_scf_prime.text(1.5*k[0],1.3*tau_eq,r'$\mathrm{R/M} \,\, \mathrm{eq.}$')
-ax_delta_phi_scf_prime.text(1.5*k[0],0.9*tau_lambda,r'$\mathrm{M/L} \,\, \mathrm{eq.}$')
-ax_delta_phi_scf_prime.axhline(y=background_tau_at_z(1./(10**log10_axion_ac)),color='black',linestyle='--')
-ax_delta_phi_scf_prime.text(1.5*k[0],0.9*background_tau_at_z(1./(10**log10_axion_ac)),r'$z_c$',color='black')
-
-ax_delta_phi_scf_prime.annotate(r'$\mathrm{Hubble} \,\, \mathrm{cross.}$',
-                  xy=(background_aH_at_tau(tau_label_Hubble),tau_label_Hubble),
-                  xytext=(0.05*background_aH_at_tau(tau_label_Hubble),0.8*tau_label_Hubble),
-                  arrowprops=dict(facecolor='black', shrink=0.05, width=1, headlength=5, headwidth=5))
-# ax_delta_phi_scf_prime.annotate(r'$\mathrm{sound} \,\, \mathrm{horizon} \,\, \mathrm{cross.}$',
-#                   xy=(background_ks_at_tau(tau_label_ks),tau_label_ks),
-#                   xytext=(0.07*background_aH_at_tau(tau_label_ks),0.8*tau_label_ks),
-#                   arrowprops=dict(facecolor='black', shrink=0.05, width=1, headlength=5, headwidth=5))
-#
-# dealing with axes
-
-ax_delta_phi_scf_prime.set_xscale('log')
-ax_delta_phi_scf_prime.set_yscale('log')
-ax_delta_phi_scf_prime.set_xlabel(r'$k \,\,\, \mathrm{[h/Mpc]}$')
-ax_delta_phi_scf_prime.set_ylabel(r'$\tau \,\,\, \mathrm{[Mpc]}$',labelpad=-20)
-ax_delta_phi_scf_prime.invert_yaxis()
-#
-# color legend
-#
-fig.colorbar(fig_phi)
-#
-# produce the PDF
-#
-#plt.show()
-plt.savefig('amin_criterion_n3.png',dpi=300)
+# ax_delta_phi_scf_prime.set_xscale('log')
+# ax_delta_phi_scf_prime.set_yscale('log')
+# ax_delta_phi_scf_prime.set_xlabel(r'$k \,\,\, \mathrm{[h/Mpc]}$')
+# ax_delta_phi_scf_prime.set_ylabel(r'$\tau \,\,\, \mathrm{[Mpc]}$',labelpad=-20)
+# ax_delta_phi_scf_prime.invert_yaxis()
+# #
+# # color legend
+# #
+# fig.colorbar(fig_phi)
+# #
+# # produce the PDF
+# #
+# #plt.show()
+# plt.savefig('amin_criterion_n3.png',dpi=300)

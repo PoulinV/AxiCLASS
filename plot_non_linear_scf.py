@@ -81,7 +81,7 @@ start = time()
 
 # file to either store a_c, Om_fld and H0 values computed below, or to load a_c, Om_fld and H0 values from
 
-load_from_file = False # are we loading a_c, Omega_fld and H0 values from a file or computing them right now?
+load_from_file = True  # are we loading a_c, Omega_fld and H0 values from a file or computing them right now?
 
 make_plot = False # do you want it to also make a plot or just save the arrays ?
 # plot arguments will need to be toggled below under the plot section
@@ -92,11 +92,12 @@ N2 = 10
 fEDE_min = -1 # min a_c
 fEDE_max = -0.5 # max a_c
 ac_min=-4.5
-ac_max=-3.
+ac_max=-3
 # mu_min=4
 # mu_max=8
 n_axion = 2.2
-output_file = 'n%f'%(n_axion) # Just name, no extension!!
+# output_file = 'n%.0f'%(n_axion) # Just name, no extension!!
+output_file = 'n2p2'# Just name, no extension!!
 wn = (n_axion-1)/(n_axion+1)
 
 # Contours_at = (71.5,73.24,74.98) # This must be a tuple with a at least one value and a comma. That is, must have at least one comma
@@ -247,7 +248,7 @@ elif load_from_file == False:
                 print "bug!"
                 k_res_numerical = 0
                 k_nl_scf[i][j] = 100 #arbitrary large number: bug
-                z_nl_scf[i][j] = -30 #arbitrary large number: bug
+                z_nl_scf[i][j] = 0 #arbitrary large number: bug
                 Omega_nl_scf[i][j] = 1e-30 #arbitrary small number
 
             ##2em iteration: find z_nl at which k_res becomes non linear
@@ -348,46 +349,68 @@ print "z nl:",z_nl_scf
 cax1 = ax1.pcolormesh( ac, Theta_initial, np.transpose(z_nl_scf), # for some reason, need to transpose H0 to get it to plot correctly
 				cmap='coolwarm',vmin=0 # choose colour map
 				)
-fig.colorbar(cax1) #, ticks=[H0.min(), 0.5*(H0.min() + H0.max()), H0.max()]) # cax is the imshow object above
+cbar = fig.colorbar(cax1) #, ticks=[H0.min(), 0.5*(H0.min() + H0.max()), H0.max()]) # cax is the imshow object above
+cbar.set_label(r"${\rm Log}_{10}(z_{\rm nl})$", fontsize = 16)
+cbar.ax.tick_params(labelsize=16)
 
 ax1.set_ylabel(r"$\Theta_i$", fontsize=16)
 ax1.set_xlabel(r"$a_c$", fontsize=16)
-ax1.set_title(r"$z_{\rm nl}$, n=%.1f"%(n_axion), fontsize=16)
+# ax1.set_title(r"$z_{\rm nl}$, n=%.1f"%(n_axion), fontsize=16)
+ax1.tick_params('x',labelsize=16)
+ax1.tick_params('y',labelsize=16)
+
 
 ax2 = fig.add_subplot(222)
 print "Omega_nl_scf:",Omega_nl_scf
 cax2 = ax2.pcolormesh( ac, Theta_initial, np.transpose(np.log10(Omega_nl_scf)), # for some reason, need to transpose H0 to get it to plot correctly
 				cmap='coolwarm',vmin=-6 # choose colour map
 				)
-fig.colorbar(cax2) #, ticks=[H0.min(), 0.5*(H0.min() + H0.max()), H0.max()]) # cax is the imshow object above
+cbar = fig.colorbar(cax2) #, ticks=[H0.min(), 0.5*(H0.min() + H0.max()), H0.max()]) # cax is the imshow object above
+cbar.set_label(r"${\rm Log}_{10}(f_{\rm EDE}(z_{\rm nl}))$", fontsize = 16)
+cbar.ax.tick_params(labelsize=16)
 
 ax2.set_ylabel(r"$\Theta_i$", fontsize=16)
 ax2.set_xlabel(r"$a_c$", fontsize=16)
-ax2.set_title(r"$f_{\rm EDE}(z_{\rm nl})$, n=%.1f"%(n_axion), fontsize=16)
+ax2.tick_params('x',labelsize=16)
+ax2.tick_params('y',labelsize=16)
+# ax2.set_title(r"$f_{\rm EDE}(z_{\rm nl})$, n=%.1f"%(n_axion), fontsize=16)
+
 ax3 = fig.add_subplot(223)
 
 print "k nl:",k_nl_scf
-cax3 = ax3.pcolormesh( ac, Theta_initial, np.transpose(k_nl_scf), # for some reason, need to transpose H0 to get it to plot correctly
-				cmap='coolwarm',vmax=1# choose colour map
+
+
+cax3 = ax3.pcolormesh( ac, Theta_initial, np.transpose(np.log10(k_nl_scf)), # for some reason, need to transpose H0 to get it to plot correctly
+				cmap='coolwarm',vmin=-2,vmax=0# choose colour map
 				)
-fig.colorbar(cax3) #, ticks=[H0.min(), 0.5*(H0.min() + H0.max()), H0.max()]) # cax is the imshow object above
+cbar = fig.colorbar(cax3) #, ticks=[H0.min(), 0.5*(H0.min() + H0.max()), H0.max()]) # cax is the imshow object above
+cbar.set_label(r"${\rm Log}_{10}(k_{\rm nl})$", fontsize = 16)
+
+cbar.ax.tick_params(labelsize=16)
 
 ax3.set_ylabel(r"$\Theta_i$", fontsize=16)
 ax3.set_xlabel(r"$a_c$", fontsize=16)
-ax3.set_title(r"$k_{\rm nl}$, n=%.1f"%(n_axion), fontsize=16)
+ax3.tick_params('x',labelsize=16)
+ax3.tick_params('y',labelsize=16)
+# ax3.set_title(r"$k_{\rm nl}$, n=%.1f"%(n_axion), fontsize=16)
 
-ax3 = fig.add_subplot(224)
+ax4 = fig.add_subplot(224)
 print "znl:", z_nl_scf[np.where(ac==-4.0)][0]
-ax3.plot(Theta_initial/np.pi,z_nl_scf[np.where(ac==-4.0)][0],'b')
-ax3.set_xlabel(r"$\Theta_i/\pi$", fontsize=16)
-ax3.set_ylabel(r"$z_{\rm nl}$", fontsize=16, color='b')
-ax3.tick_params('y', colors='b')
-ax3.set_yscale('log')
-ax3_bis = ax3.twinx()
-ax3_bis.plot(Theta_initial/np.pi,Omega_nl_scf[np.where(ac==-4.0)][0],'r')
-ax3_bis.set_ylabel(r"$f_{\rm EDE}(z_{\rm nl})$", fontsize=16, color='r')
-ax3_bis.tick_params('y', colors='r')
-ax3_bis.set_yscale('log')
-ax3_bis.set_title(r"$a_c = 10^{-4}$, n=%.1f"%(n_axion), fontsize=16)
+ax4.plot(Theta_initial/np.pi,z_nl_scf[np.where(ac==-3.5)][0],'b')
+ax4.set_xlabel(r"$\Theta_i/\pi$", fontsize=16)
+# ax4.set_yticks([0.5,1,5])
+ax4.set_ylabel(r"$z_{\rm nl}$", fontsize=16, color='b')
+ax4.tick_params('x', labelsize=16)
+ax4.tick_params('y', labelcolor='b',labelsize=16)
+# ax4.set_yscale('log')
+
+#
+ax4_bis = ax4.twinx()
+ax4_bis.plot(Theta_initial/np.pi,1000*Omega_nl_scf[np.where(ac==-4)][0],'r')
+ax4_bis.set_ylabel(r"$1000\times f_{\rm EDE}(z_{\rm nl})$", fontsize=16, color='r')
+ax4_bis.tick_params('y', labelcolor='r',labelsize=16)
+# ax4_bis.set_yscale('log')
+ax4.text(0.0,max(z_nl_scf[np.where(ac==-3.5)][0])*0.9,r"$a_c = 10^{-4}$, n=%.1f"%(n_axion), fontsize=16)
 # plt.savefig(output_file + '_zc_alpha.png',bbox_inches='tight')
+fig.tight_layout()
 plt.show()

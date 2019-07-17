@@ -68,6 +68,7 @@ cdef extern from "class.h":
         double log10_f_axion
         double log10_m_axion
         double f_ede
+        double omega_axion
         double phi_scf_c
         double w0_fld
         double wa_fld
