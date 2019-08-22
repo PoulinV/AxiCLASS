@@ -1372,12 +1372,37 @@ int input_read_parameters(
           pba->m_scf = param1;
         }
         if(pba->m_scf == 0.0 || pba->f_axion == 0.0 ){
-          class_call(parser_read_double(pfc,"log10_axion_ac",&param1,&flag1,errmsg),
-                     errmsg,
-                     errmsg);
-         if(flag1 == _TRUE_){
-           pba->log10_axion_ac = param1;
-         }
+          class_call(parser_read_string(pfc,
+                                        "zc_is_zeq",
+                                        &string1,
+                                        &flag1,
+                                        errmsg),
+                      errmsg,
+                      errmsg);
+
+          if (flag1 == _TRUE_){
+            if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+              pba->zc_is_zeq = _TRUE_;
+            }
+            else {
+              pba->zc_is_zeq = _FALSE_;
+            }
+          }else{
+            pba->zc_is_zeq = _FALSE_;
+          }
+
+          if(pba->zc_is_zeq == _TRUE_){
+            printf("log10_axion_ac %e",log10((pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm)));
+            pba->log10_axion_ac = log10((pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm));
+          }else{
+            class_call(parser_read_double(pfc,"log10_axion_ac",&param1,&flag1,errmsg),
+                       errmsg,
+                       errmsg);
+           if(flag1 == _TRUE_){
+             pba->log10_axion_ac = param1;
+           }
+          }
+
 
           class_call(parser_read_double(pfc,"Omega0_axion",&param1,&flag1,errmsg),
                      errmsg,
@@ -2157,6 +2182,7 @@ if(pth->PBH_low_mass > 0.){
       ppt->has_cl_cmb_lensing_potential = _TRUE_;
       ppt->has_perturbations = _TRUE_;
       ppt->has_cls = _TRUE_;
+      class_read_double("A_lens",psp->A_lens);
     }
 
     if ((strstr(string1,"nCl") != NULL) || (strstr(string1,"NCl") != NULL) || (strstr(string1,"NCL") != NULL) ||
@@ -4125,7 +4151,7 @@ int input_default_params(
 
   psp->z_max_pk = pop->z_pk[0];
   psp->non_diag=0;
-
+  psp->A_lens = 1;
   /** - nonlinear structure */
 
   /** - lensing structure */

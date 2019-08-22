@@ -31,7 +31,7 @@ struct spectra {
                    auto-correlation, 1 means only adjacent bins,
                    and number of bins minus one means all
                    correlations */
-
+  double A_lens;
   //@}
 
   /** @name - information on number of modes and pairs of initial conditions */
