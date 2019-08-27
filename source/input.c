@@ -2183,6 +2183,7 @@ if(pth->PBH_low_mass > 0.){
       ppt->has_perturbations = _TRUE_;
       ppt->has_cls = _TRUE_;
       class_read_double("A_lens",psp->A_lens);
+      class_read_double("A_lens_TTTEEE",ple->A_lens_TTTEEE);
     }
 
     if ((strstr(string1,"nCl") != NULL) || (strstr(string1,"NCl") != NULL) || (strstr(string1,"NCL") != NULL) ||
@@ -4152,6 +4153,7 @@ int input_default_params(
   psp->z_max_pk = pop->z_pk[0];
   psp->non_diag=0;
   psp->A_lens = 1;
+  ple->A_lens_TTTEEE = 1;
   /** - nonlinear structure */
 
   /** - lensing structure */

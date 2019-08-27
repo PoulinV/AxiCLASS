@@ -1061,7 +1061,7 @@ int lensing_lensed_cl_tt(
     for (imu=0;imu<nmu;imu++) {
       cle += ksi[imu]*d00[imu][(int)ple->l[index_l]]*w8[imu]; /* loop could be optimized */
     }
-    ple->cl_lens[index_l*ple->lt_size+ple->index_lt_tt]=cle*2.0*_PI_;
+    ple->cl_lens[index_l*ple->lt_size+ple->index_lt_tt]=cle*2.0*_PI_*ple->A_lens_TTTEEE;
   }
 
   return _SUCCESS_;
@@ -1124,7 +1124,7 @@ int lensing_lensed_cl_te(
     for (imu=0;imu<nmu;imu++) {
       clte += ksiX[imu]*d20[imu][(int)ple->l[index_l]]*w8[imu]; /* loop could be optimized */
     }
-    ple->cl_lens[index_l*ple->lt_size+ple->index_lt_te]=clte*2.0*_PI_;
+    ple->cl_lens[index_l*ple->lt_size+ple->index_lt_te]=clte*2.0*_PI_*ple->A_lens_TTTEEE;
   }
 
   return _SUCCESS_;
@@ -1192,8 +1192,8 @@ int lensing_lensed_cl_ee_bb(
       clp += ksip[imu]*d22[imu][(int)ple->l[index_l]]*w8[imu]; /* loop could be optimized */
       clm += ksim[imu]*d2m2[imu][(int)ple->l[index_l]]*w8[imu]; /* loop could be optimized */
     }
-    ple->cl_lens[index_l*ple->lt_size+ple->index_lt_ee]=(clp+clm)*_PI_;
-    ple->cl_lens[index_l*ple->lt_size+ple->index_lt_bb]=(clp-clm)*_PI_;
+    ple->cl_lens[index_l*ple->lt_size+ple->index_lt_ee]=(clp+clm)*_PI_*ple->A_lens_TTTEEE;
+    ple->cl_lens[index_l*ple->lt_size+ple->index_lt_bb]=(clp-clm)*_PI_*ple->A_lens_TTTEEE;
   }
 
   return _SUCCESS_;

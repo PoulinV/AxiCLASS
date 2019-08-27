@@ -78,6 +78,7 @@ struct lensing {
 			   cl[index_l * ple->lt_size + index_lt] */
 
   double * ddcl_lens; /**< second derivatives for interpolation */
+  double A_lens_TTTEEE; /**< Similar to A_lens parameter but not rescaling the phiphi power spectrum amplitude */
 
   //@}
 
