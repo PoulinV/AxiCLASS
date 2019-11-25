@@ -4685,7 +4685,7 @@ int perturb_initial_conditions(struct precision * ppr,
           ppw->pv->y[ppw->pv->index_pt_phi_scf] += alpha*ppw->pvecback[pba->index_bg_phi_prime_scf];
           ppw->pv->y[ppw->pv->index_pt_phi_prime_scf] +=
           (-2.*a_prime_over_a*alpha*ppw->pvecback[pba->index_bg_phi_prime_scf]
-           -a*a* dV_scf(pba,ppw->pvecback[pba->index_bg_phi_scf])*alpha
+           -a*a* dV_scf(pba,1./a-1,ppw->pvecback[pba->index_bg_phi_scf])*alpha
            +ppw->pvecback[pba->index_bg_phi_prime_scf]*alpha_prime);
          }
          if (pba->scf_evolve_as_fluid == _TRUE_){

@@ -271,13 +271,14 @@ int background_functions(
   /* fluid's time-dependent equation of state parameter */
   double w_fld, dw_over_da, integral_fld;
   /* scale factor */
-  double a;
+  double a, z;
 
   /* scalar field quantities */
   double phi = 0, phi_prime = 0;
   //printf("Inside background_functions.\n");//print_trigger
   /** - initialize local variables */
   a = pvecback_B[pba->index_bi_a];
+  z = 1./a-1;
   rho_tot = 0.;
   p_tot = 0.;
   rho_r=0.;
@@ -415,11 +416,11 @@ int background_functions(
     //The next few lines then calculate the new values for the density etc... from the new values of phi and phi prime
     pvecback[pba->index_bg_phi_scf] = phi; // value of the scalar field phi
     pvecback[pba->index_bg_phi_prime_scf] = phi_prime; // value of the scalar field phi derivative wrt conformal time
-    pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
-    pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
-    pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
-    pvecback[pba->index_bg_rho_scf] = (phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
-    pvecback[pba->index_bg_p_scf] = (phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
+    pvecback[pba->index_bg_V_scf] = V_scf(pba,z,phi); //V_scf(pba,phi); //write here potential as function of phi
+    pvecback[pba->index_bg_dV_scf] = dV_scf(pba,z,phi); // dV_scf(pba,phi); //potential' as function of phi
+    pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,z,phi); // ddV_scf(pba,phi); //potential'' as function of phi
+    pvecback[pba->index_bg_rho_scf] = (phi_prime*phi_prime/(2*a*a) + V_scf(pba,z,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
+    pvecback[pba->index_bg_p_scf] = (phi_prime*phi_prime/(2*a*a) - V_scf(pba,z,phi))/3.; // pressure of the scalar field
     // pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
     // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
@@ -445,9 +446,9 @@ int background_functions(
     /*** WE STORE THESE DUMMY QUANTITIES ANYWAY ***/
     pvecback[pba->index_bg_phi_scf] = phi; // value of the scalar field phi
     pvecback[pba->index_bg_phi_prime_scf] = phi_prime; // value of the scalar field phi derivative wrt conformal time
-    pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
-    pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
-    pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
+    pvecback[pba->index_bg_V_scf] = V_scf(pba,z,phi); //V_scf(pba,phi); //write here potential as function of phi
+    pvecback[pba->index_bg_dV_scf] = dV_scf(pba,z,phi); // dV_scf(pba,phi); //potential' as function of phi
+    pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,z,phi); // ddV_scf(pba,phi); //potential'' as function of phi
 
 
     /****THE REAL QUANTITIES ARE ASSIGNED HERE****/
@@ -2244,7 +2245,7 @@ int background_initial_conditions(
 	  printf(" No attractor IC for lambda = %.3e ! \n ",scf_lambda);
       }
       pvecback_integration[pba->index_bi_phi_prime_scf] = 2*pvecback_integration[pba->index_bi_a]*
-        sqrt(V_scf(pba,pvecback_integration[pba->index_bi_phi_scf]))*pba->phi_prime_ini_scf;
+        sqrt(V_scf(pba,1./pvecback_integration[pba->index_bi_a]-1,pvecback_integration[pba->index_bi_phi_scf]))*pba->phi_prime_ini_scf;
     }
     if(pba->scf_potential == phi_2n){
       if(pba->V0_phi2n == 0.0){
@@ -2545,13 +2546,14 @@ int background_derivs(
     //printf("inside SF evolution call\n");
     if (pba->scf_kg_eq == _TRUE_) {
     dy[pba->index_bi_phi_scf] = y[pba->index_bi_phi_prime_scf];
-    dy[pba->index_bi_phi_prime_scf] = - y[pba->index_bi_a]*
-      (2*pvecback[pba->index_bg_H]*y[pba->index_bi_phi_prime_scf]
-       + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])) ;
-       // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])/(pow(pba->scf_parameters[1],2))) ;
+      dy[pba->index_bi_phi_prime_scf] = - y[pba->index_bi_a]*(
+      2*pvecback[pba->index_bg_H]*y[pba->index_bi_phi_prime_scf]*pba->Hubble_friction_kg_eq_switch+
+       y[pba->index_bi_a]*dV_scf(pba,1./y[pba->index_bi_a]-1,y[pba->index_bi_phi_scf])*pba->potential_kg_eq_switch) ;
+       //// + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])/(pow(pba->scf_parameters[1],2))) ;//different units
     dy[pba->index_bi_rho_scf] = 0; //Update the scf density until the fluid equation starts.
     //y[pba->index_bi_rho_scf] = y[pba->index_bg_rho_scf];
-    //printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
+    // if(pba->background_verbose>1)printf("Evolving scalar field using KG equation. a %e HF %e dVdphi  %e \n", y[pba->index_bi_a],2*pvecback[pba->index_bg_H]*y[pba->index_bi_phi_prime_scf],y[pba->index_bi_a]*dV_scf(pba,1./y[pba->index_bi_a]-1,y[pba->index_bi_phi_scf]));
+    // if(pba->background_verbose>1)printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
     }
     else if(pba->scf_kg_eq == _FALSE_) {
 
@@ -2613,22 +2615,24 @@ double dV_e_scf(struct background *pba,
                 double phi
                 ) {
   double scf_lambda = pba->scf_parameters[0];
+  double z = 0; //dummy
   //  double scf_alpha  = pba->scf_parameters[1];
   //  double scf_A      = pba->scf_parameters[2];
   //  double scf_B      = pba->scf_parameters[3];
 
-  return -scf_lambda*V_scf(pba,phi);
+  return -scf_lambda*V_scf(pba,z,phi);
 }
 
 double ddV_e_scf(struct background *pba,
                  double phi
                  ) {
   double scf_lambda = pba->scf_parameters[0];
+  double z = 0; //dummy
   //  double scf_alpha  = pba->scf_parameters[1];
   //  double scf_A      = pba->scf_parameters[2];
   //  double scf_B      = pba->scf_parameters[3];
 
-  return pow(-scf_lambda,2)*V_scf(pba,phi);
+  return pow(-scf_lambda,2)*V_scf(pba,z,phi);
 }
 
 
@@ -2849,11 +2853,98 @@ double ddV_axionquad_scf(
     return pow(pba->scf_parameters[0]*pba->H0,2);
 
 }
+
+double V_gordan(
+                struct background *pba,
+                double z,
+                double phi){
+  // phi = phi*2.435e18/pba->scf_parameters[1]; // from unit of reduced planck mass to f
+  phi = phi/pba->scf_parameters[1]; // from unit of reduced planck mass to f
+  double Big_Lambda_squared = pba->scf_parameters[2]*pba->scf_parameters[2]*2.435e18*2.435e18;//from mpl to GeV
+  double cos_phi = cos(phi);
+  double cos_phi_squared = cos(phi)*cos(phi);
+  double sin_phi = sin(phi);
+  double sin_phi_squared = sin(phi)*sin(phi);
+  double T_nu_squared = pow(pba->T_cmb*(1+z)*8.617e-5*1e-9*pow(4./11,1./3),2);//Tnu in GeV
+  double Big_Lambda_tilde = 2*Big_Lambda_squared/pow(pba->m_ncdm_in_eV[0]*1e-9,2);
+  double v_T = pow(pba->m_ncdm_in_eV[0]*1e-9,2)/2*T_nu_squared/24*sin_phi_squared;
+  double conversion = 1.046e+38; //conversion from GeV^4 to CLASS units of mpl^2/Mpc^2
+  double v_CW =0;
+         if(cos_phi_squared!=0)v_CW+=(cos_phi_squared*cos_phi_squared*log(Big_Lambda_tilde/cos_phi_squared));
+         if(sin_phi_squared!=0)v_CW+=(sin_phi_squared*sin_phi_squared*log(Big_Lambda_tilde/sin_phi_squared));
+         // v_CW *= pow(lambda_squared*f_squared/(4*_PI_),2);
+         v_CW *= pow(pba->m_ncdm_in_eV[0]*1e-9,4)/4/_PI_/_PI_;
+  double classical_contribution = pow(pba->m_ncdm_in_eV[0]*1e-9,4)/4/_PI_/_PI_*log(pba->scf_parameters[2]/(pba->m_ncdm_in_eV[0]*1e-9*2));
+         // classical_contribution = 0;
+  if(v_CW>v_T && pba->background_verbose > 1)printf("phi %e T_nu/m_nu %e m_nu %e\n",phi,sqrt(T_nu_squared)*1e9/pba->m_ncdm_in_eV[0],pba->m_ncdm_in_eV[0]);
+  // if(pba->background_verbose > 1) printf("%e %e %e phi %e z %e v_CW %e v_T %e classical_contribution %e\n",lambda_squared,f_squared,Big_Lambda_squared, phi,z,v_CW,v_T,classical_contribution);
+  // printf("pow(lambda_squared*f_squared/(4*_PI_),2) %e cos_phi_squared %e %e\n",pow(lambda_squared*f_squared/(4*_PI_),2),cos_phi_squared,sin_phi_squared,Big_Lambda_tilde/cos_phi_squared);
+  return (v_T+v_CW+classical_contribution)*conversion;
+
+
+}
+double dV_gordan(
+                struct background *pba,
+                double z,
+                double phi){
+  // phi = phi*2.435e18/pba->scf_parameters[1];
+  phi = phi/pba->scf_parameters[1];
+  double Big_Lambda_squared = pba->scf_parameters[2]*pba->scf_parameters[2];//in GeV
+  double cos_phi = cos(phi);
+  double cos_phi_squared = cos(phi)*cos(phi);
+  double sin_phi = sin(phi);
+  double sin_phi_squared = sin(phi)*sin(phi);
+  double T_nu_squared = pow(pba->T_cmb*(1+z)*8.617e-5*1e-9*pow(4./11,1./3),2);//Tnu in GeV
+  double Big_Lambda_tilde = 2*Big_Lambda_squared/pow(pba->m_ncdm_in_eV[0]*1e-9,2);
+  // printf("lambda_squared*f_squared %e Big_Lambda_squared %e\n",lambda_squared*f_squared ,Big_Lambda_squared);
+  double conversion = 1.046e+38; //conversion from GeV^4 to CLASS units of mpl^2/Mpc^2
+  double dv_T = pow(pba->m_ncdm_in_eV[0]*1e-9,2)/2*T_nu_squared/24*2*sin_phi*cos_phi;
+  double dv_CW = (-2*cos_phi*sin_phi*sin_phi_squared+2*cos_phi*cos_phi_squared*sin_phi);
+  if(sin_phi_squared!=0)dv_CW += (4*cos_phi*sin_phi*sin_phi_squared*log(Big_Lambda_tilde/sin_phi_squared));
+  if(cos_phi_squared!=0)dv_CW += (-4*cos_phi*cos_phi_squared*sin_phi*log(Big_Lambda_tilde/cos_phi_squared));
+  dv_CW*= pow(pba->m_ncdm_in_eV[0]*1e-9,4)/4/_PI_/_PI_;
+  // if(pba->background_verbose > 1) printf("phi %e z %e dv_CW %e dv_T %e \n", phi,z,dv_CW,dv_T);
+
+         // dv_CW = 0;
+  return (dv_T+dv_CW)*conversion/pba->scf_parameters[1];
+}
+double ddV_gordan(
+                struct background *pba,
+                double z,
+                double phi){
+  // phi = phi*2.435e18/pba->scf_parameters[1];
+  phi = phi/pba->scf_parameters[1];
+  double Big_Lambda_squared = pba->scf_parameters[2]*pba->scf_parameters[2];//in GeV
+  double cos_phi = cos(phi);
+  double cos_phi_squared = cos(phi)*cos(phi);
+  double sin_phi = sin(phi);
+  double sin_phi_squared = sin(phi)*sin(phi);
+  double T_nu_squared = pow(pba->T_cmb*(1+z)*8.617e-5*1e-9*pow(4./11,1./3),2);//Tnu in GeV
+  double Big_Lambda_tilde = 2*Big_Lambda_squared/pow(pba->m_ncdm_in_eV[0]*1e-9,2);
+  double conversion = 1.046e+38; //conversion from GeV^4 to CLASS units of mpl^2/Mpc^2s
+  double ddv_T = pow(pba->m_ncdm_in_eV[0]*1e-9,2)/2*T_nu_squared/24*2*(cos_phi_squared-sin_phi_squared);
+  double ddv_CW = 0;
+  if(sin_phi_squared!=0)ddv_CW+=-2*sin_phi_squared*(2*sin_phi_squared*log(Big_Lambda_tilde/sin_phi_squared)
+                       -2*cos_phi_squared*log(Big_Lambda_tilde/cos_phi_squared)
+                       -sin_phi_squared+cos_phi_squared);
+  if(cos_phi_squared!=0)ddv_CW+=+2*cos_phi_squared*(2*sin_phi_squared*log(Big_Lambda_tilde/sin_phi_squared)
+                       -2*cos_phi_squared*log(Big_Lambda_tilde/cos_phi_squared)
+                       -sin_phi_squared+cos_phi_squared);
+  if(cos_phi != 0 && sin_phi != 0) ddv_CW+=+2*cos_phi*sin_phi*(4*cos_phi*sin_phi*log(Big_Lambda_tilde/sin_phi_squared)
+                      +4*cos_phi*sin_phi*log(Big_Lambda_tilde/cos_phi_squared)
+                      -12*cos_phi*sin_phi);
+   ddv_CW *= pow(pba->m_ncdm_in_eV[0]*1e-9,4)/4/_PI_/_PI_;
+
+          // ddv_CW = 0;
+
+  return (ddv_T+ddv_CW)*conversion/pba->scf_parameters[1]/pba->scf_parameters[1];
+}
 /** Finally we can obtain the overall potential \f$ V = V_p*V_e \f$
  */
 
 double V_scf(
              struct background *pba,
+             double z,
              double phi) {
   /** we check first which potential should be considered */
   double result = 0.;
@@ -2875,6 +2966,9 @@ double V_scf(
   else if(pba->scf_potential == ax_cos_cubed){
     result = V_ax_cos_cubed_scf(pba,phi);
   }
+  else if(pba->scf_potential == gordan){
+    result = V_gordan(pba,z,phi);
+  }
   // printf("result Vf %e\n", result);
 
   return result;
@@ -2882,6 +2976,7 @@ double V_scf(
 
 double dV_scf(
               struct background *pba,
+              double z,
 	      double phi) {
   /** we check first which potential should be considered */
   double result = 0.;
@@ -2903,6 +2998,9 @@ double dV_scf(
   else if(pba->scf_potential == ax_cos_cubed){
     result = dV_ax_cos_cubed_scf(pba,phi);
   }
+  else if(pba->scf_potential == gordan){
+    result = dV_gordan(pba,z,phi);
+  }
   // printf("result dVf %e\n", result);
 
   return result;
@@ -2911,6 +3009,7 @@ double dV_scf(
 
 double ddV_scf(
                struct background *pba,
+               double z,
                double phi) {
   /** we check first which potential should be considered */
   double result = 0.;
@@ -2934,6 +3033,9 @@ double ddV_scf(
 
   else if(pba->scf_potential == ax_cos_cubed){
     result = ddV_ax_cos_cubed_scf(pba,phi);
+  }
+  else if(pba->scf_potential == gordan){
+    result = ddV_gordan(pba,z,phi);
   }
   // printf("result ddVf %e\n", result);
   return result;

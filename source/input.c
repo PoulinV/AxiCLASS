@@ -301,6 +301,10 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
               fzw.scf_potential = axionquad;
               flag2 =_TRUE_;
            }
+           if (strcmp(string1,"gordan") == 0) {
+              fzw.scf_potential = gordan;
+              flag2 =_TRUE_;
+           }
 
        class_test(flag2==_FALSE_,
                       errmsg,
@@ -1468,13 +1472,17 @@ int input_read_parameters(
 
 
        }
-       if (strcmp(string1,"axionquad") == 0) {
-         pba->scf_potential = axionquad;
-         flag2 =_TRUE_;
-       }
+     if (strcmp(string1,"axionquad") == 0) {
+       pba->scf_potential = axionquad;
+       flag2 =_TRUE_;
+     }
+     if (strcmp(string1,"gordan") == 0) {
+       pba->scf_potential = gordan;
+       flag2 =_TRUE_;
+     }
    class_test(flag2==_FALSE_,
                   errmsg,
-                  "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','axionquad','ax_cos_cubed'.");
+                  "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','axionquad','ax_cos_cubed','gordan'.");
      }
 
     /** - Read parameters describing scalar field potential */
@@ -1498,10 +1506,26 @@ int input_read_parameters(
     class_read_double("alpha_squared",pba->alpha_squared);
     class_read_double("power_of_mu",pba->power_of_mu);
 
+    class_read_int("Hubble_friction_kg_eq_switch",pba->Hubble_friction_kg_eq_switch);
+    class_read_int("potential_kg_eq_switch",pba->potential_kg_eq_switch);
+
    /***additional parameters: only for shooting*/
    class_read_double("phi_ini_scf",pba->phi_ini_scf);
    class_read_double("V0_phi2n",pba->V0_phi2n);
 
+   if(pba->scf_potential == gordan){
+
+     /* Read mass of each ncdm species: */
+     // N_ncdm = 1;
+     // class_read_list_of_doubles_or_default("m_ncdm",pba->m_ncdm_in_eV,0.0,N_ncdm);
+     pba->scf_parameters[0] = sqrt(2)*(pba->m_ncdm_in_eV[0])/(pba->scf_parameters[1]*2.435e18*1e9);
+     printf("pba->scf_parameters[pba->scf_parameters_size-2] %e\n", pba->scf_parameters[pba->scf_parameters_size-2]);
+     // pba->scf_parameters[pba->scf_parameters_size-2] *= pba->scf_parameters[1] / 2.435e18; //from unit of f to reduced planck mass
+     pba->scf_parameters[pba->scf_parameters_size-2] *= pba->scf_parameters[1]; //from unit of f to reduced planck mass
+     pba->scf_parameters[pba->scf_parameters_size-1] *= pba->scf_parameters[1]; //from unit of f to reduced planck mass
+     printf("phi_ini %e phi_prime_ini %e\n", pba->scf_parameters[pba->scf_parameters_size-2], pba->scf_parameters[pba->scf_parameters_size-1]);
+     printf("mnu %e, lambda %e",pba->m_ncdm_in_eV[0],pba->scf_parameters[0]);
+   }
 
     if(input_verbose>10){
       printf("input file read, the h is %e \n", pba->h);
@@ -3848,6 +3872,8 @@ int input_default_params(
   pba->scf_parameters_size = 0;
   pba->scf_tuning_index = 0;
   pba->scf_potential = pol_times_exp;
+  pba->Hubble_friction_kg_eq_switch = 1.0; /* controls hubble friction in kg eq. */
+  pba->potential_kg_eq_switch = 1.0;/* controls potential in kg eq. */
   pba->V0_phi2n = 0.0;
   pba->f_axion = 0.0;
   pba->m_scf = 0.0;
