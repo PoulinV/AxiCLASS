@@ -27,7 +27,8 @@ enum scf_pot{
   axion, /** scf_potential set to axion: V equals m^2f^2(1-cos(phi/f)) */
   phi_2n, /** scf_potential set to axion: V equals V0((phi)^2n) */
   axionquad, /* scf_potential set to axion quadratic form: V = m^2phi^2/2 */
-  ax_cos_cubed
+  ax_cos_cubed,
+  gordan
 };
 struct background
 {
@@ -91,6 +92,8 @@ struct background
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
+  int Hubble_friction_kg_eq_switch;     /**< controls hubble friction in kg eq. */
+  int potential_kg_eq_switch;      /**< controls potential in kg eq. */
   double m_scf;
   double f_axion;
   double alpha_squared;
@@ -528,16 +531,19 @@ extern "C" {
   /** Scalar field potential and its derivatives **/
   double V_scf(
                struct background *pba,
+               double z,
                double phi
                );
 
   double dV_scf(
 		struct background *pba,
+    double z,
 		double phi
 		);
 
   double ddV_scf(
                  struct background *pba,
+                 double z,
                  double phi
                  );
 
