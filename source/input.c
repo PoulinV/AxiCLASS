@@ -433,6 +433,13 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
       fzw.target_name[counter] = index_target;
       // printf("name of target parameter: %e", fzw.target_name[counter]);
       // store target value of target parameter
+
+      if(target_namestrings[index_target]=="log10_fraction_axion_ac" && param1 > 0){
+        //VP: 04.01.2020
+        //trick to allow the code to interpret f_ede: if log10_f_ede > 0, we interpret it as being "f_ede" and translate it into log10_f_ede.
+        //this works because f_ede is a fraction <= 1, so log10_f_ede must be <= 0.
+        param1 = log10(param1);
+      }
       fzw.target_value[counter] = param1;
       fzw.unknown_parameters_index[counter]=pfc->size+counter;
       // substitute the name of the target parameter with the name of the corresponding unknown parameter
@@ -1246,6 +1253,14 @@ int input_read_parameters(
 
   /* Additional SCF parameters: */
   class_read_double("log10_fraction_axion_ac",pba->log10_fraction_axion_ac);
+  class_test(pba->log10_fraction_axion_ac > 1,errmsg,
+     "It looks like you chose a value of fraction_axion_ac too large in the .ini file");
+  if(pba->log10_fraction_axion_ac>0.){
+    //VP: 04.01.2020
+    //trick to allow the code to interpret f_ede: if log10_f_ede > 0, we interpret it as being "f_ede" and translate it into log10_f_ede.
+    //this works because f_ede is a fraction <= 1, so log10_f_ede must be <= 0.
+    pba->log10_fraction_axion_ac = log10(pba->log10_fraction_axion_ac);
+  }
   class_read_double("log10_fraction_axion_ac_phi2n",pba->log10_fraction_axion_ac);
   class_read_double("log10_axion_ac",pba->log10_axion_ac);
   class_read_double("m_axion",pba->m_scf);
@@ -1416,6 +1431,12 @@ int input_read_parameters(
                        errmsg);
            if(flag1 == _TRUE_){
             pba->log10_fraction_axion_ac = param1;
+            if(pba->log10_fraction_axion_ac>0.){
+              //VP: 04.01.2020
+              //trick to allow the code to interpret f_ede: if log10_f_ede > 0, we interpret it as being "f_ede" and translate it into log10_f_ede.
+              //this works because f_ede is a fraction <= 1, so log10_f_ede must be <= 0.
+              pba->log10_fraction_axion_ac = log10(pba->log10_fraction_axion_ac);
+            }
           }
             // printf("pba->log10_fraction_axion_ac %e \n", pba->log10_fraction_axion_ac);
           }
