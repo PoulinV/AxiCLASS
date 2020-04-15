@@ -12,5 +12,3 @@
 #include "helium.h"
 #include "hydrogen.h"
 #include "history.h"
-#include "arrays.h"
-#include "common.h"

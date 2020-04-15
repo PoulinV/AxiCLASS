@@ -134,10 +134,10 @@
  * temporary parameters for background fzero function
  */
 
-enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr, Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,log10_fraction_axion_ac,log10_axion_ac,log10_fraction_axion_ac_phi2n,log10_axion_ac_phi2n};
+enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr, Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,log10_fraction_axion_ac,log10_axion_ac,log10_fraction_axion_ac_phi2n,log10_axion_ac_phi2n,sigma8};
 enum computation_stage {cs_background, cs_thermodynamics, cs_perturbations,
                         cs_primordial, cs_nonlinear, cs_transfer, cs_spectra};
-#define _NUM_TARGETS_ 10 //Keep this number as number of target_names
+#define _NUM_TARGETS_ 11 //Keep this number as number of target_names
 enum scf_pot_inp{
   pol_times_exp_inp, /** scf_potential set to pol_times_exp:V equals ((\phi-B)^\alpha + A)exp(-lambda*phi), see http://arxiv.org/abs/astro-ph/9908085.*/
   double_exp_inp, /* scf_potential set to double_exp: V equals \Lambda_1^4e^{-\lambda\phi}+\Lambda_2^4e^{-\mu\phi} */
@@ -229,6 +229,21 @@ extern "C" {
                             ErrorMsg errmsg
                             );
 
+  int input_read_precisions(
+                            struct file_content * pfc,
+                            struct precision * ppr,
+                            struct background * pba,
+                            struct thermo *pth,
+                            struct perturbs *ppt,
+                            struct transfers *ptr,
+                            struct primordial *ppm,
+                            struct spectra *psp,
+                            struct nonlinear *pnl,
+                            struct lensing *ple,
+                            struct output *pop,
+                            ErrorMsg errmsg
+                            );
+
   int input_default_params(
 			   struct background *pba,
 			   struct thermo *pth,
@@ -295,6 +310,15 @@ extern "C" {
   int compare_integers (const void * elem1, const void * elem2);
 
   int compare_doubles(const void *a,const void *b);
+
+  int input_prepare_pk_eq(
+                          struct precision * ppr,
+                          struct background *pba,
+                          struct thermo *pth,
+                          struct nonlinear *pnl,
+                          int input_verbose,
+                          ErrorMsg errmsg
+                          );
 
 
 #ifdef __cplusplus

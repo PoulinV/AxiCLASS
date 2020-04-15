@@ -222,7 +222,7 @@ int evolver_ndf15(
 
   htspan = fabs(tfinal-t0);
   for(ii=0;ii<6;ii++) stepstat[ii] = 0;
-  //printf("Inside ndf15 evolver \n"); //print_trigger
+
   class_call((*derivs)(t0,y+1,f0+1,parameters_and_workspace_for_derivs,error_message),error_message,error_message);
   stepstat[2] +=1;
   if ((tfinal-t0)<0.0){
@@ -234,7 +234,7 @@ int evolver_ndf15(
   hmax = (tfinal-t0)/10.0;
   t = t0;
 
-  //printf("Successfully called derivs\n"); //print_trigger
+
   nfenj=0;
   class_call(numjac((*derivs),t,y,f0,&jac,&nj_ws,abstol,neq,
 		    &nfenj,parameters_and_workspace_for_derivs,error_message),
@@ -246,7 +246,6 @@ int evolver_ndf15(
   hmin = 16.0*eps*fabs(t);
   /*Calculate initial step */
   rh = 0.0;
-  //printf("Successfully called numjac\n"); //print_trigger
 
   for(jj=1;jj<=neq;jj++){
     wt[jj] = MAX(fabs(y[jj]),threshold);
@@ -264,7 +263,6 @@ int evolver_ndf15(
   class_call((*derivs)(t+tdel,y+1,tempvec1+1,parameters_and_workspace_for_derivs,error_message),
 	     error_message,error_message);
   stepstat[2] += 1;
-  //printf("Successfully called derivs\n"); //print_trigger
 
   /*I assume that a full jacobi matrix is always calculated in the beginning...*/
   for(ii=1;ii<=neq;ii++){
@@ -298,14 +296,14 @@ int evolver_ndf15(
 	     error_message,error_message);
   stepstat[4] += 1;
   havrate = _FALSE_; /*false*/
-  //printf("Successfully called new linearisation\n"); //print_trigger
 
   /* Doing main loop: */
   done = _FALSE_;
   at_hmin = _FALSE_;
   while (done==_FALSE_){
-  	//printf("Entered main loop \n");
-  	//printf("Trigger to exit loop is 'done', 'done' = %d \n",done); //print_trigger
+    /**class_test(stepstat[2] > 1e5, error_message,
+	       "Too many steps in evolver! Current stepsize:%g, in interval: [%g:%g]\n",
+	       absh,t0,tfinal);*/
     hmin = minimum_variation;
     maxtmp = MAX(hmin,absh);
     absh = MIN(hmax, maxtmp);
@@ -378,11 +376,9 @@ int evolver_ndf15(
 	/* Iterate with simplified Newton method. */
 	tooslow = _FALSE_;
 	for(iter=1;iter<=maxit;iter++){
-		// printf("iter = %f \n",iter ); //print_trigger
 	  for (ii=1;ii<=neq;ii++){
 	    tempvec1[ii]=(psi[ii]+difkp1[ii]);
 	  }
-	  //printf("Iterating with simplified newton method. \n"); //print_trigger
 	  class_call((*derivs)(tnew,ynew+1,f0+1,parameters_and_workspace_for_derivs,error_message),
 		     error_message,error_message);
 	  stepstat[2] += 1;
@@ -448,7 +444,6 @@ int evolver_ndf15(
 	  }
 	  oldnrm = newnrm;
 	}
-	//printf("is tooslow==true? %d \n",tooslow); //print_trigger
 	if (tooslow==_TRUE_){
 	  stepstat[1] += 1;
 	  /*	! Speed up the iteration by forming new linearization or reducing h. */
@@ -527,15 +522,12 @@ int evolver_ndf15(
 	adjust_stepsize(dif,(absh/abshlast),neq,k);
 	hinvGak = h * invGa[k-1];
 	nconhk = 0;
-	//printf("Adjusted step size \n"); //print_trigger
-
 	class_call(new_linearisation(&jac,hinvGak,neq,error_message),
 		   error_message,error_message);
 	stepstat[4] += 1;
 	havrate = _FALSE_;
       }
       else {
-      //printf("Successful step\n"); //print_trigger
 	break; /* Succesfull step */
       }
     }
@@ -662,8 +654,6 @@ int evolver_ndf15(
   /* a last call is compulsory to ensure that all quantitites in
      y,dy,parameters_and_workspace_for_derivs are updated to the
      last point in the covered range */
-  //printf("About to do last call to derivs \n"); //print_trigger
-
   class_call(
 	     (*derivs)(tnew,
 		       ynew+1,
@@ -671,6 +661,13 @@ int evolver_ndf15(
 		       parameters_and_workspace_for_derivs,error_message),
 	     error_message,
 	     error_message);
+
+  if (print_variables!=NULL){
+    /** If we are printing variables, we must store the final point */
+    class_call((*print_variables)(tnew,ynew+1,f0+1,
+				  parameters_and_workspace_for_derivs,error_message),
+	       error_message,error_message);
+  }
 
   if (verbose > 0){
     printf("\n End of evolver. Next=%d, t=%e and tnew=%e.",next,t,tnew);

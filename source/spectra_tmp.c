@@ -2629,11 +2629,7 @@ int spectra_pk(
             + 2.*_PI_*_PI_/exp(3.*psp->ln_k[index_k])
                 *source_ic1*source_ic1*primordial_pk_poissonian_noise));
 
-<<<<<<< HEAD
-        ln_pk_tot += exp(psp->ln_pk[(index_tau * psp->ln_k_size + index_k)* psp->ic_ic_size[index_md] + index_ic1_ic2]);
-=======
         pk_tot += exp(psp->ln_pk[(index_tau * psp->ln_k_size + index_k)* psp->ic_ic_size[index_md] + index_ic1_ic2]);
->>>>>>> 858b3f013751d089df4ddfbddff099142a7bb111
 
         // ln_pk_tot += 2.*_PI_*_PI_/exp(3.*psp->ln_k[index_k])
         //     *source_ic1*source_ic1
@@ -2661,14 +2657,10 @@ int spectra_pk(
             psp->ln_pk[(index_tau * psp->ln_k_size + index_k)* psp->ic_ic_size[index_md] + index_ic1_ic2] =
               primordial_pk[index_ic1_ic2]*SIGN(source_ic1)*SIGN(source_ic2);
 
-<<<<<<< HEAD
-            ln_pk_tot += exp(psp->ln_pk[(index_tau * psp->ln_k_size + index_k)* psp->ic_ic_size[index_md] + index_ic1_ic2]);
-=======
             pk_tot += psp->ln_pk[(index_tau * psp->ln_k_size + index_k)* psp->ic_ic_size[index_md] + index_ic1_ic2]
               * sqrt(psp->ln_pk[(index_tau * psp->ln_k_size + index_k)* psp->ic_ic_size[index_md] + index_ic1_ic1]
                      * psp->ln_pk[(index_tau * psp->ln_k_size + index_k)* psp->ic_ic_size[index_md] + index_ic2_ic2]);
 
->>>>>>> 858b3f013751d089df4ddfbddff099142a7bb111
 
           }
           else {
@@ -2676,12 +2668,9 @@ int spectra_pk(
           }
         }
       }
-<<<<<<< HEAD
-=======
 
       ln_pk_tot = log(pk_tot);
 
->>>>>>> 858b3f013751d089df4ddfbddff099142a7bb111
       /* if non-linear corrections required, compute the total non-linear matter power spectrum */
       ln_pk_tot = log(ln_pk_tot);
 

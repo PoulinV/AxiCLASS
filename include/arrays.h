@@ -124,14 +124,6 @@ extern "C" {
 		       short spline_mode,
 		       ErrorMsg errmsg
 		       );
-  int array_spline_table_lines_hyrec(
-		       double * x,
-		       int x_size,
-		       double * y_array,
-		       int y_size,
-		       double * ddy_array,
-		       short spline_mode
-		       );
 
   int array_logspline_table_lines(
 				  double * x,
@@ -249,6 +241,13 @@ int array_integrate_all_trapzd_or_spline(
 			       double * __restrict__ result,
 			       int result_size, /** from 1 to n_columns */
 			       ErrorMsg errmsg);
+
+  int array_search_bisect(
+                       int n_lines,
+                       double * __restrict__ array,
+                       double c,
+                       int * __restrict__ last_index,
+                       ErrorMsg errmsg);
 
   int array_interpolate_linear(
 			       double * x_array,

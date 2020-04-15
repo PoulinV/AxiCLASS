@@ -43,18 +43,14 @@ OMPFLAG   = -fopenmp
 #OMPFLAG   = -openmp
 
 # all other compilation flags
-CCFLAG = -g -fPIC
+CCFLAG = -g -fPIC 
 LDFLAG = -g -fPIC
 
+#GSL FLAGS
+GSLFLAG += -lgsl -lgslcblas -lm
 # leave blank to compile without HyRec, or put path to HyRec directory
 # (with no slash at the end: e.g. hyrec or ../hyrec)
-HYREC = hyrec_2017
-
-# set to cosmorec, CosmoRec or COSMOREC to compile with CosmoRec
-COSMOREC =
-#COSMOREC = $(PWD)/cosmorec
-GSL_LIB = /opt/local/lib/
-CC++ = g++-mp-6
+HYREC = hyrec
 
 ########################################################
 ###### IN PRINCIPLE THE REST SHOULD BE LEFT UNCHANGED ##
@@ -74,32 +70,14 @@ ifneq ($(HYREC),)
 vpath %.c $(HYREC)
 CCFLAG += -DHYREC
 #LDFLAGS += -DHYREC
-INCLUDES += -I../$(HYREC)/include
-EXTERNAL += hyrectools.o helium.o hydrogen.o history.o energy_injection.o
-
-endif
-
-#===============================================================================
-# GSL lib
-#===============================================================================
-CCFLAG += -lgsl -lgslcblas -lm
-#LDFLAGS= -lgsl
-#LIBS= -lgsl
-INCLUDES += -I/usr/local/include
-
-# eventually update flags for including CosmoRec
-ifneq ($(COSMOREC),)
-CCFLAG += -DCOSMOREC
-LDFLAG += $(COSMOREC)/libCosmoRec.a -lstdc++ -L$(GSL_LIB) -lgsl -lgslcblas
-INCLUDES += -I$(COSMOREC)
-MAKE_RECOMBINATION = cd $(COSMOREC); make CC=$(CC++);
-CLEAN_RECOMBINATION = cd $(COSMOREC); make tidy;
+INCLUDES += -I../hyrec
+EXTERNAL += hyrectools.o helium.o hydrogen.o history.o
 endif
 
 %.o:  %.c .base
 	cd $(WRKDIR);$(CC) $(OPTFLAG) $(OMPFLAG) $(CCFLAG) $(INCLUDES) -c ../$< -o $*.o
 
-TOOLS = growTable.o dei_rkck.o sparse.o evolver_rkck.o  evolver_ndf15.o arrays.o parser.o quadrature.o hyperspherical.o common.o
+TOOLS = growTable.o dei_rkck.o sparse.o evolver_rkck.o  evolver_ndf15.o arrays.o parser.o quadrature.o hyperspherical.o common.o trigonometric_integrals.o
 
 SOURCE = input.o background.o thermodynamics.o perturbations.o primordial.o nonlinear.o transfer.o spectra.o lensing.o
 
@@ -132,6 +110,8 @@ TEST_LOOPS = test_loops.o
 TEST_LOOPS_OMP = test_loops_omp.o
 
 TEST_DEGENERACY = test_degeneracy.o
+
+TEST_SPECTRA = test_spectra.o
 
 TEST_TRANSFER = test_transfer.o
 
@@ -166,7 +146,7 @@ libclass.a: $(TOOLS) $(SOURCE) $(EXTERNAL)
 	$(AR)  $@ $(addprefix build/, $(TOOLS) $(SOURCE) $(EXTERNAL))
 
 class: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(CLASS)
-	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o class $(addprefix build/,$(notdir $^)) -lm -lgsl
+	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(GSLFLAG) -o class $(addprefix build/,$(notdir $^))
 
 test_sigma: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_SIGMA)
 	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o test_sigma $(addprefix build/,$(notdir $^)) -lm
@@ -182,6 +162,9 @@ test_stephane: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_STEPHANE)
 
 test_degeneracy: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_DEGENERACY)
 	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o $@ $(addprefix build/,$(notdir $^)) -lm
+
+test_spectra: $(TOOLS) $(SOURCE) $(EXTERNAL) $(TEST_SPECTRA)
+	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o  $@ $(addprefix build/,$(notdir $^)) -lm
 
 test_transfer: $(TOOLS) $(SOURCE) $(EXTERNAL) $(TEST_TRANSFER)
 	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o  $@ $(addprefix build/,$(notdir $^)) -lm
@@ -203,7 +186,7 @@ test_hyperspherical: $(TOOLS) $(TEST_HYPERSPHERICAL)
 
 
 tar: $(C_ALL) $(C_TEST) $(H_ALL) $(PRE_ALL) $(INI_ALL) $(MISC_FILES) $(HYREC) $(PYTHON_FILES)
-	tar czvf class.tar.gz $(C_ALL) $(H_ALL) $(PRE_ALL) $(INI_ALL) $(MISC_FILES) $(HYREC) $(PYTHON_FILES) $(COSMOREC)
+	tar czvf class.tar.gz $(C_ALL) $(H_ALL) $(PRE_ALL) $(INI_ALL) $(MISC_FILES) $(HYREC) $(PYTHON_FILES)
 
 classy: libclass.a python/classy.pyx python/cclassy.pxd
 ifdef OMPFLAG

@@ -256,6 +256,9 @@ int background_functions(
 
   /* total density */
   double rho_tot;
+
+  /* critical density */
+  double rho_crit;
   /* total pressure */
   double p_tot;
   /* total relativistic density */
@@ -276,17 +279,28 @@ int background_functions(
   /* scalar field quantities */
   double phi = 0, phi_prime = 0;
   //printf("Inside background_functions.\n");//print_trigger
+
+  /* Since we only know a_prime_over_a after we have rho_tot,
+     it is not possible to simply sum up p_tot_prime directly.
+     Instead we sum up dp_dloga = p_prime/a_prime_over_a. The formula is
+     p_prime = a_prime_over_a * dp_dloga = a_prime_over_a * Sum [ (w_prime/a_prime_over_a -3(1+w)w)rho].
+     Note: The scalar field contribution must be added in the end, as an exception!*/
+  double dp_dloga;
+
   /** - initialize local variables */
   a = pvecback_B[pba->index_bi_a];
   rho_tot = 0.;
   p_tot = 0.;
+
+  dp_dloga = 0.;
   rho_r=0.;
   rho_m=0.;
   a_rel = a / pba->a_today;
+
   class_test(a_rel <= 0.,
              pba->error_message,
              "a = %e instead of strictly positive",a_rel);
-  //printf("Checked a is positive - success. Passing a to output. \n");//print_trigger
+
   /** - pass value of \f$ a\f$ to output */
   pvecback[pba->index_bg_a] = a;
 
@@ -296,6 +310,7 @@ int background_functions(
   pvecback[pba->index_bg_rho_g] = pba->Omega0_g * pow(pba->H0,2) / pow(a_rel,4);
   rho_tot += pvecback[pba->index_bg_rho_g];
   p_tot += (1./3.) * pvecback[pba->index_bg_rho_g];
+  dp_dloga += -(4./3.) * pvecback[pba->index_bg_rho_g];
   rho_r += pvecback[pba->index_bg_rho_g];
 
   /* baryons */
@@ -303,10 +318,9 @@ int background_functions(
   rho_tot += pvecback[pba->index_bg_rho_b];
   p_tot += 0;
   rho_m += pvecback[pba->index_bg_rho_b];
-  //printf("About to enter 'if has_x ' section.\n");//print_trigger
+
   /* cdm */
   if (pba->has_cdm == _TRUE_) {
-    //printf("Inside has_cdm.\n");//print_trigger
     pvecback[pba->index_bg_rho_cdm] = pba->Omega0_cdm * pow(pba->H0,2) / pow(a_rel,3);
     rho_tot += pvecback[pba->index_bg_rho_cdm];
     p_tot += 0.;
@@ -328,86 +342,14 @@ int background_functions(
     pvecback[pba->index_bg_rho_dr] = pvecback_B[pba->index_bi_rho_dr];
     rho_tot += pvecback[pba->index_bg_rho_dr];
     p_tot += (1./3.)*pvecback[pba->index_bg_rho_dr];
+    dp_dloga += -(4./3.) * pvecback[pba->index_bg_rho_dr];
     rho_r += pvecback[pba->index_bg_rho_dr];
   }
 
 
-
-    /* ncdm */
-    if (pba->has_ncdm == _TRUE_) {
-
-      /* Loop over species: */
-      for(n_ncdm=0; n_ncdm<pba->N_ncdm; n_ncdm++){
-
-        /* function returning background ncdm[n_ncdm] quantities (only
-           those for which non-NULL pointers are passed) */
-        class_call(background_ncdm_momenta(
-                                           pba->q_ncdm_bg[n_ncdm],
-                                           pba->w_ncdm_bg[n_ncdm],
-                                           pba->q_size_ncdm_bg[n_ncdm],
-                                           pba->M_ncdm[n_ncdm],
-                                           pba->factor_ncdm[n_ncdm],
-                                           1./a_rel-1.,
-                                           NULL,
-                                           &rho_ncdm,
-                                           &p_ncdm,
-                                           NULL,
-                                           &pseudo_p_ncdm),
-                   pba->error_message,
-                   pba->error_message);
-
-        pvecback[pba->index_bg_rho_ncdm1+n_ncdm] = rho_ncdm;
-        rho_tot += rho_ncdm;
-        pvecback[pba->index_bg_p_ncdm1+n_ncdm] = p_ncdm;
-        p_tot += p_ncdm;
-        pvecback[pba->index_bg_pseudo_p_ncdm1+n_ncdm] = pseudo_p_ncdm;
-
-        /* (3 p_ncdm1) is the "relativistic" contribution to rho_ncdm1 */
-        rho_r += 3.* p_ncdm;
-
-        /* (rho_ncdm1 - 3 p_ncdm1) is the "non-relativistic" contribution
-           to rho_ncdm1 */
-        rho_m += rho_ncdm - 3.* p_ncdm;
-      }
-    }
-
-    /* Lambda */
-    if (pba->has_lambda == _TRUE_) {
-      pvecback[pba->index_bg_rho_lambda] = pba->Omega0_lambda * pow(pba->H0,2);
-      rho_tot += pvecback[pba->index_bg_rho_lambda];
-      p_tot -= pvecback[pba->index_bg_rho_lambda];
-    }
-
-    /* fluid with w(a) and constant cs2 */
-    if (pba->has_fld == _TRUE_) {
-
-      /* get rho_fld from vector of integrated variables */
-      pvecback[pba->index_bg_rho_fld] = pvecback_B[pba->index_bi_rho_fld];
-
-      /* get w_fld from dedicated function */
-      class_call(background_w_fld(pba,a,&w_fld,&dw_over_da,&integral_fld), pba->error_message, pba->error_message);
-      pvecback[pba->index_bg_w_fld] = w_fld;
-
-      // Obsolete: at the beginning, we had here the analytic integral solution corresponding to the case w=w0+w1(1-a/a0):
-      // pvecback[pba->index_bg_rho_fld] = pba->Omega0_fld * pow(pba->H0,2) / pow(a_rel,3.*(1.+pba->w0_fld+pba->wa_fld)) * exp(3.*pba->wa_fld*(a_rel-1.));
-      // But now everthing is integrated numerically for a given w_fld(a) defined in the function background_w_fld.
-
-      rho_tot += pvecback[pba->index_bg_rho_fld];
-      p_tot += w_fld * pvecback[pba->index_bg_rho_fld];
-    }
-
-    /* relativistic neutrinos (and all relativistic relics) */
-    if (pba->has_ur == _TRUE_) {
-      pvecback[pba->index_bg_rho_ur] = pba->Omega0_ur * pow(pba->H0,2) / pow(a_rel,4);
-      rho_tot += pvecback[pba->index_bg_rho_ur];
-      p_tot += (1./3.) * pvecback[pba->index_bg_rho_ur];
-      rho_r += pvecback[pba->index_bg_rho_ur];
-    }
-
-
-  //printf("Scalar field? %f \n", pba->has_scf);//print_trigger
-  /* Scalar field */
-  if (pba->has_scf == _TRUE_ && pba->scf_kg_eq == _TRUE_) {
+    //printf("Scalar field? %f \n", pba->has_scf);//print_trigger
+    /* Scalar field */
+    if (pba->has_scf == _TRUE_ && pba->scf_kg_eq == _TRUE_) {
     //printf("Inside scf table update\n"); //print_trigger
     phi = pvecback_B[pba->index_bi_phi_scf];
     phi_prime = pvecback_B[pba->index_bi_phi_prime_scf];
@@ -429,6 +371,8 @@ int background_functions(
     // else{
       rho_tot += pvecback[pba->index_bg_rho_scf];
       p_tot += pvecback[pba->index_bg_p_scf];
+      dp_dloga += 0.0; /** <-- This depends on a_prime_over_a, so we cannot add it now! */
+
       //divide relativistic & nonrelativistic (not very meaningful for oscillatory models)
       rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
       rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
@@ -478,6 +422,96 @@ int background_functions(
   //printf("Scalar field? %f \n", pba->has_scf); //print_trigger
 
 
+  /* ncdm */
+  if (pba->has_ncdm == _TRUE_) {
+
+    /* Loop over species: */
+    for(n_ncdm=0; n_ncdm<pba->N_ncdm; n_ncdm++){
+
+      /* function returning background ncdm[n_ncdm] quantities (only
+         those for which non-NULL pointers are passed) */
+      class_call(background_ncdm_momenta(
+                                         pba->q_ncdm_bg[n_ncdm],
+                                         pba->w_ncdm_bg[n_ncdm],
+                                         pba->q_size_ncdm_bg[n_ncdm],
+                                         pba->M_ncdm[n_ncdm],
+                                         pba->factor_ncdm[n_ncdm],
+                                         1./a_rel-1.,
+                                         NULL,
+                                         &rho_ncdm,
+                                         &p_ncdm,
+                                         NULL,
+                                         &pseudo_p_ncdm),
+                 pba->error_message,
+                 pba->error_message);
+
+      pvecback[pba->index_bg_rho_ncdm1+n_ncdm] = rho_ncdm;
+      rho_tot += rho_ncdm;
+      pvecback[pba->index_bg_p_ncdm1+n_ncdm] = p_ncdm;
+      p_tot += p_ncdm;
+      pvecback[pba->index_bg_pseudo_p_ncdm1+n_ncdm] = pseudo_p_ncdm;
+      /** See e.g. Eq. A6 in 1811.00904. */
+      dp_dloga += (pseudo_p_ncdm - 5*p_ncdm);
+
+      /* (3 p_ncdm1) is the "relativistic" contribution to rho_ncdm1 */
+      rho_r += 3.* p_ncdm;
+
+      /* (rho_ncdm1 - 3 p_ncdm1) is the "non-relativistic" contribution
+         to rho_ncdm1 */
+      rho_m += rho_ncdm - 3.* p_ncdm;
+    }
+  }
+
+  /* Lambda */
+  if (pba->has_lambda == _TRUE_) {
+    pvecback[pba->index_bg_rho_lambda] = pba->Omega0_lambda * pow(pba->H0,2);
+    rho_tot += pvecback[pba->index_bg_rho_lambda];
+    p_tot -= pvecback[pba->index_bg_rho_lambda];
+  }
+
+  /* fluid with w(a) and constant cs2 */
+  if (pba->has_fld == _TRUE_) {
+
+    /* get rho_fld from vector of integrated variables */
+    pvecback[pba->index_bg_rho_fld] = pvecback_B[pba->index_bi_rho_fld];
+
+    /* get w_fld from dedicated function */
+    class_call(background_w_fld(pba,a,&w_fld,&dw_over_da,&integral_fld), pba->error_message, pba->error_message);
+    pvecback[pba->index_bg_w_fld] = w_fld;
+
+    // Obsolete: at the beginning, we had here the analytic integral solution corresponding to the case w=w0+w1(1-a/a0):
+    // pvecback[pba->index_bg_rho_fld] = pba->Omega0_fld * pow(pba->H0,2) / pow(a_rel,3.*(1.+pba->w0_fld+pba->wa_fld)) * exp(3.*pba->wa_fld*(a_rel-1.));
+    // But now everthing is integrated numerically for a given w_fld(a) defined in the function background_w_fld.
+
+    rho_tot += pvecback[pba->index_bg_rho_fld];
+    p_tot += w_fld * pvecback[pba->index_bg_rho_fld];
+    dp_dloga += (a*dw_over_da-3*(1+w_fld)*w_fld)*pvecback[pba->index_bg_rho_fld];
+  }
+
+  /* relativistic neutrinos (and all relativistic relics) */
+  if (pba->has_ur == _TRUE_) {
+    pvecback[pba->index_bg_rho_ur] = pba->Omega0_ur * pow(pba->H0,2) / pow(a_rel,4);
+    rho_tot += pvecback[pba->index_bg_rho_ur];
+    p_tot += (1./3.) * pvecback[pba->index_bg_rho_ur];
+    dp_dloga += -(4./3.) * pvecback[pba->index_bg_rho_ur];
+    rho_r += pvecback[pba->index_bg_rho_ur];
+  }
+
+  /* interacting dark matter */
+  if (pba->has_idm_dr == _TRUE_) {
+    pvecback[pba->index_bg_rho_idm_dr] = pba->Omega0_idm_dr * pow(pba->H0,2) / pow(a_rel,3);
+    rho_tot += pvecback[pba->index_bg_rho_idm_dr];
+    p_tot += 0.;
+    rho_m += pvecback[pba->index_bg_rho_idm_dr];
+  }
+
+  /* interacting dark radiation */
+  if (pba->has_idr == _TRUE_) {
+    pvecback[pba->index_bg_rho_idr] = pba->Omega0_idr * pow(pba->H0,2) / pow(a_rel,4);
+    rho_tot += pvecback[pba->index_bg_rho_idr];
+    p_tot += (1./3.) * pvecback[pba->index_bg_rho_idr];
+    rho_r += pvecback[pba->index_bg_rho_idr];
+  }
 
   /** - compute expansion rate H from Friedmann equation: this is the
       only place where the Friedmann equation is assumed. Remember
@@ -488,30 +522,49 @@ int background_functions(
   /** - compute derivative of H with respect to conformal time */
   pvecback[pba->index_bg_H_prime] = - (3./2.) * (rho_tot + p_tot) * a + pba->K/a;
 
-  /** - compute relativistic density to total density ratio */
-  pvecback[pba->index_bg_Omega_r] = rho_r / rho_tot;
-
   if(pba->has_scf == _TRUE_){
     pvecback[pba->index_bg_Omega_scf] = pvecback[pba->index_bg_rho_scf] / rho_tot;
   }
+
+  /* Total energy density*/
+  pvecback[pba->index_bg_rho_tot] = rho_tot;
+
+  /* Total pressure */
+  pvecback[pba->index_bg_p_tot] = p_tot;
+
+  /* Derivative of total pressure w.r.t. conformal time */
+  pvecback[pba->index_bg_p_tot_prime] = a*pvecback[pba->index_bg_H]*dp_dloga;
+  if (pba->has_scf == _TRUE_){
+    /** The contribution of scf was not added to dp_dloga, add p_scf_prime here: */
+    pvecback[pba->index_bg_p_prime_scf] = pvecback[pba->index_bg_phi_prime_scf]*
+      (-pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_H]/a-2./3.*pvecback[pba->index_bg_dV_scf]);
+    pvecback[pba->index_bg_p_tot_prime] += pvecback[pba->index_bg_p_prime_scf];
+  }
+
+  /** - compute critical density */
+  rho_crit = rho_tot-pba->K/a/a;
+  class_test(rho_crit <= 0.,
+             pba->error_message,
+             "rho_crit = %e instead of strictly positive",rho_crit);
+
+  /** - compute relativistic density to total density ratio */
+  pvecback[pba->index_bg_Omega_r] = rho_r / rho_crit;
+
   /** - compute other quantities in the exhaustive, redundant format */
   if (return_format == pba->long_info) {
 
-    /** - compute critical density */
-    pvecback[pba->index_bg_rho_crit] = rho_tot-pba->K/a/a;
-    class_test(pvecback[pba->index_bg_rho_crit] <= 0.,
-               pba->error_message,
-               "rho_crit = %e instead of strictly positive",pvecback[pba->index_bg_rho_crit]);
+    /** - store critical density */
+    pvecback[pba->index_bg_rho_crit] = rho_crit;
 
     /** - compute Omega_m */
-    pvecback[pba->index_bg_Omega_m] = rho_m / rho_tot;
+    pvecback[pba->index_bg_Omega_m] = rho_m / rho_crit;
 
     /* one can put other variables here */
     /*  */
     /*  */
 
   }
-  //printf("End of background functions.\n");//print_trigger
+
   return _SUCCESS_;
 
 }
@@ -537,15 +590,60 @@ int background_w_fld(
                      double * dw_over_da_fld,
                      double * integral_fld) {
 
+
+  double Omega_ede = 0.;
+  double dOmega_ede_over_da = 0.;
+  double d2Omega_ede_over_da2 = 0.;
+  double a_eq, Omega_r, Omega_m;
+
   /** - first, define the function w(a) */
-  *w_fld = pba->w0_fld + pba->wa_fld * (1. - a / pba->a_today);
+  switch (pba->fluid_equation_of_state) {
+  case CLP:
+    *w_fld = pba->w0_fld + pba->wa_fld * (1. - a / pba->a_today);
+    break;
+  case EDE:
+    // Omega_ede(a) taken from eq. (10) in 1706.00730
+    Omega_ede = (pba->Omega0_fld - pba->Omega_EDE*(1.-pow(a,-3.*pba->w0_fld)))
+      /(pba->Omega0_fld+(1.-pba->Omega0_fld)*pow(a,3.*pba->w0_fld))
+      + pba->Omega_EDE*(1.-pow(a,-3.*pba->w0_fld));
+
+    // d Omega_ede / d a taken analytically from the above
+    dOmega_ede_over_da = - pba->Omega_EDE* 3.*pba->w0_fld*pow(a,-3.*pba->w0_fld-1.)/(pba->Omega0_fld+(1.-pba->Omega0_fld)*pow(a,3.*pba->w0_fld))
+      - (pba->Omega0_fld - pba->Omega_EDE*(1.-pow(a,-3.*pba->w0_fld)))*(1.-pba->Omega0_fld)*3.*pba->w0_fld*pow(a,3.*pba->w0_fld-1.)/pow(pba->Omega0_fld+(1.-pba->Omega0_fld)*pow(a,3.*pba->w0_fld),2)
+      + pba->Omega_EDE*3.*pba->w0_fld*pow(a,-3.*pba->w0_fld-1.);
+
+    // find a_equality (needed because EDE tracks first radiation, then matter)
+    Omega_r = pba->Omega0_g * (1. + 3.046 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
+    Omega_m = pba->Omega0_b;
+    if (pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
+    if (pba->has_idm_dr == _TRUE_) Omega_m += pba->Omega0_idm_dr;
+    if (pba->has_dcdm == _TRUE_)
+      class_stop(pba->error_message,"Early Dark Energy not compatible with decaying Dark Matter because we omitted to code the calculation of a_eq in that case, but it would not be difficult to add it if necessary, should be a matter of 5 minutes");
+    a_eq = Omega_r/Omega_m; // assumes a flat universe with a=1 today
+
+    // w_ede(a) taken from eq. (11) in 1706.00730
+    *w_fld = - dOmega_ede_over_da*a/Omega_ede/3./(1.-Omega_ede)+a_eq/3./(a+a_eq);
+    break;
+  }
+
 
   /** - then, give the corresponding analytic derivative dw/da (used
-        by perturbation equations; we could compute it numerically,
-        but with a loss of precision; as long as there is a simple
-        analytic expression of the derivative of the previous
-        function, let's use it! */
-  *dw_over_da_fld = - pba->wa_fld / pba->a_today;
+      by perturbation equations; we could compute it numerically,
+      but with a loss of precision; as long as there is a simple
+      analytic expression of the derivative of the previous
+      function, let's use it! */
+  switch (pba->fluid_equation_of_state) {
+  case CLP:
+    *dw_over_da_fld = - pba->wa_fld / pba->a_today;
+    break;
+  case EDE:
+    d2Omega_ede_over_da2 = 0.;
+    *dw_over_da_fld = - d2Omega_ede_over_da2*a/3./(1.-Omega_ede)/Omega_ede
+      - dOmega_ede_over_da/3./(1.-Omega_ede)/Omega_ede
+      + dOmega_ede_over_da*dOmega_ede_over_da*a/3./(1.-Omega_ede)/(1.-Omega_ede)/Omega_ede
+      + a_eq/3./(a+a_eq)/(a+a_eq);
+    break;
+  }
 
   /** - finally, give the analytic solution of the following integral:
         \f$ \int_{a}^{a0} da 3(1+w_{fld})/a \f$. This is used in only
@@ -557,7 +655,15 @@ int background_w_fld(
         implement a numerical calculation of this integral only for
         a=a_ini, using for instance Romberg integration. It should be
         fast, simple, and accurate enough. */
-  *integral_fld = 3.*((1.+pba->w0_fld+pba->wa_fld)*log(pba->a_today/a) + pba->wa_fld*(a/pba->a_today-1.));
+
+  switch (pba->fluid_equation_of_state) {
+  case CLP:
+    *integral_fld = 3.*((1.+pba->w0_fld+pba->wa_fld)*log(pba->a_today/a) + pba->wa_fld*(a/pba->a_today-1.));
+    break;
+  case EDE:
+    class_stop(pba->error_message,"EDE implementation not finished: to finish it, read the comments in background.c just before this line\n");
+    break;
+  }
 
   /** note: of course you can generalise these formulas to anything,
       defining new parameters pba->w..._fld. Just remember that so
@@ -586,9 +692,10 @@ int background_init(
   /** - define local variables */
   int n_ncdm;
   double rho_ncdm_rel,rho_nu_rel;
-  double Neff, Omega_rad_neutrinos, Omega_tot_ac;
+  double Neff, Omega_rad_neutrinos, Omega_tot_ac, N_dark;
   double w_fld, dw_over_da, integral_fld;
   double wn, f, p, Eac, xc,cos_initial,sin_initial, n, ac, Gac;
+
   int filenum=0;
 
   /** - in verbose mode, provide some information */
@@ -596,95 +703,80 @@ int background_init(
     printf("Running CLASS version %s\n",_VERSION_);
     printf("Computing background\n");
 
-    /* below we want to inform the user about ncdm species*/
-    Neff = pba->Omega0_ur/7.*8./pow(4./11.,4./3.)/pba->Omega0_g;
+    /* below we want to inform the user about ncdm species and/or the total N_eff */
+    if ((pba->N_ncdm > 0) || (pba->Omega0_idr != 0.))  {
 
-    if (pba->N_ncdm > 0) {
+      /* contribution of ultra-relativistic species _ur to N_eff */
+      Neff = pba->Omega0_ur/7.*8./pow(4./11.,4./3.)/pba->Omega0_g;
 
-      /* loop over ncdm species */
-      for (n_ncdm=0;n_ncdm<pba->N_ncdm; n_ncdm++) {
+      /* contribution of ncdm species to N_eff*/
+      if (pba->N_ncdm > 0){
+        /* loop over ncdm species */
+        for (n_ncdm=0;n_ncdm<pba->N_ncdm; n_ncdm++) {
 
-        /* inform if p-s-d read in files */
-        if (pba->got_files[n_ncdm] == _TRUE_) {
-          printf(" -> ncdm species i=%d read from file %s\n",n_ncdm+1,pba->ncdm_psd_files+filenum*_ARGUMENT_LENGTH_MAX_);
-          filenum++;
+          /* inform if p-s-d read in files */
+          if (pba->got_files[n_ncdm] == _TRUE_) {
+            printf(" -> ncdm species i=%d read from file %s\n",n_ncdm+1,pba->ncdm_psd_files+filenum*_ARGUMENT_LENGTH_MAX_);
+            filenum++;
+          }
+
+          /* call this function to get rho_ncdm */
+          background_ncdm_momenta(pba->q_ncdm_bg[n_ncdm],
+                                  pba->w_ncdm_bg[n_ncdm],
+                                  pba->q_size_ncdm_bg[n_ncdm],
+                                  0.,
+                                  pba->factor_ncdm[n_ncdm],
+                                  0.,
+                                  NULL,
+                                  &rho_ncdm_rel,
+                                  NULL,
+                                  NULL,
+                                  NULL);
+
+          /* inform user of the contribution of each species to
+             radiation density (in relativistic limit): should be
+             between 1.01 and 1.02 for each active neutrino species;
+             evaluated as rho_ncdm/rho_nu_rel where rho_nu_rel is the
+             density of one neutrino in the instantaneous decoupling
+             limit, i.e. assuming T_nu=(4/11)^1/3 T_gamma (this comes
+             from the definition of N_eff) */
+          rho_nu_rel = 56.0/45.0*pow(_PI_,6)*pow(4.0/11.0,4.0/3.0)*_G_/pow(_h_P_,3)/pow(_c_,7)*
+            pow(_Mpc_over_m_,2)*pow(pba->T_cmb*_k_B_,4);
+
+          printf(" -> ncdm species i=%d sampled with %d (resp. %d) points for purpose of background (resp. perturbation) integration. In the relativistic limit it gives Delta N_eff = %g\n",
+                 n_ncdm+1,
+                 pba->q_size_ncdm_bg[n_ncdm],
+                 pba->q_size_ncdm[n_ncdm],
+                 rho_ncdm_rel/rho_nu_rel);
+
+          Neff += rho_ncdm_rel/rho_nu_rel;
         }
-
-        /* call this function to get rho_ncdm */
-        background_ncdm_momenta(pba->q_ncdm_bg[n_ncdm],
-                                pba->w_ncdm_bg[n_ncdm],
-                                pba->q_size_ncdm_bg[n_ncdm],
-                                0.,
-                                pba->factor_ncdm[n_ncdm],
-                                0.,
-                                NULL,
-                                &rho_ncdm_rel,
-                                NULL,
-                                NULL,
-                                NULL);
-
-        /* inform user of the contribution of each species to
-           radiation density (in relativistic limit): should be
-           between 1.01 and 1.02 for each active neutrino species;
-           evaluated as rho_ncdm/rho_nu_rel where rho_nu_rel is the
-           density of one neutrino in the instantaneous decoupling
-           limit, i.e. assuming T_nu=(4/11)^1/3 T_gamma (this comes
-           from the definition of N_eff) */
-        rho_nu_rel = 56.0/45.0*pow(_PI_,6)*pow(4.0/11.0,4.0/3.0)*_G_/pow(_h_P_,3)/pow(_c_,7)*
-          pow(_Mpc_over_m_,2)*pow(pba->T_cmb*_k_B_,4);
-
-        printf(" -> ncdm species i=%d sampled with %d (resp. %d) points for purpose of background (resp. perturbation) integration. In the relativistic limit it gives Delta N_eff = %g\n",
-               n_ncdm+1,
-               pba->q_size_ncdm_bg[n_ncdm],
-               pba->q_size_ncdm[n_ncdm],
-               rho_ncdm_rel/rho_nu_rel);
-
-        Neff += rho_ncdm_rel/rho_nu_rel;
-
       }
 
-      printf(" -> total N_eff = %g (sumed over ultra-relativistic and ncdm species)\n",Neff);
+      /* contribution of interacting dark radiation _idr to N_eff */
+      if (pba->Omega0_idr != 0.) {
+        N_dark = pba->Omega0_idr/7.*8./pow(4./11.,4./3.)/pba->Omega0_g;
+        Neff += N_dark;
+        printf(" -> dark radiation Delta Neff %e\n",N_dark);
+      }
+
+      printf(" -> total N_eff = %g (sumed over ultra-relativistic species, ncdm and dark radiation)\n",Neff);
 
     }
   }
 
 
-
-
-
   /** - if shooting failed during input, catch the error here */
-  class_test(pba->shooting_failed == _TRUE_,
-             pba->error_message,
-             "Shooting failed, try optimising input_get_guess(). Error message:\n\n%s",
-             pba->shooting_error);
-  // printf("Passed shooting test. Calling background_indices.\n");
+  class_test_except(pba->shooting_failed == _TRUE_,
+                    pba->error_message,
+                    background_free_input(pba),
+                    "Shooting failed, try optimising input_get_guess(). Error message:\n\n%s",
+                    pba->shooting_error);
+
   /** - assign values to all indices in vectors of background quantities with background_indices()*/
   class_call(background_indices(pba),
              pba->error_message,
              pba->error_message);
-  /** - control that cosmological parameter values make sense */
-
-  /* H0 in Mpc^{-1} */
-  /* Many users asked for this test to be supressed. It is commented out. */
-  /*class_test((pba->H0 < _H0_SMALL_)||(pba->H0 > _H0_BIG_),
-             pba->error_message,
-             "H0=%g out of bounds (%g<H0<%g) \n",pba->H0,_H0_SMALL_,_H0_BIG_);*/
-
-  class_test(fabs(pba->h * 1.e5 / _c_  / pba->H0 -1.)>ppr->smallest_allowed_variation,
-             pba->error_message,
-             "inconsistency between Hubble and reduced Hubble parameters: you have H0=%f/Mpc=%fkm/s/Mpc, but h=%f",pba->H0,pba->H0/1.e5* _c_,pba->h);
-
-  /* T_cmb in K */
-  /* Many users asked for this test to be supressed. It is commented out. */
-  /*class_test((pba->T_cmb < _TCMB_SMALL_)||(pba->T_cmb > _TCMB_BIG_),
-             pba->error_message,
-             "T_cmb=%g out of bounds (%g<T_cmb<%g)",pba->T_cmb,_TCMB_SMALL_,_TCMB_BIG_);*/
-
-  /* Omega_k */
-  /* Many users asked for this test to be supressed. It is commented out. */
-  /*class_test((pba->Omega0_k < _OMEGAK_SMALL_)||(pba->Omega0_k > _OMEGAK_BIG_),
-             pba->error_message,
-             "Omegak = %g out of bounds (%g<Omegak<%g) \n",pba->Omega0_k,_OMEGAK_SMALL_,_OMEGAK_BIG_);*/
 
   /* fluid equation of state */
   if (pba->has_fld == _TRUE_) {
@@ -696,6 +788,7 @@ int background_init(
                "Your choice for w(a--->0)=%g is suspicious, since it is bigger than -1/3 there cannot be radiation domination at early times\n",
                w_fld);
   }
+
   /* in verbose mode, inform the user about the value of the ncdm
      masses in eV and about the ratio [m/omega_ncdm] in eV (the usual
      93 point something)*/
@@ -827,9 +920,17 @@ int background_init(
 
   /** - this function integrates the background over time, allocates
       and fills the background table */
-  // printf("Last step in background_init, calling background_solve.\n");
 
   class_call(background_solve(ppr,pba),
+             pba->error_message,
+             pba->error_message);
+
+  /** - this function finds and stores a few derived parameters at radiation-matter equality */
+  class_call(background_find_equality(ppr,pba),
+             pba->error_message,
+             pba->error_message);
+
+  class_call(background_output_budget(pba),
              pba->error_message,
              pba->error_message);
 
@@ -848,7 +949,29 @@ int background_init(
 int background_free(
                     struct background *pba
                     ) {
-  int err;
+
+
+  class_call(background_free_noinput(pba),
+              pba->error_message,
+              pba->error_message);
+
+  class_call(background_free_input(pba),
+              pba->error_message,
+              pba->error_message);
+
+  return _SUCCESS_;
+}
+
+/**
+ * Free only the memory space NOT allocated through input_read_parameters()
+ *
+ * @param pba Input: pointer to background structure (to be freed)
+ * @return the error status
+ */
+
+int background_free_noinput(
+                            struct background *pba
+                            ) {
 
   free(pba->tau_table);
   free(pba->z_table);
@@ -856,11 +979,9 @@ int background_free(
   free(pba->background_table);
   free(pba->d2background_dtau2_table);
 
-  err = background_free_input(pba);
 
-  return err;
+  return _SUCCESS_;
 }
-
 /**
  * Free pointers inside background structure which were
  * allocated in input_read_parameters()
@@ -874,6 +995,7 @@ int background_free_input(
                           ) {
 
   int k;
+
   if (pba->Omega0_ncdm_tot != 0.){
     for(k=0; k<pba->N_ncdm; k++){
       free(pba->q_ncdm[k]);
@@ -883,6 +1005,9 @@ int background_free_input(
       free(pba->dlnf0_dlnq_ncdm[k]);
     }
 
+    free(pba->ncdm_quadrature_strategy);
+    free(pba->ncdm_input_q_size);
+    free(pba->ncdm_qmax);
     free(pba->q_ncdm);
     free(pba->w_ncdm);
     free(pba->q_ncdm_bg);
@@ -944,6 +1069,8 @@ int background_indices(
   pba->has_curvature = _FALSE_;
   pba->scf_kg_eq = _FALSE_;
   /*COComment this probably isn't the best place to initialise this */
+  pba->has_idr = _FALSE_;
+  pba->has_idm_dr = _FALSE_;
 
   if (pba->Omega0_cdm != 0.)
     pba->has_cdm = _TRUE_;
@@ -953,7 +1080,7 @@ int background_indices(
 
   if (pba->Omega0_dcdmdr != 0.){
     pba->has_dcdm = _TRUE_;
-    // fprintf(stdout, "pba->Omega0_dcdmdr %e \n", pba->Omega0_dcdmdr);
+
     if (pba->Gamma_dcdm != 0.)
       pba->has_dr = _TRUE_;
   }
@@ -964,6 +1091,7 @@ int background_indices(
     pba->scf_kg_eq = _TRUE_; //Initially, we solve the KG equation.
   }
 
+
   if (pba->Omega0_lambda != 0.)
     pba->has_lambda = _TRUE_;
 
@@ -972,6 +1100,13 @@ int background_indices(
 
   if (pba->Omega0_ur != 0.)
     pba->has_ur = _TRUE_;
+
+
+  if (pba->Omega0_idr != 0.)
+    pba->has_idr = _TRUE_;
+
+  if (pba->Omega0_idm_dr != 0.)
+    pba->has_idm_dr = _TRUE_;
 
   if (pba->sgnK != 0)
     pba->has_curvature = _TRUE_;
@@ -1020,6 +1155,7 @@ int background_indices(
   class_define_index(pba->index_bg_rho_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_Omega_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_p_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_p_prime_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_w_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_dw_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_ddw_scf,pba->has_scf,index_bg,1);
@@ -1034,8 +1170,23 @@ int background_indices(
   /* - index for ultra-relativistic neutrinos/species */
   class_define_index(pba->index_bg_rho_ur,pba->has_ur,index_bg,1);
 
+  /* - index for total density */
+  class_define_index(pba->index_bg_rho_tot,_TRUE_,index_bg,1);
+
+  /* - index for total pressure */
+  class_define_index(pba->index_bg_p_tot,_TRUE_,index_bg,1);
+
+  /* - index for derivative of total pressure */
+  class_define_index(pba->index_bg_p_tot_prime,_TRUE_,index_bg,1);
+
   /* - index for Omega_r (relativistic density fraction) */
   class_define_index(pba->index_bg_Omega_r,_TRUE_,index_bg,1);
+
+  /* - index interacting for dark radiation */
+  class_define_index(pba->index_bg_rho_idr,pba->has_idr,index_bg,1);
+
+  /* - index for interacting dark matter */
+  class_define_index(pba->index_bg_rho_idm_dr,pba->has_idm_dr,index_bg,1);
 
   /* - put here additional ingredients that you want to appear in the
      normal vector */
@@ -1098,13 +1249,12 @@ int background_indices(
   /* -> energy density in fluid */
   class_define_index(pba->index_bi_rho_fld,pba->has_fld,index_bi,1);
 
-
-
   /* -> scalar field and its derivative wrt conformal time (Zuma) */
   class_define_index(pba->index_bi_phi_scf,pba->has_scf,index_bi,1);
   class_define_index(pba->index_bi_phi_prime_scf,pba->has_scf,index_bi,1);
   /* -> energy density in scf */ //necessary when we switch to the fluid equation
   class_define_index(pba->index_bi_rho_scf,pba->has_scf,index_bi,1);
+
 
   /* End of {B} variables, now continue with {C} variables */
   pba->bi_B_size = index_bi;
@@ -1380,59 +1530,94 @@ int background_ncdm_init(
     }
 
     /* Handle perturbation qsampling: */
-    class_alloc(pba->q_ncdm[k],_QUADRATURE_MAX_*sizeof(double),pba->error_message);
-    class_alloc(pba->w_ncdm[k],_QUADRATURE_MAX_*sizeof(double),pba->error_message);
 
-    class_call(get_qsampling(pba->q_ncdm[k],
-                             pba->w_ncdm[k],
-                             &(pba->q_size_ncdm[k]),
-                             _QUADRATURE_MAX_,
-                             ppr->tol_ncdm,
-                             pbadist.q,
-                             pbadist.tablesize,
-                             background_ncdm_test_function,
-                             background_ncdm_distribution,
-                             &pbadist,
-                             pba->error_message),
-               pba->error_message,
-               pba->error_message);
-    pba->q_ncdm[k]=realloc(pba->q_ncdm[k],pba->q_size_ncdm[k]*sizeof(double));
-    pba->w_ncdm[k]=realloc(pba->w_ncdm[k],pba->q_size_ncdm[k]*sizeof(double));
+    if (pba->ncdm_quadrature_strategy[k]==qm_auto){
+      /** Automatic q-sampling for this species */
+      class_alloc(pba->q_ncdm[k],_QUADRATURE_MAX_*sizeof(double),pba->error_message);
+      class_alloc(pba->w_ncdm[k],_QUADRATURE_MAX_*sizeof(double),pba->error_message);
 
-
-    if (pba->background_verbose > 0)
-      printf("ncdm species i=%d sampled with %d points for purpose of perturbation integration\n",
-             k+1,
-             pba->q_size_ncdm[k]);
-
-    /* Handle background q_sampling: */
-    class_alloc(pba->q_ncdm_bg[k],_QUADRATURE_MAX_BG_*sizeof(double),pba->error_message);
-    class_alloc(pba->w_ncdm_bg[k],_QUADRATURE_MAX_BG_*sizeof(double),pba->error_message);
-
-    class_call(get_qsampling(pba->q_ncdm_bg[k],
-                             pba->w_ncdm_bg[k],
-                             &(pba->q_size_ncdm_bg[k]),
-                             _QUADRATURE_MAX_BG_,
-                             ppr->tol_ncdm_bg,
-                             pbadist.q,
-                             pbadist.tablesize,
-                             background_ncdm_test_function,
-                             background_ncdm_distribution,
-                             &pbadist,
-                             pba->error_message),
-               pba->error_message,
-               pba->error_message);
+      class_call(get_qsampling(pba->q_ncdm[k],
+                               pba->w_ncdm[k],
+                               &(pba->q_size_ncdm[k]),
+                               _QUADRATURE_MAX_,
+                               ppr->tol_ncdm,
+                               pbadist.q,
+                               pbadist.tablesize,
+                               background_ncdm_test_function,
+                               background_ncdm_distribution,
+                               &pbadist,
+                               pba->error_message),
+                 pba->error_message,
+                 pba->error_message);
+      pba->q_ncdm[k]=realloc(pba->q_ncdm[k],pba->q_size_ncdm[k]*sizeof(double));
+      pba->w_ncdm[k]=realloc(pba->w_ncdm[k],pba->q_size_ncdm[k]*sizeof(double));
 
 
-    pba->q_ncdm_bg[k]=realloc(pba->q_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double));
-    pba->w_ncdm_bg[k]=realloc(pba->w_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double));
+      if (pba->background_verbose > 0)
+        printf("ncdm species i=%d sampled with %d points for purpose of perturbation integration\n",
+               k+1,
+               pba->q_size_ncdm[k]);
 
-    /** - in verbose mode, inform user of number of sampled momenta
-        for background quantities */
-    if (pba->background_verbose > 0)
-      printf("ncdm species i=%d sampled with %d points for purpose of background integration\n",
-             k+1,
-             pba->q_size_ncdm_bg[k]);
+      /* Handle background q_sampling: */
+      class_alloc(pba->q_ncdm_bg[k],_QUADRATURE_MAX_BG_*sizeof(double),pba->error_message);
+      class_alloc(pba->w_ncdm_bg[k],_QUADRATURE_MAX_BG_*sizeof(double),pba->error_message);
+
+      class_call(get_qsampling(pba->q_ncdm_bg[k],
+                               pba->w_ncdm_bg[k],
+                               &(pba->q_size_ncdm_bg[k]),
+                               _QUADRATURE_MAX_BG_,
+                               ppr->tol_ncdm_bg,
+                               pbadist.q,
+                               pbadist.tablesize,
+                               background_ncdm_test_function,
+                               background_ncdm_distribution,
+                               &pbadist,
+                               pba->error_message),
+                 pba->error_message,
+                 pba->error_message);
+
+
+      pba->q_ncdm_bg[k]=realloc(pba->q_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double));
+      pba->w_ncdm_bg[k]=realloc(pba->w_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double));
+
+      /** - in verbose mode, inform user of number of sampled momenta
+          for background quantities */
+      if (pba->background_verbose > 0)
+        printf("ncdm species i=%d sampled with %d points for purpose of background integration\n",
+               k+1,
+               pba->q_size_ncdm_bg[k]);
+    }
+    else{
+      /** Manual q-sampling for this species. Same sampling used for both perturbation and background sampling, since this will usually be a high precision setting anyway */
+      pba->q_size_ncdm_bg[k] = pba->ncdm_input_q_size[k];
+      pba->q_size_ncdm[k] = pba->ncdm_input_q_size[k];
+      class_alloc(pba->q_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double),pba->error_message);
+      class_alloc(pba->w_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double),pba->error_message);
+      class_alloc(pba->q_ncdm[k],pba->q_size_ncdm[k]*sizeof(double),pba->error_message);
+      class_alloc(pba->w_ncdm[k],pba->q_size_ncdm[k]*sizeof(double),pba->error_message);
+      class_call(get_qsampling_manual(pba->q_ncdm[k],
+                                      pba->w_ncdm[k],
+                                      pba->q_size_ncdm[k],
+                                      pba->ncdm_qmax[k],
+                                      pba->ncdm_quadrature_strategy[k],
+                                      pbadist.q,
+                                      pbadist.tablesize,
+                                      background_ncdm_distribution,
+                                      &pbadist,
+                                      pba->error_message),
+                 pba->error_message,
+                 pba->error_message);
+      for (index_q=0; index_q<pba->q_size_ncdm[k]; index_q++) {
+        pba->q_ncdm_bg[k][index_q] = pba->q_ncdm[k][index_q];
+        pba->w_ncdm_bg[k][index_q] = pba->w_ncdm[k][index_q];
+      }
+      /** - in verbose mode, inform user of number of sampled momenta
+          for background quantities */
+      if (pba->background_verbose > 0)
+        printf("ncdm species i=%d sampled with %d points for purpose of background andperturbation integration using the manual method\n",
+               k+1,
+               pba->q_size_ncdm[k]);
+    }
 
     class_alloc(pba->dlnf0_dlnq_ncdm[k],
                 pba->q_size_ncdm[k]*sizeof(double),
@@ -1563,7 +1748,8 @@ int background_ncdm_momenta(
   }
 
   /** - adjust normalization */
-  if (n!=NULL) *n *= factor2*(1.+z);
+
+  if (n!=NULL) *n *= factor2/(1.+z);
   if (rho!=NULL) *rho *= factor2;
   if (p!=NULL) *p *= factor2;
   if (drho_dM!=NULL) *drho_dM *= factor2;
@@ -1686,6 +1872,7 @@ int background_solve(
 
   double integration_stepsize;
   double ac, n, anow, Tosc;
+
   bpaw.pba = pba;
   class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
   bpaw.pvecback = pvecback;
@@ -1703,17 +1890,15 @@ int background_solve(
              pba->error_message);
 
   /** - impose initial conditions with background_initial_conditions() */
-  //printf("Inside background_solve. Calling background_initial_conditions.\n");//print_trigger
+
   class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration),
              pba->error_message,
              pba->error_message);
-  //printf("background_initial_conditions was successful.\n");//print_trigger
+
   /* here tau_end is in fact the initial time (in the next loop
      tau_start = tau_end) */
-  //printf("Set tau_end.\n");//print_trigger
   tau_end=pvecback_integration[pba->index_bi_tau];
-  //printf("tau_end = %e\n",tau_end);//print_trigger
-  //printf("About to create a growTable with gt_init.\n");//print_trigger
+
   /** - create a growTable with gt_init() */
   class_call(gt_init(&gTable),
              gTable.error_message,
@@ -1721,15 +1906,13 @@ int background_solve(
 
   /* initialize the counter for the number of steps */
   pba->bt_size=0;
-  //printf("Set counter for number of steps to zero.\n");//print_trigger
+
   /** - loop over integration steps: call background_functions(), find step size, save data in growTable with gt_add(), perform one step with generic_integrator(), store new value of tau */
 
   while (pvecback_integration[pba->index_bi_a] < pba->a_today) {
 
     tau_start = tau_end;
-    //printf("Inside while a < a_0 loop. Set tau_start = tau_end. \n");//print_trigger
-    /* -> find step size (trying to adjust the last step as close as possible to the one needed to reach a=a_today; need not be exact, difference corrected later) */
-    //printf("About to call background_functions.\n"); //print_trigger
+
     class_call(background_functions(pba,pvecback_integration, pba->short_info, pvecback),
                pba->error_message,
                pba->error_message);
@@ -1787,40 +1970,23 @@ int background_solve(
       tau_end = tau_start + integration_stepsize / (pvecback_integration[pba->index_bi_a]*pvecback[pba->index_bg_H]);
       /* no possible segmentation fault here: non-zeroness of "a" has been checked in background_functions() */
     //printf("Inside if statement where apparently no segmentation fault possible.\n");//print_trigger
+
     }
     else {
       tau_end = tau_start + (pba->a_today/pvecback_integration[pba->index_bi_a]-1.) / (pvecback_integration[pba->index_bi_a]*pvecback[pba->index_bg_H]);
       /* no possible segmentation fault here: non-zeroness of "a" has been checked in background_functions() */
-    //printf("Inside 'else' of if statement where apparently no segmentation fault possible.\n");//print_trigger
     }
 
     class_test((tau_end-tau_start)/tau_start < ppr->smallest_allowed_variation,
                pba->error_message,
                "integration step: relative change in time =%e < machine precision : leads either to numerical error or infinite loop",(tau_end-tau_start)/tau_start);
-    //printf("Calling gt_add.\n");//print_trigger
+
     /* -> save data in growTable */
     class_call(gt_add(&gTable,_GT_END_,(void *) pvecback_integration,sizeof(double)*pba->bi_size),
                gTable.error_message,
                pba->error_message);
     pba->bt_size++;
-    //printf("Calling generic_integrator.\n");//print_trigger
 
-    // if(pba->has_scf == _TRUE_){
-    //       if(pba->scf_potential == axionquad){
-    //         pba->m_scf = pba->scf_parameters[0]*pba->H0;
-    //         pba->w_scf = 0;
-    //       }
-    //       else if(pba->scf_potential == axion){
-    //         pba->m_scf = pba->m_scf*pba->H0;
-    //         pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
-    //         printf("%e %e\n",  pba->m_scf,  pba->w_scf );
-    //       }
-    //       else{
-    //         pba->m_scf = 0;
-    //         pba->w_scf = 0; //default to 0 but never used in that case
-    //       }
-    //       // printf("m_scf is %e pba->w_scf %e\n", pba->m_scf,pba->w_scf);
-    //    }
 
     /* -> perform one step */
     class_call(generic_integrator(background_derivs,
@@ -1892,6 +2058,7 @@ int background_solve(
   if(pba->has_scf == _TRUE_){
     pba->f_ede = 0.0;
   }
+
   /** - allocate background tables */
   class_alloc(pba->tau_table,pba->bt_size * sizeof(double),pba->error_message);
 
@@ -1927,8 +2094,6 @@ int background_solve(
     pvecback[pba->index_bg_lum_distance] = pba->a_today*comoving_radius*(1.+pba->z_table[i]);
     pvecback[pba->index_bg_rs] = pData[i*pba->bi_size+pba->index_bi_rs];
 
-
-
     /* -> compute all other quantities depending only on {B} variables.
        The value of {B} variables in pData are also copied to pvecback.*/
     class_call(background_functions(pba,pData+i*pba->bi_size, pba->long_info, pvecback),
@@ -1946,6 +2111,7 @@ int background_solve(
        // printf("z %e pba->f_ede %e\n", pba->z_table[i],pba->f_ede);
      }
    }
+
     /* -> compute growth functions (valid in dust universe) */
 
     /* Normalise D(z=0)=1 and construct f = D_prime/(aHD) */
@@ -1988,41 +2154,7 @@ int background_solve(
              pba->error_message,
              pba->error_message);
 
-   /** - if needed, compute dw_over_dtau_scf */
-   // if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid==_TRUE_){
-   //
-   //   /** - ---> second derivative with respect to tau of cb2 */
-   //   class_call(array_spline_table_line_to_line(pba->tau_table,
-   //                                             pba->bt_size,
-   //                                             pba->background_table,
-   //                                             pba->bg_size,
-   //                                             pba->index_bg_w_scf,
-   //                                             pba->index_bg_ddw_scf,
-   //                                             _SPLINE_EST_DERIV_,
-   //                                             pba->error_message),
-   //              pba->error_message,
-   //              pba->error_message);
-   //
-   //   class_call(array_derive_spline_table_line_to_line(pba->tau_table,
-   //                                                     pba->bt_size,
-   //                                                     pba->background_table,
-   //                                                     pba->bg_size,
-   //                                                     pba->index_bg_w_scf,
-   //                                                     pba->index_bg_ddw_scf,
-   //                                                     pba->index_bg_dw_scf,
-   //                                                     pba->error_message),
-   //              pba->error_message,
-   //              pba->error_message);
-   //
-   //
-   // }
 
-  /** - compute remaining "related parameters"
-   *     - so-called "effective neutrino number", computed at earliest
-      time in interpolation table. This should be seen as a
-      definition: Neff is the equivalent number of
-      instantaneously-decoupled neutrinos accounting for the
-      radiation density, beyond photons */
   pba->Neff = (pba->background_table[pba->index_bg_Omega_r]
                *pba->background_table[pba->index_bg_rho_crit]
                -pba->background_table[pba->index_bg_rho_g])
@@ -2036,6 +2168,7 @@ int background_solve(
   }
 
   if (pba->background_verbose > 2) {
+    printf(" -> pba->Neff = %f\n",pba->Neff);
     if ((pba->has_dcdm == _TRUE_)&&(pba->has_dr == _TRUE_)){
       printf("    Decaying Cold Dark Matter details: (DCDM --> DR)\n");
       printf("     -> Omega0_dcdm = %f\n",pba->Omega0_dcdm);
@@ -2072,23 +2205,26 @@ int background_solve(
       printf("m_a = %g eV, f_a/mpl = %g\n",(pba->scf_parameters[0]/1.5638e29),pba->scf_parameters[1]);
       }
       if(pba->has_lambda == _TRUE_)
-	     printf("     -> Omega_Lambda = %g, wished %g\n",
-       pvecback[pba->index_bg_rho_lambda]/pvecback[pba->index_bg_rho_crit], pba->Omega0_lambda);
-      //printf("     -> parameters: [lambda, alpha, A, B] = \n");
-      //printf("                    [");
-      //for (i=0; i<pba->scf_parameters_size-1; i++){
-      //  printf("%.3f, ",pba->scf_parameters[i]);
-      //}
-      //printf("%.3f]\n",pba->scf_parameters[pba->scf_parameters_size-1]);
+        printf("     -> Omega_Lambda = %g, wished %g\n",
+               pvecback[pba->index_bg_rho_lambda]/pvecback[pba->index_bg_rho_crit], pba->Omega0_lambda);
+      printf("     -> parameters: [lambda, alpha, A, B] = \n");
+      printf("                    [");
+      for (i=0; i<pba->scf_parameters_size-1; i++){
+        printf("%.3f, ",pba->scf_parameters[i]);
+      }
+      printf("%.3f]\n",pba->scf_parameters[pba->scf_parameters_size-1]);
     }
   }
+
+  /**  - total matter, radiation, dark energy today */
+  pba->Omega0_m = pba->background_table[(pba->bt_size-1)*pba->bg_size+pba->index_bg_Omega_m];
+  pba->Omega0_r = pba->background_table[(pba->bt_size-1)*pba->bg_size+pba->index_bg_Omega_r];
+  pba->Omega0_de = 1. - (pba->Omega0_m + pba->Omega0_r + pba->Omega0_k);
 
   free(pvecback);
   free(pvecback_integration);
   pba->scf_kg_eq = _TRUE_; // COpertchange
-  // printf("Finished background computation, resetting scf flags to KG.\n"); //print_trigger
   return _SUCCESS_;
-
 }
 
 /**
@@ -2126,8 +2262,8 @@ int background_initial_conditions(
   a = ppr->a_ini_over_a_today_default * pba->a_today;
 
   /**  If we have ncdm species, perhaps we need to start earlier
-      than the standard value for the species to be relativistic.
-      This could happen for some WDM models.
+       than the standard value for the species to be relativistic.
+       This could happen for some WDM models.
   */
 
   if (pba->has_ncdm == _TRUE_) {
@@ -2139,31 +2275,32 @@ int background_initial_conditions(
 
       for (n_ncdm=0; n_ncdm<pba->N_ncdm; n_ncdm++) {
 
-	class_call(background_ncdm_momenta(pba->q_ncdm_bg[n_ncdm],
-					   pba->w_ncdm_bg[n_ncdm],
-					   pba->q_size_ncdm_bg[n_ncdm],
-					   pba->M_ncdm[n_ncdm],
-					   pba->factor_ncdm[n_ncdm],
-					   pba->a_today/a-1.0,
-					   NULL,
-					   &rho_ncdm,
-					   &p_ncdm,
-					   NULL,
-					   NULL),
+
+        class_call(background_ncdm_momenta(pba->q_ncdm_bg[n_ncdm],
+                                           pba->w_ncdm_bg[n_ncdm],
+                                           pba->q_size_ncdm_bg[n_ncdm],
+                                           pba->M_ncdm[n_ncdm],
+                                           pba->factor_ncdm[n_ncdm],
+                                           pba->a_today/a-1.0,
+                                           NULL,
+                                           &rho_ncdm,
+                                           &p_ncdm,
+                                           NULL,
+                                           NULL),
                    pba->error_message,
                    pba->error_message);
-	rho_ncdm_rel_tot += 3.*p_ncdm;
-	if (fabs(p_ncdm/rho_ncdm-1./3.)>ppr->tol_ncdm_initial_w)
-	  is_early_enough = _FALSE_;
+        rho_ncdm_rel_tot += 3.*p_ncdm;
+        if (fabs(p_ncdm/rho_ncdm-1./3.)>ppr->tol_ncdm_initial_w)
+          is_early_enough = _FALSE_;
       }
       if (is_early_enough == _TRUE_)
-	break;
+        break;
       else
-	a *= _SCALE_BACK_;
+        a *= _SCALE_BACK_;
     }
     class_test(counter == _MAX_IT_,
-	       pba->error_message,
-	       "Search for initial scale factor a such that all ncdm species are relativistic failed.");
+               pba->error_message,
+               "Search for initial scale factor a such that all ncdm species are relativistic failed.");
   }
 
   pvecback_integration[pba->index_bi_a] = a;
@@ -2172,6 +2309,9 @@ int background_initial_conditions(
   Omega_rad = pba->Omega0_g;
   if (pba->has_ur == _TRUE_)
     Omega_rad += pba->Omega0_ur;
+
+  if (pba->has_idr == _TRUE_)
+    Omega_rad += pba->Omega0_idr;
   rho_rad = Omega_rad*pow(pba->H0,2)/pow(a/pba->a_today,4);
   if (pba->has_ncdm == _TRUE_){
     /** - We must add the relativistic contribution from NCDM species */
@@ -2213,10 +2353,10 @@ int background_initial_conditions(
     class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, pba->error_message);
 
     /* Note: for complicated w_fld(a) functions with no simple
-    analytic integral, this is the place were you should compute
-    numerically the simple 1d integral [int_{a_ini}^{a_0} 3
-    [(1+w_fld)/a] da] (e.g. with the Romberg method?) instead of
-    calling background_w_fld */
+       analytic integral, this is the place were you should compute
+       numerically the simple 1d integral [int_{a_ini}^{a_0} 3
+       [(1+w_fld)/a] da] (e.g. with the Romberg method?) instead of
+       calling background_w_fld */
 
     /* rho_fld at initial time */
     pvecback_integration[pba->index_bi_rho_fld] = rho_fld_today * exp(integral_fld);
@@ -2231,7 +2371,6 @@ int background_initial_conditions(
    * - Check equations and signs. Sign of phi_prime?
    * - is rho_ur all there is early on?
    */
-  //printf("Inside background_initial_conditions, checking for SF. SF? %f \n",pba->has_scf);//print_trigger
   if(pba->has_scf == _TRUE_){
     scf_lambda = pba->scf_parameters[0];
     if(pba->attractor_ic_scf == _TRUE_){
@@ -2240,8 +2379,8 @@ int background_initial_conditions(
       if (3.*pow(scf_lambda,2)-12. < 0){
         /** - --> If there is no attractor solution for scf_lambda, assign some value. Otherwise would give a nan.*/
     	pvecback_integration[pba->index_bi_phi_scf] = 1./scf_lambda;//seems to the work
-	if (pba->background_verbose > 0)
-	  printf(" No attractor IC for lambda = %.3e ! \n ",scf_lambda);
+        if (pba->background_verbose > 0)
+          printf(" No attractor IC for lambda = %.3e ! \n ",scf_lambda);
       }
       pvecback_integration[pba->index_bi_phi_prime_scf] = 2*pvecback_integration[pba->index_bi_a]*
         sqrt(V_scf(pba,pvecback_integration[pba->index_bi_phi_scf]))*pba->phi_prime_ini_scf;
@@ -2301,9 +2440,10 @@ int background_initial_conditions(
   /* Just checking that our initial time indeed is deep enough in the radiation
      dominated regime */
   class_test(fabs(pvecback[pba->index_bg_Omega_r]-1.) > ppr->tol_initial_Omega_r,
-	     pba->error_message,
-	     "Omega_r = %e, not close enough to 1. Decrease a_ini_over_a_today_default in order to start from radiation domination.",
-	     pvecback[pba->index_bg_Omega_r]);
+
+             pba->error_message,
+             "Omega_r = %e, not close enough to 1. Decrease a_ini_over_a_today_default in order to start from radiation domination.",
+             pvecback[pba->index_bg_Omega_r]);
 
   /** - compute initial proper time, assuming radiation-dominated
       universe since Big Bang and therefore \f$ t=1/(2H) \f$ (good
@@ -2312,7 +2452,7 @@ int background_initial_conditions(
   class_test(pvecback[pba->index_bg_H] <= 0.,
              pba->error_message,
              "H = %e instead of strictly positive",pvecback[pba->index_bg_H]);
-  //printf("Setting initial conditions.\n");//print_trigger
+
   pvecback_integration[pba->index_bi_time] = 1./(2.* pvecback[pba->index_bg_H]);
 
   /** - compute initial conformal time, assuming radiation-dominated
@@ -2326,10 +2466,87 @@ int background_initial_conditions(
   /** - set initial value of D and D' in RD. D will be renormalised later, but D' must be correct. */
   pvecback_integration[pba->index_bi_D] = a;
   pvecback_integration[pba->index_bi_D_prime] = 2*pvecback_integration[pba->index_bi_D]*pvecback[pba->index_bg_H];
-  //printf("Success.\n");//print_trigger
+
   return _SUCCESS_;
 
 }
+
+/**
+ * Find the time of radiation/matter equality and store characteristic
+ * quantitites at that time in the background structure..
+ *
+ * @param ppr                  Input: pointer to precision structure
+ * @param pba                  Input/Output: pointer to background structure
+ * @return the error status
+ */
+
+int background_find_equality(
+                             struct precision *ppr,
+                             struct background *pba) {
+
+  double Omega_m_over_Omega_r=0.;
+  int index_tau_minus = 0;
+  int index_tau_plus = pba->bt_size-1;
+  int index_tau_mid = 0;
+  double tau_minus,tau_plus,tau_mid=0.;
+  double * pvecback;
+
+  /* first bracket the right tau value between two consecutive indices in the table */
+
+  while ((index_tau_plus - index_tau_minus) > 1) {
+
+    index_tau_mid = (int)(0.5*(index_tau_plus+index_tau_minus));
+
+    Omega_m_over_Omega_r = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_Omega_m]
+      /pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_Omega_r];
+
+    if (Omega_m_over_Omega_r > 1)
+      index_tau_plus = index_tau_mid;
+    else
+      index_tau_minus = index_tau_mid;
+
+  }
+
+  /* then get a better estimate within this range */
+
+  tau_minus = pba->tau_table[index_tau_minus];
+  tau_plus =  pba->tau_table[index_tau_plus];
+
+  class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
+
+  while ((tau_plus - tau_minus) > ppr->tol_tau_eq) {
+
+    tau_mid = 0.5*(tau_plus+tau_minus);
+
+    class_call(background_at_tau(pba,tau_mid,pba->long_info,pba->inter_closeby,&index_tau_minus,pvecback),
+               pba->error_message,
+               pba->error_message);
+
+    Omega_m_over_Omega_r = pvecback[pba->index_bg_Omega_m]/pvecback[pba->index_bg_Omega_r];
+
+    if (Omega_m_over_Omega_r > 1)
+      tau_plus = tau_mid;
+    else
+      tau_minus = tau_mid;
+
+  }
+
+  pba->a_eq = pvecback[pba->index_bg_a];
+  pba->H_eq = pvecback[pba->index_bg_H];
+  pba->z_eq = pba->a_today/pba->a_eq -1.;
+  pba->tau_eq = tau_mid;
+
+  if (pba->background_verbose > 0) {
+    printf(" -> radiation/matter equality at z = %f\n",pba->z_eq);
+    printf("    corresponding to conformal time = %f Mpc\n",pba->tau_eq);
+  }
+
+  free(pvecback);
+
+  return _SUCCESS_;
+
+}
+
 
 /**
  * Subroutine for formatting background output
@@ -2343,7 +2560,7 @@ int background_output_titles(struct background * pba,
   /** - Length of the column title should be less than _OUTPUTPRECISION_+6
       to be indented correctly, but it can be as long as . */
   int n;
-  char tmp[20];
+  char tmp[40];
 
   class_store_columntitle(titles,"z",_TRUE_);
   class_store_columntitle(titles,"proper time [Gyr]",_TRUE_);
@@ -2368,13 +2585,18 @@ int background_output_titles(struct background * pba,
   class_store_columntitle(titles,"(.)rho_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)w_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)rho_ur",pba->has_ur);
+
+  class_store_columntitle(titles,"(.)rho_idr",pba->has_idr);
+  class_store_columntitle(titles,"(.)rho_idm_dr",pba->has_idm_dr);
   class_store_columntitle(titles,"(.)rho_crit",_TRUE_);
   class_store_columntitle(titles,"(.)rho_dcdm",pba->has_dcdm);
   class_store_columntitle(titles,"(.)rho_dr",pba->has_dr);
 
   class_store_columntitle(titles,"(.)rho_scf",pba->has_scf);
+
   class_store_columntitle(titles,"(.)Omega_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)p_scf",pba->has_scf);
+  class_store_columntitle(titles,"(.)p_prime_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)w_scf",pba->has_scf);
   class_store_columntitle(titles,"(.)dw_scf",pba->has_scf);
   class_store_columntitle(titles,"phi_scf",pba->has_scf);
@@ -2382,6 +2604,10 @@ int background_output_titles(struct background * pba,
   class_store_columntitle(titles,"V_scf",pba->has_scf);
   class_store_columntitle(titles,"V'_scf",pba->has_scf);
   class_store_columntitle(titles,"V''_scf",pba->has_scf);
+
+  class_store_columntitle(titles,"(.)rho_tot",_TRUE_);
+  class_store_columntitle(titles,"(.)p_tot",_TRUE_);
+  class_store_columntitle(titles,"(.)p_tot_prime",_TRUE_);
 
   class_store_columntitle(titles,"gr.fac. D",_TRUE_);
   class_store_columntitle(titles,"gr.fac. f",_TRUE_);
@@ -2423,6 +2649,9 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_rho_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_w_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_ur],pba->has_ur,storeidx);
+
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_idr],pba->has_idr,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_idm_dr],pba->has_idm_dr,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_crit],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dcdm],pba->has_dcdm,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dr],pba->has_dr,storeidx);
@@ -2430,6 +2659,7 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_rho_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_Omega_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_scf],pba->has_scf,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_p_prime_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_w_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dw_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_phi_scf],pba->has_scf,storeidx);
@@ -2437,6 +2667,10 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_V_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dV_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_ddV_scf],pba->has_scf,storeidx);
+
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_tot],_TRUE_,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_p_tot],_TRUE_,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_p_tot_prime],_TRUE_,storeidx);
 
     class_store_double(dataptr,pvecback[pba->index_bg_D],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_f],_TRUE_,storeidx);
@@ -2519,6 +2753,10 @@ int background_derivs(
   rho_M = pvecback[pba->index_bg_rho_b];
   if (pba->has_cdm)
     rho_M += pvecback[pba->index_bg_rho_cdm];
+
+  if (pba->has_idm_dr)
+    rho_M += pvecback[pba->index_bg_rho_idm_dr];
+
   dy[pba->index_bi_D] = y[pba->index_bi_D_prime];
   dy[pba->index_bi_D_prime] = -a*H*y[pba->index_bi_D_prime] + 1.5*a*a*rho_M*y[pba->index_bi_D];
 
@@ -2544,6 +2782,7 @@ int background_derivs(
     /*COComment - add if statement, dependent on flag, to either use KG equation or fluid equation  */
     //printf("inside SF evolution call\n");
     if (pba->scf_kg_eq == _TRUE_) {
+
     dy[pba->index_bi_phi_scf] = y[pba->index_bi_phi_prime_scf];
     dy[pba->index_bi_phi_prime_scf] = - y[pba->index_bi_a]*
       (2*pvecback[pba->index_bg_H]*y[pba->index_bi_phi_prime_scf]
@@ -2569,10 +2808,12 @@ int background_derivs(
 }
 
 
+
   return _SUCCESS_;
 
 }
  /**
+
  * Scalar field potential and its derivatives with respect to the field _scf
  * For Albrecht & Skordis model: 9908085
  * - \f$ V = V_{p_{scf}}*V_{e_{scf}} \f$
@@ -2595,8 +2836,9 @@ int background_derivs(
  * - the potential \f$ V(\phi) \f$ is given in units of \f$ m_{pl}^2/Mpc^2 \f$.
  * With this convention, we have
  * \f$ \rho^{class} = (8 \pi G)/3 \rho^{physical} = 1/(3 m_{pl}^2) \rho^{physical} = 1/3 * [ 1/(2a^2) (\phi')^2 + V(\phi) ] \f$
-    and \f$ \rho^{class} \f$ has the proper dimension \f$ Mpc^-2 \f$.
- */
+
+ and \f$ \rho^{class} \f$ has the proper dimension \f$ Mpc^-2 \f$.
+*/
 
 double V_e_scf(struct background *pba,
                double phi
@@ -2938,4 +3180,111 @@ double ddV_scf(
   // printf("result ddVf %e\n", result);
   return result;
 
+}
+/**
+ * Function outputting the fractions Omega of the total critical density
+ * today, and also the reduced fractions omega=Omega*h*h
+ *
+ * It also prints the total budgets of non-relativistic, relativistic,
+ * and other contents, and of the total
+ *
+ * @param pba                      Input: Pointer to background structure
+ * @return the error status
+ */
+
+int background_output_budget(
+                             struct background* pba
+                             ) {
+
+  double budget_matter, budget_radiation, budget_other,budget_neutrino;
+  int index_ncdm;
+
+  budget_matter = 0;
+  budget_radiation = 0;
+  budget_other = 0;
+  budget_neutrino = 0;
+
+  //The name for the _class_print_species_ macro can be at most 30 characters total
+  if(pba->background_verbose > 1){
+
+    printf(" ---------------------------- Budget equation ----------------------- \n");
+
+    printf(" ---> Nonrelativistic Species \n");
+    _class_print_species_("Bayrons",b);
+    budget_matter+=pba->Omega0_b;
+    if(pba->has_cdm){
+      _class_print_species_("Cold Dark Matter",cdm);
+      budget_matter+=pba->Omega0_cdm;
+    }
+    if(pba->has_idm_dr){
+      _class_print_species_("Interacting Dark Matter - DR ",idm_dr);
+      budget_matter+=pba->Omega0_idm_dr;
+    }
+    if(pba->has_dcdm){
+      _class_print_species_("Decaying Cold Dark Matter",dcdm);
+      budget_matter+=pba->Omega0_dcdm;
+    }
+
+
+    printf(" ---> Relativistic Species \n");
+    _class_print_species_("Photons",g);
+    budget_radiation+=pba->Omega0_g;
+    if(pba->has_ur){
+      _class_print_species_("Ultra-relativistic relics",ur);
+      budget_radiation+=pba->Omega0_ur;
+    }
+    if(pba->has_dr){
+      _class_print_species_("Dark Radiation (from decay)",dr);
+      budget_radiation+=pba->Omega0_dr;
+    }
+    if(pba->has_idr){
+      _class_print_species_("Interacting Dark Radiation",idr);
+      budget_radiation+=pba->Omega0_idr;
+    }
+
+    if(pba->N_ncdm > 0){
+      printf(" ---> Massive Neutrino Species \n");
+    }
+    if(pba->N_ncdm > 0){
+      for(index_ncdm=0;index_ncdm<pba->N_ncdm;++index_ncdm){
+        printf("-> %-26s%-4d Omega = %-15g , omega = %-15g\n","Neutrino Species Nr.",index_ncdm+1,pba->Omega0_ncdm[index_ncdm],pba->Omega0_ncdm[index_ncdm]*pba->h*pba->h);
+        budget_neutrino+=pba->Omega0_ncdm[index_ncdm];
+      }
+    }
+
+    if(pba->has_lambda || pba->has_fld || pba->has_scf || pba->has_curvature){
+      printf(" ---> Other Content \n");
+    }
+    if(pba->has_lambda){
+      _class_print_species_("Cosmological Constant",lambda);
+      budget_other+=pba->Omega0_lambda;
+    }
+    if(pba->has_fld){
+      _class_print_species_("Dark Energy Fluid",fld);
+      budget_other+=pba->Omega0_fld;
+    }
+    if(pba->has_scf){
+      _class_print_species_("Scalar Field",scf);
+      budget_other+=pba->Omega0_scf;
+    }
+    if(pba->has_curvature){
+      _class_print_species_("Spatial Curvature",k);
+      budget_other+=pba->Omega0_k;
+    }
+
+    printf(" ---> Total budgets \n");
+    printf(" Radiation                        Omega = %-15g , omega = %-15g \n",budget_radiation,budget_radiation*pba->h*pba->h);
+    printf(" Non-relativistic                 Omega = %-15g , omega = %-15g \n",budget_matter,budget_matter*pba->h*pba->h);
+    if(pba->N_ncdm > 0){
+      printf(" Neutrinos                        Omega = %-15g , omega = %-15g \n",budget_neutrino,budget_neutrino*pba->h*pba->h);
+    }
+    if(pba->has_lambda || pba->has_fld || pba->has_scf || pba->has_curvature){
+      printf(" Other Content                    Omega = %-15g , omega = %-15g \n",budget_other,budget_other*pba->h*pba->h);
+    }
+    printf(" TOTAL                            Omega = %-15g , omega = %-15g \n",budget_radiation+budget_matter+budget_neutrino+budget_other,(budget_radiation+budget_matter+budget_neutrino+budget_other)*pba->h*pba->h);
+
+    printf(" -------------------------------------------------------------------- \n");
+  }
+
+  return _SUCCESS_;
 }

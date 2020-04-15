@@ -1,4 +1,4 @@
-/** @file input.c Documented input module.
+
 /** @file input.c Documented input module.
  *
  * Julien Lesgourgues, 27.08.2010
@@ -44,7 +44,7 @@ int input_init_from_arguments(
 
   char input_file[_ARGUMENT_LENGTH_MAX_];
   char precision_file[_ARGUMENT_LENGTH_MAX_];
-  char tmp_file[_ARGUMENT_LENGTH_MAX_];
+  char tmp_file[_ARGUMENT_LENGTH_MAX_+26]; // 26 is enough to extend the file name [...] with the characters "output/[...]%02d_parameters.ini" (as done below)
 
   int i;
   char extension[5];
@@ -84,7 +84,7 @@ int input_init_from_arguments(
         strcpy(precision_file,argv[i]);
       }
       else {
-        fprintf(stdout,"Warning: the file %s has an extension different from .ini and .pre, so it has been ignored\n",argv[i]);
+        fprintf(stdout,"Warning: the file '%s' has an extension different from .ini and .pre, so it has been ignored\n",argv[i]);
       }
     }
   }
@@ -209,6 +209,7 @@ int input_init(
 
   int flag1,flag2;
   int int1,int2;
+
   double param1;
   int counter, index_target, i;
   double * unknown_parameter;
@@ -226,7 +227,57 @@ int input_init(
 
   struct fzerofun_workspace fzw;
 
+/**
+ * Before getting into the assignment of parameters,
+ * and before the shooting, we want to already fix our precision parameters.
+ *
+ * No precision parameter should depend on any input parameter
+ *
+ */
 
+class_call(input_read_precisions(pfc,
+                                 ppr,
+                                 pba,
+                                 pth,
+                                 ppt,
+                                 ptr,
+                                 ppm,
+                                 psp,
+                                 pnl,
+                                 ple,
+                                 pop,
+                                 errmsg),
+           errmsg,
+           errmsg);
+
+
+
+/**
+ * In CLASS, we can do something we call 'shooting', where a variable,
+ *  which is not directly given is calculated by another variable
+ *  through successive runs of class.
+ *
+ * This is needed for variables which do not immediately follow from
+ *  other input parameters. An example is theta_s, the angular scale
+ *  of the sound horizon giving us the horizontal peak positions.
+ *  This quantity can only replace the hubble parameter h, if we
+ *  run all the way into class through to thermodynamics to figure out
+ *  how h and theta_s relate numerically.
+ *
+ * A default parameter for h is chosen, and then we shoot through
+ *  CLASS, finding what the corresponding theta_s is. We adjust our
+ *  initial h, and shoot again, repeating this process until a
+ *  suitable value for h is found which gives the correct
+ *  100*theta_s value
+ *
+ * These two arrays must contain the strings of names to be searched
+ *  for and the corresponding new parameter
+ * The third array contains the module inside of which the old
+ *  parameter is calculated
+ *
+ * See input_try_unknown_parameters for the actual shooting
+ *
+ */
 class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -253,11 +304,11 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
    * These two arrays must contain the strings of names to be searched
    *  for and the corresponding new parameter */
   char * const target_namestrings[] = {"100*theta_s","Omega_dcdmdr","omega_dcdmdr",
-                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","log10_fraction_axion_ac","log10_axion_ac","log10_fraction_axion_ac_phi2n","log10_axion_ac_phi2n"};
+                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","log10_fraction_axion_ac","log10_axion_ac","log10_fraction_axion_ac_phi2n","log10_axion_ac_phi2n","sigma8"};
   char * const unknown_namestrings[] = {"h","Omega_ini_dcdm","Omega_ini_dcdm",
-                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","alpha_squared","power_of_mu","phi_ini_scf","V0_phi2n"};
+                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","alpha_squared","power_of_mu","phi_ini_scf","V0_phi2n","A_s"};
   enum computation_stage target_cs[] = {cs_thermodynamics, cs_background, cs_background,cs_background,
-                                        cs_background, cs_background, cs_background,cs_background,cs_background,cs_background};
+                                        cs_background, cs_background, cs_background,cs_background,cs_background,cs_background,cs_nonlinear};
 
   int input_verbose = 0, aux_flag, shooting_failed=_FALSE_;
 
@@ -347,6 +398,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
         // }
 
   }
+
   class_read_int("input_verbose",input_verbose);
   if (input_verbose >0) printf("Reading input parameters\n");
 
@@ -365,7 +417,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     if (flag1 == _TRUE_){
       /** - --> input_auxillary_target_conditions() takes care of the case where for
           instance Omega_dcdmdr is set to 0.0.
-       */
+      */
       class_call(input_auxillary_target_conditions(pfc,
                                                    index_target,
                                                    param1,
@@ -391,6 +443,14 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
   /** - case with unknown parameters */
   if (unknown_parameters_size > 0 && fzw.do_shooting == _TRUE_) {
     // printf("About to start shooting, initialising tables.\n"); //print_trigger
+
+      /**
+       * Case with unknown parameters...
+       *
+       * Here we start shooting (see above for explanation of shooting)
+       *
+       *  */
+
     /* Create file content structure with additional entries */
     class_call(parser_init(&(fzw.fc),
                            pfc->size+unknown_parameters_size,
@@ -418,32 +478,39 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
     /** - --> go through all cases with unknown parameters: */
     for (counter = 0; counter < unknown_parameters_size; counter++){
-      // printf("counter is %e", counter);
-      index_target = target_indices[counter]; /*Defining the target as the thing we have told code to shoot for */
-      // fprintf(stdout, "index_target = %d\n",index_target );
+
+      index_target = target_indices[counter];
       class_call(parser_read_double(pfc,
                                     target_namestrings[index_target],
                                     &param1,
                                     &flag1,
                                     errmsg),
-               errmsg,
-               errmsg);
+                                    errmsg,
+                                    errmsg);
 
       // store name of target parameter
       fzw.target_name[counter] = index_target;
       // printf("name of target parameter: %e", fzw.target_name[counter]);
+
       // store target value of target parameter
       fzw.target_value[counter] = param1;
       fzw.unknown_parameters_index[counter]=pfc->size+counter;
       // substitute the name of the target parameter with the name of the corresponding unknown parameter
       strcpy(fzw.fc.name[fzw.unknown_parameters_index[counter]],unknown_namestrings[index_target]);
-      if(input_verbose>3)printf("%d, %d: %s\n",counter,index_target,target_namestrings[index_target]);
+      // printf("%d, %d: %s %s\n",counter,index_target,target_namestrings[index_target], fzw.fc.name[fzw.unknown_parameters_index[counter]]);
     }
 
 
     if (unknown_parameters_size == 1){
-      // fprintf(stdout," -> shooting for %s\n",
-      //         fzw.fc.name[fzw.unknown_parameters_index[0]]);
+      if (input_verbose > 0) {
+        fprintf(
+                stdout,
+                "Computing unknown input parameter '%s' using input parameter '%s'\n",
+                fzw.fc.name[fzw.unknown_parameters_index[0]],
+                target_namestrings[fzw.target_name[0]]
+                );
+      }
+
       /* We can do 1 dimensional root finding */
       /* If shooting fails, postpone error to background module to play nice with MontePython. */
       class_call_try(input_find_root(&xzero,
@@ -459,35 +526,43 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
       if (input_verbose > 0) {
         fprintf(stdout,"Computing unknown input parameters\n");
         fprintf(stdout," -> found %s = %s\n",
+
                 fzw.fc.name[fzw.unknown_parameters_index[0]],
                 fzw.fc.value[fzw.unknown_parameters_index[0]]);
       }
     }
     else{
+
+      /* We need to do multidimensional root finding */
+
+      if (input_verbose > 0) {
+        fprintf(stdout,"Computing unknown input parameters\n");
+      }
       class_alloc(x_inout,
                   sizeof(double)*unknown_parameters_size,
                   errmsg);
       class_alloc(dxdF,
                   sizeof(double)*unknown_parameters_size,
                   errmsg);
+      printf("berfore get guess\n");
       class_call(input_get_guess(x_inout,
                                  dxdF,
                                  &fzw,
                                  errmsg),
                  errmsg, errmsg);
+
       class_call_try(fzero_Newton(input_try_unknown_parameters,
                                   x_inout,
                                   dxdF,
                                   unknown_parameters_size,
-                                  1e-2, //Here we have improved accuracy manually, in the future needs to adapt it to the parameter we shoot for TLS
-                                  1e-2, //Here we have improved accuracy manually, in the future needs to adapt it to the parameter we shoot for
-                                  &fzw,
+                                  1e-3,//1e-2 TLS
+                                  1e-3,//1e-2 TLS
+                                    &fzw,
                                   &fevals,
                                   errmsg),
                      errmsg, pba->shooting_error,shooting_failed=_TRUE_);
-     if (input_verbose > 0) {
-        fprintf(stdout,"Computing unknown input parameters\n");
-      }
+
+
 
       /* Store xzero */
       for (counter = 0; counter < unknown_parameters_size; counter++){
@@ -495,6 +570,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                 "%e",x_inout[counter]);
         if (input_verbose > 0) {
           fprintf(stdout," -> found %s = %s\n",
+
                   fzw.fc.name[fzw.unknown_parameters_index[counter]],
                   fzw.fc.value[fzw.unknown_parameters_index[counter]]);
         }
@@ -545,6 +621,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     if(fzw.do_shooting_scf == _TRUE_){
       free(fzw.scf_parameters);
     }
+
     free(fzw.target_value);
   }
   /** - case with no unknown parameters */
@@ -553,6 +630,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     xzero = 33.1;
     // printf("Shooting entirely skipped, phi_init initialised.\n");
     }
+
     /** - --> just read all parameters from input pfc: */
     class_call(input_read_parameters(pfc,
                                      ppr,
@@ -623,6 +701,44 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
 }
 
+int input_read_precisions(
+                          struct file_content * pfc,
+                          struct precision * ppr,
+                          struct background *pba,
+                          struct thermo *pth,
+                          struct perturbs *ppt,
+                          struct transfers *ptr,
+                          struct primordial *ppm,
+                          struct spectra *psp,
+                          struct nonlinear * pnl,
+                          struct lensing *ple,
+                          struct output *pop,
+                          ErrorMsg errmsg
+                          ) {
+  /** - set all precision parameters to default values */
+
+  /**
+   * Declare initial params to read into
+   * */
+  class_call(input_default_precision(ppr),
+             errmsg,
+             errmsg);
+
+  int int1;
+  int flag1;
+  double param1;
+  char string1[_ARGUMENT_LENGTH_MAX_];
+
+  /**
+   * Parse all precision parameters
+   * */
+
+#define __PARSE_PRECISION_PARAMETER__
+#include "precisions.h"
+#undef __PARSE_PRECISION_PARAMETER__
+
+  return _SUCCESS_;
+}
 int input_read_parameters(
                           struct file_content * pfc,
                           struct precision * ppr,
@@ -644,6 +760,7 @@ int input_read_parameters(
 
   int flag1,flag2,flag3,flag4,flag5,flag6; //COcdmchange added flags 4 and 5
   double param1,param2,param3,param4,param5,param6; //COcdmchange added params 4 and 5
+
   int N_ncdm=0,n,entries_read;
   int int1,fileentries;
   double scf_lambda;
@@ -663,6 +780,7 @@ int input_read_parameters(
   double f_iso=0.;
   double n_cor=0.;
   double c_cor=0.;
+  double stat_f_idr = 7./8.;
 
   double Omega_tot;
 
@@ -678,10 +796,12 @@ int input_read_parameters(
   double z_max=0.;
   int bin;
   int input_verbose=0;
-
+  int index = 0;
   sigma_B = 2. * pow(_PI_,5) * pow(_k_B_,4) / 15. / pow(_h_P_,3) / pow(_c_,2);
 
-  /** - set all parameters (input and precision) to default values */
+
+
+  /** - set all input parameters to default values */
 
   class_call(input_default_params(pba,
                                   pth,
@@ -694,9 +814,7 @@ int input_read_parameters(
                                   pop),
              errmsg,
              errmsg);
-  class_call(input_default_precision(ppr),
-             errmsg,
-             errmsg);
+
 
   /** - if entries passed in file_content structure, carefully read
       and interpret each of them, and tune the relevant input
@@ -746,6 +864,8 @@ int input_read_parameters(
   class_read_double("a_today",pba->a_today);
 
   /** - h (dimensionless) and [\f$ H_0/c\f$] in \f$ Mpc^{-1} = h / 2997.9... = h * 10^5 / c \f$ */
+  index =0;
+
   class_call(parser_read_double(pfc,"H0",&param1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -877,12 +997,52 @@ int input_read_parameters(
              errmsg,
              errmsg);
   if (flag1 == _TRUE_) ppt->three_ceff2_ur = 3.*param1;
+
   class_call(parser_read_double(pfc,"cvis2_ur",&param1,&flag1,errmsg),
              errmsg,
              errmsg);
   if (flag1 == _TRUE_) ppt->three_cvis2_ur = 3.*param1;
 
   Omega_tot += pba->Omega0_ur;
+
+
+  /** - Omega_0_idr (interacting dark radiation) */
+  /* Can take both the ethos parameters, and the NADM parameters */
+
+  class_read_double("stat_f_idr",stat_f_idr);
+
+  class_call(parser_read_double(pfc,"N_idr",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+  class_call(parser_read_double(pfc,"N_dg",&param2,&flag2,errmsg),
+             errmsg,
+             errmsg);
+  class_call(parser_read_double(pfc,"xi_idr",&param3,&flag3,errmsg),
+             errmsg,
+             errmsg);
+  class_test(class_at_least_two_of_three(flag1,flag2,flag3),
+             errmsg,
+             "In input file, you can only enter one of N_idr, N_dg or xi_idr, choose one");
+
+  if (flag1 == _TRUE_) {
+    pba->T_idr = pow(param1/stat_f_idr*(7./8.)/pow(11./4.,(4./3.)),(1./4.)) * pba->T_cmb;
+    if (input_verbose > 1)
+      printf("You passed N_idr = N_dg = %e, this is equivalent to xi_idr = %e in the ETHOS notation. \n", param2, pba->T_idr/pba->T_cmb);
+  }
+  else if (flag2 == _TRUE_) {
+    pba->T_idr = pow(param2/stat_f_idr*(7./8.)/pow(11./4.,(4./3.)),(1./4.)) * pba->T_cmb;
+    if (input_verbose > 2)
+      printf("You passed N_dg = N_idr = %e, this is equivalent to xi_idr = %e in the ETHOS notation. \n", param2, pba->T_idr/pba->T_cmb);
+  }
+  else if (flag3 == _TRUE_) {
+    pba->T_idr = param3 * pba->T_cmb;
+    if (input_verbose > 1)
+      printf("You passed xi_idr = %e, this is equivalent to N_idr = N_dg = %e in the NADM notation. \n", param3, stat_f_idr*pow(param3,4.)/(7./8.)*pow(11./4.,(4./3.)));
+  }
+
+  pba->Omega0_idr = stat_f_idr*pow(pba->T_idr/pba->T_cmb,4.)*pba->Omega0_g;
+
+  Omega_tot += pba->Omega0_idr;
 
   /** - Omega_0_cdm (CDM) */
   class_call(parser_read_double(pfc,"Omega_cdm",&param1,&flag1,errmsg),
@@ -899,8 +1059,168 @@ int input_read_parameters(
   if (flag2 == _TRUE_)
     pba->Omega0_cdm = param2/pba->h/pba->h;
 
-  Omega_tot += pba->Omega0_cdm; //COcdmchange - commented out here, it is now read in on line 1076 as an option for filling.
+  if ((ppt->gauge == synchronous) && (pba->Omega0_cdm==0)) pba->Omega0_cdm = ppr->Omega0_cdm_min_synchronous;
 
+  Omega_tot += pba->Omega0_cdm;
+
+  /** - Omega_0_icdm_dr (DM interacting with DR) */
+  class_call(parser_read_double(pfc,"Omega_idm_dr",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+  class_call(parser_read_double(pfc,"omega_idm_dr",&param2,&flag2,errmsg),
+             errmsg,
+             errmsg);
+  class_call(parser_read_double(pfc,"f_idm_dr",&param3,&flag3,errmsg),
+             errmsg,
+             errmsg);
+  class_test(class_at_least_two_of_three(flag1,flag2,flag3),
+             errmsg,
+             "In input file, you can only enter one of Omega_idm_dr, omega_idm_dr or f_idm_dr, choose one");
+
+  /* ---> if user passes directly the density of idm_dr */
+  if (flag1 == _TRUE_)
+    pba->Omega0_idm_dr = param1;
+  if (flag2 == _TRUE_)
+    pba->Omega0_idm_dr = param2/pba->h/pba->h;
+
+  /* ---> if user passes density of idm_dr as a fraction of the CDM one */
+  if (flag3 == _TRUE_) {
+    class_test((param3 < 0.) || (param3 > 1.),
+               errmsg,
+               "The fraction of interacting DM with DR must be between 0 and 1, you asked for f_idm_dr=%e",param3);
+    class_test((param3 > 0.) && (pba->Omega0_cdm == 0.),
+               errmsg,
+               "If you want a fraction of interacting DM with DR, to be consistent, you should not set the fraction of CDM to zero");
+
+    pba->Omega0_idm_dr = param3 * pba->Omega0_cdm;
+    /* readjust Omega0_cdm */
+    pba->Omega0_cdm -= pba->Omega0_idm_dr;
+    /* to be consistent, remove same amount from Omega_tot */
+    Omega_tot -= pba->Omega0_idm_dr;
+    /* avoid Omega0_cdm =0 in synchronous gauge */
+    if ((ppt->gauge == synchronous) && (pba->Omega0_cdm==0)) {
+      pba->Omega0_cdm += ppr->Omega0_cdm_min_synchronous;
+      Omega_tot += ppr->Omega0_cdm_min_synchronous;
+      pba->Omega0_idm_dr -= ppr->Omega0_cdm_min_synchronous;
+    }
+  }
+
+  Omega_tot += pba->Omega0_idm_dr;
+
+  if (pba->Omega0_idm_dr > 0.) {
+
+    class_test(pba->Omega0_idr == 0.0,
+               errmsg,
+               "You have requested interacting DM ith DR, this requires a non-zero density of interacting DR. Please set either N_idr or xi_idr");
+
+    class_call(parser_read_double(pfc,"a_idm_dr",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+    class_call(parser_read_double(pfc,"a_dark",&param2,&flag2,errmsg),
+               errmsg,
+               errmsg);
+    class_call(parser_read_double(pfc,"Gamma_0_nadm",&param3,&flag3,errmsg),
+               errmsg,
+               errmsg);
+    class_test(class_at_least_two_of_three(flag1,flag2,flag3),
+               errmsg,
+               "In input file, you can only enter one of a_idm_dr, a_dark or Gamma_0_nadm, choose one");
+
+    if (flag1 == _TRUE_){
+      pth->a_idm_dr = param1;
+      if (input_verbose > 1)
+        printf("You passed a_idm_dr = a_dark = %e, this is equivalent to Gamma_0_nadm = %e in the NADM notation. \n", param1, param1*(4./3.)*(pba->h*pba->h*pba->Omega0_idr));
+    }
+    else if (flag2 == _TRUE_){
+      pth->a_idm_dr = param2;
+      if (input_verbose > 1)
+        printf("You passed a_dark = a_idm_dr = %e, this is equivalent to Gamma_0_nadm = %e in the NADM notation. \n", param2, param2*(4./3.)*(pba->h*pba->h*pba->Omega0_idr));
+    }
+    else if (flag3 == _TRUE_){
+      pth->a_idm_dr = param3*(3./4.)/(pba->h*pba->h*pba->Omega0_idr);
+      if (input_verbose > 1)
+        printf("You passed Gamma_0_nadm = %e, this is equivalent to a_idm_dr = a_dark = %e in the ETHOS notation. \n", param3, pth->a_idm_dr);
+    }
+
+    /** - Load the rest of the parameters for idm and idr */
+
+    if (flag3 == _TRUE_){ /* If the user passed Gamma_0_nadm, assume they want nadm parameterisation*/
+      pth->nindex_idm_dr = 0;
+      ppt->idr_nature = idr_fluid;
+      if (input_verbose > 1)
+        printf("NADM requested. Defaulting on nindex_idm_dr = %e and idr_nature = fluid \n", pth->nindex_idm_dr);
+    }
+
+    else{
+
+      class_read_double_one_of_two("nindex_dark","nindex_idm_dr",pth->nindex_idm_dr);
+
+      class_call(parser_read_string(pfc,"idr_nature",&string1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+
+      if (flag1 == _TRUE_) {
+        if ((strstr(string1,"free_streaming") != NULL) || (strstr(string1,"Free_Streaming") != NULL) || (strstr(string1,"Free_streaming") != NULL) || (strstr(string1,"FREE_STREAMING") != NULL)) {
+          ppt->idr_nature = idr_free_streaming;
+        }
+        if ((strstr(string1,"fluid") != NULL) || (strstr(string1,"Fluid") != NULL) || (strstr(string1,"FLUID") != NULL)) {
+          ppt->idr_nature = idr_fluid;
+        }
+      }
+    }
+
+    class_read_double_one_of_two("m_idm","m_dm",pth->m_idm);
+
+    class_read_double_one_of_two("b_dark","b_idr",pth->b_idr);
+
+    /* Read alpha_idm_dr or alpha_dark */
+
+    class_call(parser_read_list_of_doubles(pfc,"alpha_idm_dr",&entries_read,&(ppt->alpha_idm_dr),&flag1,errmsg),
+               errmsg,
+               errmsg);
+
+    /* try with the other syntax */
+    if (flag1 == _FALSE_) {
+      class_call(parser_read_list_of_doubles(pfc,"alpha_dark",&entries_read,&(ppt->alpha_idm_dr),&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+    }
+
+    if(flag1 == _TRUE_){
+      if(entries_read != (ppr->l_max_idr-1)){
+        class_realloc(ppt->alpha_idm_dr,ppt->alpha_idm_dr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
+        for(n=entries_read; n<(ppr->l_max_idr-1); n++) ppt->alpha_idm_dr[n] = ppt->alpha_idm_dr[entries_read-1];
+      }
+    }
+    else{
+      class_alloc(ppt->alpha_idm_dr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
+      for(n=0; n<(ppr->l_max_idr-1); n++) ppt->alpha_idm_dr[n] = 1.5;
+    }
+
+    /* Read alpha_idm_dr or alpha_dark */
+
+    class_call(parser_read_list_of_doubles(pfc,"beta_idr",&entries_read,&(ppt->beta_idr),&flag1,errmsg),
+               errmsg,
+               errmsg);
+
+    /* try with the other syntax */
+    if (flag1 == _FALSE_) {
+      class_call(parser_read_list_of_doubles(pfc,"beta_dark",&entries_read,&(ppt->beta_idr),&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+    }
+
+    if(flag1 == _TRUE_){
+      if(entries_read != (ppr->l_max_idr-1)){
+        class_realloc(ppt->beta_idr,ppt->beta_idr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
+        for(n=entries_read; n<(ppr->l_max_idr-1); n++) ppt->beta_idr[n] = ppt->beta_idr[entries_read-1];
+      }
+    }
+    else{
+      class_alloc(ppt->beta_idr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
+      for(n=0; n<(ppr->l_max_idr-1); n++) ppt->beta_idr[n] = 1.5;
+    }
+  }
 
   /** - Omega_0_dcdmdr (DCDM) */
   class_call(parser_read_double(pfc,"Omega_dcdmdr",&param1,&flag1,errmsg),
@@ -912,94 +1232,53 @@ int input_read_parameters(
   class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
              errmsg,
              "In input file, you can only enter one of Omega_dcdmdr or omega_dcdmdr, choose one");
-  pba->Omega0_dcdmdr = 0.;
   if (flag1 == _TRUE_)
     pba->Omega0_dcdmdr = param1;
   if (flag2 == _TRUE_)
     pba->Omega0_dcdmdr = param2/pba->h/pba->h;
-  Omega_tot += pba->Omega0_dcdmdr;
 
-  /** - Read Omega_ini_dcdm or omega_ini_dcdm */
-  class_call(parser_read_double(pfc,"Omega_ini_dcdm",&param1,&flag1,errmsg),
-             errmsg,
-             errmsg);
-  class_call(parser_read_double(pfc,"omega_ini_dcdm",&param2,&flag2,errmsg),
-             errmsg,
-             errmsg);
-  class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
-             errmsg,
-             "In input file, you can only enter one of Omega_ini_dcdm or omega_ini_dcdm, choose one");
-  pba->Omega_ini_dcdm = 0.;
-  if (flag1 == _TRUE_)
-    pba->Omega_ini_dcdm = param1;
-  if (flag2 == _TRUE_)
-    pba->Omega_ini_dcdm = param2/pba->h/pba->h;
+  if (pba->Omega0_dcdmdr > 0) {
 
+    Omega_tot += pba->Omega0_dcdmdr;
 
-  /* Read Gamma in same units as H0, i.e. km/(s Mpc)*/
-  class_call(parser_read_double(pfc,"Gamma_dcdm",&param1,&flag1,errmsg),
-             errmsg,
-             errmsg);
- /* Read tau_gamma in seconds */
-  class_call(parser_read_double(pfc,"tau_dcdm",&param2,&flag2,errmsg),
-             errmsg,
-             errmsg);
+    /** - Read Omega_ini_dcdm or omega_ini_dcdm */
+    class_call(parser_read_double(pfc,"Omega_ini_dcdm",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+    class_call(parser_read_double(pfc,"omega_ini_dcdm",&param2,&flag2,errmsg),
+               errmsg,
+               errmsg);
+    class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+               errmsg,
+               "In input file, you can only enter one of Omega_ini_dcdm or omega_ini_dcdm, choose one");
+    if (flag1 == _TRUE_)
+      pba->Omega_ini_dcdm = param1;
+    if (flag2 == _TRUE_)
+      pba->Omega_ini_dcdm = param2/pba->h/pba->h;
 
-   class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
-              errmsg,
-              "In input file, you can only enter one of Gamma_dcdm or tau_dcdm, choose one");
-  // class_read_double("Gamma_dcdm",pba->Gamma_dcdm);
+    /** - Read Gamma in same units as H0, i.e. km/(s Mpc)*/
+    class_read_double("Gamma_dcdm",pba->Gamma_dcdm);
+    /* Convert to Mpc */
+    pba->Gamma_dcdm *= (1.e3 / _c_);
 
-  /* Convert to Mpc */
-  // pba->Gamma_dcdm *= (1.e3 / _c_);
-  if (flag1 == _TRUE_)
-    pba->Gamma_dcdm = param1*(1.e3 / _c_);
-  if (flag2 == _TRUE_){
-  pba->Gamma_dcdm = 1/(param2/(1e9*365*24*3600))/1.02e-3*(1.e3 / _c_);
-  pba->tau_dcdm = param2;
-  // fprintf(stdout, "you have chosen Gamma = %e*H0, tau = %e s \n",pba->Gamma_dcdm/(1.e3 / _c_)/67,param2);
   }
-
-  /** Input parameters relative to DM-baryon scattering */
-  class_read_double("u_gcdm",pth->u_gcdm); /** interaction rate */
-
-  /** Input parameters relative to excited DM-gamma scattering */
-  class_read_double("beta_gcdm",pth->beta_gcdm); /** The energy splitting (in unit of T0) */
-  class_read_double("alpha_gcdm_eV",pth->alpha_gcdm); /** One can pass either alpha_gcdm_eV = a_0 A_21 E_21^2 / (6 m_xhi T_0) (in eV) */
-  class_read_double("A_21_over_mchi",pth->A_21_over_mchi); /**  or the transition rate over the DM mass A_21 / m_xhi (dimensionless)*/
-  class_test((pth->alpha_gcdm != 0) && (pth->A_21_over_mchi != 0),
-              errmsg,
-              "You have 'alpha_gcdm != 0 ' and 'A_21_over_mchi != 0'. Please, set either 'alpha_gcdm_eV != 0' (in eV) or the transition rate 'A_21_over_mchi != 0', not both.");
-  if(pth->A_21_over_mchi!= 0) pth->alpha_gcdm = pth->A_21_over_mchi*pth->beta_gcdm*pth->beta_gcdm*pba->T_cmb*8.625e-5/6;
-
-  pth->alpha_gcdm *= 0.15637*1.e30; //eV to Mpc^-1
-
-  // class_read_double("alpha_gcdm_eV",alpha_gcdm_eV);
-  // pth->alpha_gcdm = alpha_gcdm_eV;
-
-  class_test(((pth->u_gcdm != 0) || (pth->beta_gcdm != 0) || (pth->alpha_gcdm != 0)) && (ppt->gauge == synchronous),
-             errmsg,
-             "DM-gamma interactions in the synchronous gauge are not yet implemented. Please work in the newtonian gauge by setting 'gauge = newtonian' in your '.ini' file.");
-  class_test((pth->beta_gcdm == 0) && (pth->alpha_gcdm != 0),
-             errmsg,
-             "You have 'alpha_gcdm != 0 ' but 'pth->beta_gcdm == 0'. Please, either switch off excited DM-gamma scattering (alpha_gcdm = 0) or pick a value for the energy splitting (beta_gcdm != 0).");
-  class_test((pth->beta_gcdm != 0) && (pth->alpha_gcdm == 0),
-             errmsg,
-             "You have 'beta_gcdm != 0 ' but 'pth->alpha_gcdm == 0'. Please, either switch off excited DM-gamma scattering (beta_gcdm = 0) or pick a value for the transition rate (alpha_gcdm_eV != 0 in eV or A_21_over_mchi != 0).");
 
   /** - non-cold relics (ncdm) */
   class_read_int("N_ncdm",N_ncdm);
   if ((flag1 == _TRUE_) && (N_ncdm > 0)){
     pba->N_ncdm = N_ncdm;
-    /* Precision parameters for ncdm has to be read now since they are used here:*/
-    class_read_double("tol_M_ncdm",ppr->tol_M_ncdm);
-    class_read_double("tol_ncdm_newtonian",ppr->tol_ncdm_newtonian);
-    class_read_double("tol_ncdm_synchronous",ppr->tol_ncdm_synchronous);
-    class_read_double("tol_ncdm_bg",ppr->tol_ncdm_bg);
     if (ppt->gauge == synchronous)
       ppr->tol_ncdm = ppr->tol_ncdm_synchronous;
     if (ppt->gauge == newtonian)
       ppr->tol_ncdm = ppr->tol_ncdm_newtonian;
+
+    /* Quadrature modes, 0 is qm_auto. */
+    class_read_list_of_integers_or_default("Quadrature strategy",pba->ncdm_quadrature_strategy,0,N_ncdm);
+    /* Number of momentum bins */
+    class_read_list_of_integers_or_default("Number of momentum bins",pba->ncdm_input_q_size,-1,N_ncdm);
+
+    /* qmax, if relevant */
+    class_read_list_of_doubles_or_default("Maximum q",pba->ncdm_qmax,15,N_ncdm);
 
     /* Read temperatures: */
     class_read_list_of_doubles_or_default("T_ncdm",pba->T_ncdm,pba->T_ncdm_default,N_ncdm);
@@ -1139,12 +1418,6 @@ int input_read_parameters(
   class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
              errmsg,
              errmsg);
-  // class_call(parser_read_double(pfc,"Omega_cdm",&param4,&flag4,errmsg),
-  //            errmsg,
-  //            errmsg); //COcdmchange
-  // class_call(parser_read_double(pfc,"omega_cdm",&param5,&flag5,errmsg),
-  //            errmsg,
-  //            errmsg); //COcdmchange
 
   class_test((flag1 == _TRUE_) && (flag2 == _TRUE_) && (flag4 == _TRUE_ || flag5 == _TRUE_) && ((flag3 == _FALSE_) || (param3 >= 0.)),
              errmsg,
@@ -1152,6 +1425,7 @@ int input_read_parameters(
   class_test(((flag4 == _TRUE_) && (flag5 == _TRUE_)),
              errmsg,
              "In input file, you can only enter one of Omega_cdm or omega_cdm, choose one"); //COcdmchange
+
   /** - --> (flag3 == _FALSE_) || (param3 >= 0.) explained:
    *  it means that either we have not read Omega_scf so we are ignoring it
    *  (unlike lambda and fld!) OR we have read it, but it had a
@@ -1160,7 +1434,8 @@ int input_read_parameters(
    *  1) set each Omega0 and add to the total for each specified component.
    *  2) go through the components in order {lambda, fld, scf} and
    *     fill using first unspecified component.
-  */
+   */
+
   /* Step 1 */
   if (flag1 == _TRUE_){
     pba->Omega0_lambda = param1;
@@ -1185,6 +1460,7 @@ int input_read_parameters(
   //   Omega_tot += pba->Omega0_cdm;
   // }   //COcdmchange
 
+
   if (flag1 == _FALSE_) {
     //Fill with Lambda
     pba->Omega0_lambda= 1. - pba->Omega0_k - Omega_tot;
@@ -1200,17 +1476,6 @@ int input_read_parameters(
     pba->Omega0_scf = 1. - pba->Omega0_k - Omega_tot;
     if (input_verbose > 0) printf(" -> matched budget equations by adjusting Omega_scf = %e\n",pba->Omega0_scf);
   }
-  // else if (flag4 == _FALSE_ || flag5 == _FALSE_) {
-  //   // Fill up with cdm
-  //   pba->Omega0_cdm = 1. - pba->Omega0_k - Omega_tot;
-  //   if (input_verbose > 0) printf(" -> matched budget equations by adjusting Omega_cdm = %e\n",pba->Omega0_cdm);
-  // } //COcdmchange
-  // fprintf(stderr,"%e %e %e %e %e\n",
-  //         pba->Omega0_lambda,
-  //         pba->Omega0_fld,
-  //         pba->Omega0_scf,
-  //         pba->Omega0_k,
-  //         Omega_tot);
 
 
   /** - Test that the user have not specified Omega_scf = -1 but left either
@@ -1220,9 +1485,38 @@ int input_read_parameters(
              "It looks like you want to fulfil the closure relation sum Omega = 1 using the scalar field, so you have to specify both Omega_lambda and Omega_fld in the .ini file");
 
   if (pba->Omega0_fld != 0.) {
-    class_read_double("w0_fld",pba->w0_fld);
-    class_read_double("wa_fld",pba->wa_fld);
-    class_read_double("cs2_fld",pba->cs2_fld);
+    class_call(parser_read_string(pfc,"fluid_equation_of_state",&string1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+
+    if (flag1 == _TRUE_) {
+
+      if ((strstr(string1,"CLP") != NULL) || (strstr(string1,"clp") != NULL)) {
+        pba->fluid_equation_of_state = CLP;
+      }
+
+      else if ((strstr(string1,"EDE") != NULL) || (strstr(string1,"ede") != NULL)) {
+        pba->fluid_equation_of_state = EDE;
+      }
+
+      else {
+        class_stop(errmsg,"incomprehensible input '%s' for the field 'fluid_equation_of_state'",string1);
+      }
+    }
+
+    if (pba->fluid_equation_of_state == CLP) {
+      class_read_double("w0_fld",pba->w0_fld);
+      class_read_double("wa_fld",pba->wa_fld);
+      class_read_double("cs2_fld",pba->cs2_fld);
+    }
+
+    if (pba->fluid_equation_of_state == EDE) {
+      class_read_double("w0_fld",pba->w0_fld);
+      class_read_double("Omega_EDE",pba->Omega_EDE);
+      class_read_double("cs2_fld",pba->cs2_fld);
+    }
+  }
+
 
     class_call(parser_read_string(pfc,
                                   "use_ppf",
@@ -1231,6 +1525,7 @@ int input_read_parameters(
                                   errmsg),
                 errmsg,
                 errmsg);
+
 
     if (flag1 == _TRUE_){
       if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
@@ -1242,7 +1537,8 @@ int input_read_parameters(
       }
     }
 
-  }
+
+
 
   /* Additional SCF parameters: */
   class_read_double("log10_fraction_axion_ac",pba->log10_fraction_axion_ac);
@@ -1497,6 +1793,7 @@ int input_read_parameters(
     class_read_double("log10_m_axion",pba->log10_m_axion);
     class_read_double("alpha_squared",pba->alpha_squared);
     class_read_double("power_of_mu",pba->power_of_mu);
+    // printf("power_of_mu %e\n",pba->power_of_mu);
 
    /***additional parameters: only for shooting*/
    class_read_double("phi_ini_scf",pba->phi_ini_scf);
@@ -1519,6 +1816,7 @@ int input_read_parameters(
     //   printf("i %e\n",pba->scf_parameters[i]);
     // }
     if ((fabs(scf_lambda) <3.)&&(pba->background_verbose>1)&&(pba->scf_potential==double_exp || pba->scf_potential == pol_times_exp ))
+
       printf("lambda = %e <3 won't be tracking (for exp quint) unless overwritten by tuning function\n",scf_lambda);
 
     class_call(parser_read_string(pfc,
@@ -1528,6 +1826,7 @@ int input_read_parameters(
                                   errmsg),
                 errmsg,
                 errmsg);
+
 
     if (flag1 == _TRUE_){
       if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
@@ -1545,6 +1844,7 @@ int input_read_parameters(
           // pba->phi_ini_scf = 0;//dummy: will be set later
           pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];//dummy: will be set later
         }
+
 
       }
     }
@@ -1569,6 +1869,7 @@ int input_read_parameters(
   }
   class_read_double("adptative_stepsize",pba->adptative_stepsize);
 
+
   /** - recombination parameters */
   class_call(parser_read_string(pfc,"recombination",&string1,&flag1,errmsg),
              errmsg,
@@ -1580,24 +1881,9 @@ int input_read_parameters(
       pth->recombination = hyrec;
     }
 
-    else if ((strstr(string1,"COSMOREC") != NULL) || (strstr(string1,"cosmorec") != NULL) || (strstr(string1,"CosmoRec") != NULL)) {
-      pth->recombination = cosmorec;
-    }
-
-  }
-  if(pth->recombination == cosmorec){
-    /** - read some parameter of CosmoRec */
-
-    class_read_double("cosmorec_runmode",pth->cosmorec_runmode);
-    class_test((pth->cosmorec_runmode > 4 || pth->cosmorec_runmode < 0),errmsg,"cosmorec_runmode parameters runs from 0 to 4 !! Have a look at 'explanatory.ini' for details of the options.");
-    class_read_double("cosmorec_accuracy",pth->cosmorec_accuracy);
-    class_test((pth->cosmorec_accuracy > 7 || pth->cosmorec_accuracy < -1),errmsg,"cosmorec_accuracy parameters runs from -1 to 7 !! Have a look at 'explanatory.ini' for details of the options.");
-    class_read_double("cosmorec_verbose",pth->cosmorec_verbose);
-    class_test((pth->cosmorec_verbose > 3 || pth->cosmorec_verbose < 0),errmsg,"cosmorec_verbose parameters runs from 0 to 3 !! Have a look at 'explanatory.ini' for details of the options.");
-
   }
 
-  class_read_double("Lambda_over_theoritical_Lambda",pth->Lambda_over_theoritical_Lambda);
+
 
   /** - reionization parametrization */
   class_call(parser_read_string(pfc,"reio_parametrization",&string1,&flag1,errmsg),
@@ -1623,18 +1909,7 @@ int input_read_parameters(
       pth->reio_parametrization=reio_half_tanh;
       flag2=_TRUE_;
     }
-    if (strcmp(string1,"reio_stars_sfr_source_term") == 0) {
-      pth->reio_parametrization=reio_stars_sfr_source_term;
-      flag2=_TRUE_;
-    }
-    if (strcmp(string1,"reio_douspis_et_al") == 0) {
-      pth->reio_parametrization=reio_douspis_et_al;
-      flag2=_TRUE_;
-    }
-    if (strcmp(string1,"reio_asymmetric_planck_16") == 0) {
-      pth->reio_parametrization=reio_asymmetric_planck_16;
-      flag2=_TRUE_;
-    }
+
     if (strcmp(string1,"reio_many_tanh") == 0) {
       pth->reio_parametrization=reio_many_tanh;
       flag2=_TRUE_;
@@ -1649,30 +1924,7 @@ int input_read_parameters(
                "could not identify reionization_parametrization value, check that it is one of 'reio_none', 'reio_camb', 'reio_bins_tanh', 'reio_half_tanh', 'reio_many_tanh', 'reio_inter'...");
   }
 
-  /** - heating parametrization */
-  class_call(parser_read_string(pfc,"star_heating_parametrization",&string1,&flag1,errmsg),
-             errmsg,
-             errmsg);
 
-   if (flag1 == _TRUE_) {
-     flag2=_FALSE_;
-     if (strcmp(string1,"heating_none") == 0) {
-       pth->star_heating_parametrization=heating_none;
-       flag2=_TRUE_;
-     }
-     if (strcmp(string1,"heating_reiolike_tanh") == 0) {
-       pth->star_heating_parametrization=heating_reiolike_tanh;
-       class_read_double("final_IGM_temperature",pth->final_IGM_temperature);
-      flag2=_TRUE_;
-     }
-     if (strcmp(string1,"heating_stars_sfr_source_term") == 0) {
-       pth->star_heating_parametrization=heating_stars_sfr_source_term;
-       flag2=_TRUE_;
-     }
-     class_test(flag2==_FALSE_,
-                errmsg,
-                "could not identify star_heating_parametrization value, check that it is one of 'heating_none', 'heating_reiolike_tanh', 'heating_stars_sfr_source_term'.");
-    }
 
   /* reionization parameters if reio_parametrization=reio_camb */
   if ((pth->reio_parametrization == reio_camb) || (pth->reio_parametrization == reio_half_tanh) ){
@@ -1693,107 +1945,17 @@ int input_read_parameters(
     if (flag2 == _TRUE_) {
       pth->tau_reio=param2;
       pth->reio_z_or_tau=reio_tau;
+
     }
 
     class_read_double("reionization_exponent",pth->reionization_exponent);
     class_read_double("reionization_width",pth->reionization_width);
-    class_read_double("reionization_width",pth->reionization_width);
     class_read_double("helium_fullreio_redshift",pth->helium_fullreio_redshift);
     class_read_double("helium_fullreio_width",pth->helium_fullreio_width);
 
   }
 
-  if (pth->star_heating_parametrization == heating_stars_sfr_source_term || pth->reio_parametrization == reio_stars_sfr_source_term){
 
-    class_read_double("fx",pth->fx);
-    class_read_double("Ex",pth->Ex);
-    pth->Ex*=_joules_over_ergs_;
-    class_read_double("z_start_reio_stars",pth->z_start_reio_stars);
-    class_read_double("f_esc",pth->f_esc);
-    class_call(parser_read_double(pfc,"Zeta_ion",&param1,&flag1,errmsg),
-               errmsg,
-               errmsg);
-    class_call(parser_read_double(pfc,"Log10_Zeta_ion",&param2,&flag2,errmsg),
-               errmsg,
-               errmsg);
-    class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
-               errmsg,
-               "In input file, you can only enter one of Zeta_ion or Log10_Zeta_ion, choose one");
-    if (flag1 == _TRUE_) {
-      pth->Zeta_ion=param1;
-    }
-    if (flag2 == _TRUE_) {
-      pth->Zeta_ion=pow(10,param2);
-    }
-    class_call(parser_read_string(pfc,"model_SFR",&string1,&flag1,errmsg),
-               errmsg,
-               errmsg);
-
-     if (flag1 == _TRUE_) {
-       flag2=_FALSE_;
-       if (strcmp(string1,"model_SFR_bestfit") == 0) {
-         pth->model_SFR=model_SFR_bestfit;
-         pth->ap = 0.01376;
-         pth->bp = 3.26;
-         pth->cp = 2.59;
-         pth->dp = 5.68;
-         flag2=_TRUE_;
-       }
-       if (strcmp(string1,"model_SFR_p1sig") == 0) {
-         pth->model_SFR=model_SFR_p1sig;
-         pth->ap = 0.01476;
-         /*
-         pth->bp = 3.47;
-         pth->cp = 2.73;
-        //  pth->dp = 5.87;
-         pth->dp = 5.49;
-         */
-         pth->bp = 3.26;
-         pth->cp = 2.59;
-         pth->dp = 5.68;
-        flag2=_TRUE_;
-       }
-       if (strcmp(string1,"model_SFR_m1sig") == 0) {
-         pth->model_SFR=model_SFR_m1sig;
-         pth->ap = 0.01276;
-         /*
-         pth->bp = 3.05;
-         pth->cp = 2.45;
-        //  pth->dp = 5.49;
-         pth->dp = 5.87;
-         */
-         pth->bp = 3.26;
-         pth->cp = 2.59;
-         pth->dp = 5.68;
-         flag2=_TRUE_;
-       }
-       if (strcmp(string1,"model_SFR_free") == 0) {
-         pth->model_SFR=model_SFR_free;
-       class_read_double("ap",pth->ap);
-       class_read_double("bp",pth->bp);
-       class_read_double("cp",pth->cp);
-       class_read_double("dp",pth->dp);
-       flag2=_TRUE_;
-     }
-       class_test(flag2==_FALSE_,
-                  errmsg,
-                  "could not identify model_SFR value, check that it is one of 'model_SFR_bestfit', 'model_SFR_p1sig', 'model_SFR_m1sig','model_SFR_free'.");
-      }
-  }
-  if (pth->reio_parametrization == reio_douspis_et_al){
-    class_read_double("helium_fullreio_redshift",pth->helium_fullreio_redshift);
-    class_read_double("helium_fullreio_width",pth->helium_fullreio_width);
-    class_read_double("lambda_douspis_et_al",pth->lambda_douspis_et_al);
-    class_read_double("Qp_douspis_et_al",pth->Qp_douspis_et_al);
-    class_read_double("zp_douspis_et_al",pth->zp_douspis_et_al);
-  }
-  if (pth->reio_parametrization == reio_asymmetric_planck_16){
-    class_read_double("helium_fullreio_redshift",pth->helium_fullreio_redshift);
-    class_read_double("helium_fullreio_width",pth->helium_fullreio_width);
-    class_read_double("alpha_asymmetric_planck_16",pth->alpha_asymmetric_planck_16);
-    class_read_double("z_end_asymmetric_planck_16",pth->z_end_asymmetric_planck_16);
-    class_read_double("z_start_asymmetric_planck_16",pth->z_start_asymmetric_planck_16);
-  }
 
   /* reionization parameters if reio_parametrization=reio_bins_tanh */
   if (pth->reio_parametrization == reio_bins_tanh) {
@@ -1811,7 +1973,6 @@ int input_read_parameters(
     class_read_double("many_tanh_width",pth->many_tanh_width);
   }
 
-
   /** - reionization parameters if reio_parametrization=reio_many_tanh */
   if (pth->reio_parametrization == reio_inter) {
     class_read_int("reio_inter_num",pth->reio_inter_num);
@@ -1821,95 +1982,9 @@ int input_read_parameters(
 
   /** - energy injection parameters from CDM annihilation/decay */
   class_read_double("annihilation",pth->annihilation);
-  class_read_double("annihilation_boost_factor",pth->annihilation_boost_factor);
-  class_read_double("annihilation_m_DM",pth->annihilation_m_DM);
-  class_read_double("decay_fraction",pth->decay_fraction);
-  class_read_double("PBH_high_mass",pth->PBH_high_mass);
-  if(pth->PBH_high_mass>0.){
 
-    class_call(parser_read_string(pfc,"PBH_accretion_recipe",&string1,&flag1,errmsg),
-               errmsg,
-               errmsg);
-    if (flag1 == _TRUE_){
-      flag2 = _FALSE_;
-      if (strcmp(string1,"Ali_Haimoud") == 0) {
-        pth->PBH_accretion_recipe=Ali_Haimoud;
-        class_read_int("coll_ion_pbh",pth->coll_ion_pbh);
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"Ricotti_et_al") == 0) {
-        pth->PBH_accretion_recipe=Ricotti_et_al;
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"Horowitz") == 0) {
-        pth->PBH_accretion_recipe=Horowitz;
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"Gaggero_et_al") == 0) {
-        pth->PBH_accretion_recipe=Gaggero_et_al;
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"Thin_disk") == 0) {
-        pth->PBH_accretion_recipe=Thin_disk;
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"ADAF") == 0) {
-        pth->PBH_accretion_recipe=ADAF;
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"ADAF_Simulation") == 0) {
-        pth->PBH_accretion_recipe=ADAF_Simulation;
-        class_read_double("PBH_ADAF_delta",pth->PBH_ADAF_delta);
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"Hybrid") == 0) {
-        pth->PBH_accretion_recipe=Hybrid;
-        class_read_double("PBH_disk_formation_redshift",pth->PBH_disk_formation_redshift);
-        flag2=_TRUE_;
-      }
-    class_test(flag2==_FALSE_,
-                 errmsg,
-                 "could not identify PBH_accretion_recipe, check that it is one of 'Ali_Haimoud', 'Ricotti_et_al', 'Horowitz','Gaggero_et_al','Hybrid','Thin_disk','ADAF','ADAF_Simulation'.");
-    }
-    class_read_double("PBH_accretion_eigenvalue",pth->PBH_accretion_eigenvalue); // If chosen to negative value, it will be set to the linear result.
-    class_read_double("PBH_relative_velocities",pth->PBH_relative_velocities);
 
-  }
-  class_read_double("PBH_low_mass",pth->PBH_low_mass);
-  class_read_double("PBH_fraction",pth->PBH_fraction);
-  // class_test(pth->PBH_low_mass < 1e15 && pth->PBH_fraction > 1e-4,errmsg,
-  //   "The value of 'pth->PBH_fraction' that you enter is suspicious given the mass you chose. You are several orders of magnitude above the limit. The code doesn't handle well too high energy injection. Please choose 'pth->PBH_fraction < 1e-4'. ")
-  class_test(pth->PBH_high_mass<0.,errmsg,
-    "You need to enter a mass for your PBH 'PBH_high_mass > 0.' (in Msun).");
-  class_test(pth->PBH_disk_formation_redshift<0.,errmsg,
-    "You need to enter a redshift for your accretion disk formation 'PBH_disk_formation_redshift > 0.'.");
-  class_test(pth->PBH_low_mass<0.,errmsg,
-    "You need to enter a mass for your PBH 'PBH_high_mass > 0.' (in Msun).");
-  class_test(pth->PBH_fraction>0. && (pth->PBH_high_mass==0. && pth->PBH_low_mass==0.),errmsg,
-    "You have asked for a fraction of PBH being DM but you have 'PBH_high_mass == 0 && PBH_low_mass ==0'. Please choose a value (in Msun for PBH_high_mass, in g for PBH_low_mass).");
-  class_test(pth->PBH_fraction<0.,errmsg,
-    "You need to enter a fraction of PBH being DM 'PBH_fraction > 0. Please choose a value for PBH_fraction in ]0,1].'");
-  class_test(pth->recombination==cosmorec && pth->PBH_high_mass!= 0.,
-               errmsg,
-               "Effect of accreting PBH cannot yet be computed using cosmorec. Please, restart using recfast or hyrec. In the case you'd be using hyrec, only the 'on the spot' approximation is currently implemented.");
-  class_test(pth->recombination==cosmorec && pth->PBH_low_mass!= 0.,
-               errmsg,
-               "Effect of evaporating PBH cannot yet be computed using cosmorec. Please, restart in recfast or hyrec mode.");
-  class_test(pth->PBH_ADAF_delta != 1e-3 && pth->PBH_ADAF_delta != 0.5  && pth->PBH_ADAF_delta != 0.1 ,errmsg,
-   "The parameter 'pth->PBH_ADAF_delta' can currently only be set to 1e-3, 0.1 or 0.5.");
-  class_test(pth->annihilation>0. && pth->annihilation_boost_factor >0.,errmsg,"You gave both boost factor and annihilation parameter, please enter only one.");
-  if(pth->annihilation_m_DM > 0 && pth->annihilation_boost_factor >0.){
-      double sigma_thermal = 3*pow(10,-32); // Sigma_v in m^3/s
-      double conversion = 1.8*pow(10,-27); // Conversion GeV => Kg
-      class_test(pth->annihilation_m_DM<=0.,errmsg,
-        "You need to enter a mass for your dark matter particle 'm_DM > 0.' (in GeV).");
-      pth->annihilation = pth->annihilation_boost_factor*sigma_thermal/(pth->annihilation_m_DM*conversion);
-      if(input_verbose > 0)fprintf(stdout,"You gave m_DM = %.2e and boost_factor = %.2e. Your parameter annihilation = %.2e. \n",pth->annihilation_m_DM,pth->annihilation_boost_factor, pth->annihilation);
-  }
-
-  class_test((pth->annihilation_m_DM > 0 && pth->annihilation_boost_factor <=0)||(pth->annihilation_m_DM <= 0 && pth->annihilation_boost_factor >0),errmsg,"You set one of (pth->annihilation_m_DM,pth->annihilation_boost_factor) to non-zero value but not the other ! I cannot compute annihilation parameter: pth->annihilation_boost_factor*sigma_thermal/(pth->annihilation_m_DM).")
-
-  if (pth->annihilation > 0. || pth->annihilation_m_DM > 0.) {
+  if (pth->annihilation > 0.) {
   class_read_double("annihilation_variation",pth->annihilation_variation);
   class_read_double("annihilation_z",pth->annihilation_z);
   class_read_double("annihilation_zmax",pth->annihilation_zmax);
@@ -1921,8 +1996,7 @@ int input_read_parameters(
   class_read_double("annihilation_z_halo",pth->annihilation_z_halo);
   }
 /** - Relevant parameters in case of exotic energy injection */
-if(pth->annihilation>0. || pth->decay_fraction>0. || pth->PBH_high_mass > 0. || pth->PBH_low_mass > 0.){
-
+if(pth->annihilation>0.){
 
     class_call(parser_read_string(pfc,
                                   "on the spot",
@@ -1946,190 +2020,16 @@ if(pth->annihilation>0. || pth->decay_fraction>0. || pth->PBH_high_mass > 0. || 
       }
     }
 
-	/* BEGIN: Add function to read if "fz_is_extern"-flag is set.
-    If so read also the external command and the inputs */
-    class_call( parser_read_string(pfc,"external_fz",&(string1),&(flag1),errmsg),errmsg,errmsg);
-    if (flag1 == _TRUE_) {
-      if ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)) {
-        ppr->fz_is_extern = _TRUE_;
-        sprintf(ppr->command_fz,""); //Start by reseting previous command, useful in context of MCMC with MontePython.
-
-  /* Check first if injection history is standard and already implemented */
-  /* For PBH evaporation history: automatic command */
-  if(pth->PBH_low_mass > 0){
-    // ppr->param_fz_1 = pth->PBH_low_mass;  // In gramms.
-    ppr->param_fz_2 = pth->PBH_fraction;
-    // sprintf(string2,"python ./external_fz/bin/DarkAges --hist=PBH --mass=");
-    // class_alloc(ppr->command_fz,(strlen(string2) + 4 + 1)*sizeof(char), errmsg); // +4 corresponds to the mass that will be given just below
-    strcat(ppr->command_fz, "python ");
-    strcat(ppr->command_fz,__CLASSDIR__);
-    strcat(ppr->command_fz,"/external_fz/bin/DarkAges --hist=PBH --mass=");
-    sprintf(string2,"%g",pth->PBH_low_mass);
-    strcat(ppr->command_fz,string2);
-
-  }
-  else if(pth->decay_fraction > 0){
-    // ppr->param_fz_1 = pth->PBH_low_mass;  // In gramms.
-    ppr->param_fz_2 = pba->tau_dcdm;
-    // sprintf(string2,"python ./external_fz/bin/DarkAges --hist=PBH --mass=");
-    // class_alloc(ppr->command_fz,(strlen(string2) + 4 + 1)*sizeof(char), errmsg); // +4 corresponds to the mass that will be given just below
-    strcat(ppr->command_fz, "python ");
-    strcat(ppr->command_fz,__CLASSDIR__);
-    strcat(ppr->command_fz,"/external_fz/bin/DarkAges --hist=decay --specfile external_fz/bottom_70-80_spectrum.dat --mass=75 --tdec=");
-    sprintf(string2,"%g",pba->tau_dcdm);
-    strcat(ppr->command_fz,string2);
-  }
-  /* If the story is not implemented */
-  /* Reading the input parameter for the external command */
-	else {
-  class_call( parser_read_string(pfc,"ext_fz_command",&string2,&flag2,errmsg), errmsg, errmsg);
-	class_test(strlen(string2) == 0, errmsg, "You omitted to write a command to calculate the f(z) externally");
-	// class_alloc(ppr->command_fz,(strlen(string2) + 1)*sizeof(char), errmsg);
-	strcat(ppr->command_fz, string2);
-  }
-
-	/** An arbitrary number of external parameters to be used by the external command
-	 * They can be assigned to any parameters (e.g. mass, branching ratio, abundance...)
-	 * except if those have already been assigned in class. In that case, the value known
-	 * by class is attributed to those parameters.
-	 */
-
-	/* The first parameter is set by default to be the mass of the candidate (e.g. particle or primordial black hole) that injects e.m. energy */
-        if(pth->annihilation_m_DM > 0){
-          ppr->param_fz_1 = pth->annihilation_m_DM; // In GeV.
-        }
-        else if(pth->PBH_high_mass > 0){
-          ppr->param_fz_1 = pth->PBH_high_mass; // In Msun.
-        }
-        else class_read_double("ext_fz_par1",ppr->param_fz_1);
-
-	/* The second parameter is set by default to be the fraction (normalized to Omega0_cdm) of the candidate (e.g. particle or primordial black hole) that injects e.m. energy */
-        if(pth->decay_fraction > 0){
-          ppr->param_fz_2 = pth->decay_fraction;
-        }
-        else if(pth->PBH_fraction > 0){
-          ppr->param_fz_2 = pth->PBH_fraction;
-        }
-        else class_read_double("ext_fz_par2",ppr->param_fz_2);
-
-	/* The third parameter is set by default to be the cross-section or the lifetime of the candidate (e.g. particle or primordial black hole) that injects e.m. energy */
-        if(pba->Gamma_dcdm > 0){
-          ppr->param_fz_3 = pba->Gamma_dcdm; //In km/s/Mpc.
-        }
-        else if(pba->tau_dcdm > 0){
-          ppr->param_fz_3 = pba->tau_dcdm; //In s.
-        }
-        else if(pth->annihilation_boost_factor > 0){
-          ppr->param_fz_3 = pth->annihilation_boost_factor*3*pow(10,-32); //<Sigma*v> in m^3/s.
-        }
-        else class_read_double("ext_fz_par3",ppr->param_fz_3);
-
-	/* More parameters that are not set to any default, can be used arbitrarily */
-        class_read_double("ext_fz_par4",ppr->param_fz_4);
-	class_read_double("ext_fz_par5",ppr->param_fz_5);
-
-      }
-      else {
-        if ((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)) {
-          ppr->fz_is_extern = _FALSE_;
-        }
-        else {
-          class_stop(errmsg,"incomprehensible input '%s' for the field 'external_fz'",string1);
-        }
-      }
-    }
-    /* END */
 
     if(pth->has_on_the_spot == _TRUE_ && pth->annihilation_f_halo > 0.){
       fprintf(stdout,"You cannot work in the 'on the spot' approximation with dark matter halos formation. Condition 'has_on_the_spot' will be set to 'no' automatically.\n");
       pth->has_on_the_spot = _FALSE_;
     }
-    if(pth->has_on_the_spot == _FALSE_){
-      class_call(parser_read_string(pfc,"energy_deposition_treatment",&string1,&flag1,errmsg),
-                 errmsg,
-                 errmsg);
-      if (flag1 == _TRUE_){
-        flag2 = _FALSE_;
-        if (strcmp(string1,"Analytical_approximation") == 0) {
-          pth->energy_deposition_treatment=Analytical_approximation;
-          flag2=_TRUE_;
-        }
-        if (strcmp(string1,"Slatyer") == 0) {
-          pth->energy_deposition_treatment=Slatyer;
-          flag2=_TRUE_;
-        }
-        if (strcmp(string1,"No_deposition") == 0) {
-          pth->energy_deposition_treatment=No_deposition;
-          flag2=_TRUE_;
-        }
-      class_test(flag2==_FALSE_,
-                   errmsg,
-                   "could not identify energy_deposition_treatment, check that it is one of 'Analytical_approximation', 'Slatyer','No_deposition'.");
-      }
-    }
 
-    class_call(parser_read_string(pfc,"energy_repartition_functions",&string1,&flag1,errmsg),
-               errmsg,
-               errmsg);
-    if (flag1 == _TRUE_){
-      flag2 = _FALSE_;
-      if (strcmp(string1,"SSCK") == 0) {
-        pth->energy_repart_functions=SSCK;
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"Galli_et_al_fit") == 0) {
-        pth->energy_repart_functions=Galli_et_al_fit;
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"Galli_et_al_interpolation") == 0) {
-        pth->energy_repart_functions=Galli_et_al_interpolation;
-        flag2=_TRUE_;
-      }
-      if (strcmp(string1,"no_factorization") == 0) {
-        pth->energy_repart_functions=no_factorization;
-        flag2=_TRUE_;
-      }
-      class_test(pth->has_on_the_spot == _TRUE_ && pth->energy_repart_functions  == no_factorization,errmsg,
-        "You cannot work in the 'on the spot' approximation if you choose to not factorize the energy deposition functions from the repartition functions. Please restart and either change the energy repartition functions or work beyond the on the spot treatment.\n");
 
-    class_test(flag2==_FALSE_,
-                 errmsg,
-                 "could not identify energy repartition functions, check that it is one of 'SSCK', 'Galli_et_al_fit', 'Galli_et_al_interpolation','no_factorization'");
-    }
 
-    class_call(parser_read_string(pfc,
-                                  "reio_stars_and_dark_matter",
-                                  &(string1),
-                                  &(flag1),
-                                  errmsg),
-               errmsg,
-               errmsg);
 
-    if (flag1 == _TRUE_) {
-      if ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)) {
-        pth->reio_stars_and_dark_matter = _TRUE_;
-      }
-      else {
-        if ((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)) {
-          pth->reio_stars_and_dark_matter = _FALSE_;
-          pth->reio_parametrization=reio_none;
-        }
-        else {
-          class_stop(errmsg,"incomprehensible input '%s' for the field 'reio_stars_and_dark_matter'",string1);
-        }
-      }
-    }
 
-}
-
-/** Tables specific to evaporating PBH */
-if(pth->PBH_low_mass > 0.){
-  pth->PBH_table_is_initialized = _FALSE_ ;
-  pth->PBH_table_z = NULL;
-  pth->PBH_table_mass = NULL;
-  pth->PBH_table_mass_dd = NULL;
-  pth->PBH_table_F = NULL;
-  pth->PBH_table_F_dd = NULL;
 }
 
 
@@ -2155,6 +2055,7 @@ if(pth->PBH_low_mass > 0.){
                  }
                }
              }
+
   /** (c) define which perturbations and sources should be computed, and down to which scale */
 
   ppt->has_perturbations = _FALSE_;
@@ -2184,6 +2085,7 @@ if(pth->PBH_low_mass > 0.){
       ppt->has_cls = _TRUE_;
       class_read_double("A_lens",psp->A_lens);
       class_read_double("A_lens_TTTEEE",ple->A_lens_TTTEEE);
+
     }
 
     if ((strstr(string1,"nCl") != NULL) || (strstr(string1,"NCl") != NULL) || (strstr(string1,"NCL") != NULL) ||
@@ -2202,6 +2104,21 @@ if(pth->PBH_low_mass > 0.){
     if ((strstr(string1,"mPk") != NULL) || (strstr(string1,"MPk") != NULL) || (strstr(string1,"MPK") != NULL)) {
       ppt->has_pk_matter=_TRUE_;
       ppt->has_perturbations = _TRUE_;
+
+      /*if (pba->Omega0_ncdm_tot != 0.0){
+        class_call(parser_read_string(pfc,"pk_only_cdm_bar",&string1,&flag1,errmsg),
+        errmsg,
+        errmsg);
+        if (flag1 == _TRUE_){
+        if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+        ppt->pk_only_cdm_bar = _TRUE_;
+        }
+        else {
+        ppt->pk_only_cdm_bar = _FALSE_;
+        }
+        }
+        }*/
+
     }
 
     if ((strstr(string1,"mTk") != NULL) || (strstr(string1,"MTk") != NULL) || (strstr(string1,"MTK") != NULL) ||
@@ -2215,6 +2132,13 @@ if(pth->PBH_low_mass > 0.){
       ppt->has_perturbations = _TRUE_;
     }
 
+  }
+
+
+  /* The following lines make sure that if perturbations are not computed, IDR parameters are still freed */
+  if(ppt->has_perturbations == _FALSE_) {
+    free(ppt->alpha_idm_dr);
+    free(ppt->beta_idr);
   }
 
   if (ppt->has_density_transfers == _TRUE_) {
@@ -2328,7 +2252,7 @@ if(pth->PBH_low_mass > 0.){
 
       class_test(class_none_of_three(ppt->has_scalars,ppt->has_vectors,ppt->has_tensors),
                  errmsg,
-                 "You wrote: modes=%s. Could not identify any of the modes ('s', 'v', 't') in such input",string1);
+                 "You wrote: modes='%s'. Could not identify any of the modes ('s', 'v', 't') in such input",string1);
     }
 
     if (ppt->has_scalars == _TRUE_) {
@@ -2360,7 +2284,8 @@ if(pth->PBH_low_mass > 0.){
 
         class_test(ppt->has_ad==_FALSE_ && ppt->has_bi ==_FALSE_ && ppt->has_cdi ==_FALSE_ && ppt->has_nid ==_FALSE_ && ppt->has_niv ==_FALSE_,
                    errmsg,
-                   "You wrote: ic=%s. Could not identify any of the initial conditions ('ad', 'bi', 'cdi', 'nid', 'niv') in such input",string1);
+
+                   "You wrote: ic='%s'. Could not identify any of the initial conditions ('ad', 'bi', 'cdi', 'nid', 'niv') in such input",string1);
 
       }
     }
@@ -2407,7 +2332,7 @@ if(pth->PBH_low_mass > 0.){
   else{
     ppt->compute_phase_shift = _FALSE_;
   }
-  // class_test(ppt->compute_phase_shift == _TRUE_ && ppt->gauge == synchronous, errmsg, "currently the phase shift can only be calculated in the newtonian gauge!! please adapt your ini file.");
+
   /** (d) define the primordial spectrum */
 
   class_call(parser_read_string(pfc,"P_k_ini type",&string1,&flag1,errmsg),
@@ -2545,10 +2470,11 @@ if(pth->PBH_low_mass > 0.){
       }
 
       if (ppt->has_cdi == _TRUE_) {
-          ppm->f_cdi = f_iso;
-          ppm->n_cdi = n_iso;
-          ppm->c_ad_cdi = c_cor;
-          ppm->n_ad_cdi = n_cor;
+
+        ppm->f_cdi = f_iso;
+        ppm->n_cdi = n_iso;
+        ppm->c_ad_cdi = c_cor;
+        ppm->n_ad_cdi = n_cor;
       }
 
       if (ppt->has_nid == _TRUE_) {
@@ -2604,20 +2530,10 @@ if(pth->PBH_low_mass > 0.){
       }
 
       if (ppt->has_cdi == _TRUE_) {
-        if(pth->PBH_high_mass > 0){
 
-          ppm->n_cdi = 4.;
-          // ppm->f_cdi = pow(pth->PBH_fraction*pth->PBH_high_mass/(pba->Omega0_cdm*pba->h*pba->h*3*1e10/(8*_PI_*_G_)/_Sun_mass_over_kg_*_Mpc_over_m_)/ppm->A_s/(2*_PI_*_PI_)*pow(ppm->k_pivot,ppm->n_cdi-1),1./2);
-          ppm->f_cdi = pth->PBH_fraction*pow(pth->PBH_high_mass*_Sun_mass_over_kg_/(pth->PBH_fraction*pba->Omega0_cdm*pow(pba->H0*_c_/_Mpc_over_m_,2)*3/(8*_PI_*_G_))/pow(_Mpc_over_m_,3)/ppm->A_s/(8*_PI_*_PI_*_PI_),1./2);
-          // ppm->f_cdi = pow(pth->PBH_fraction*pth->PBH_high_mass/(pba->Omega0_cdm*pba->h*pba->h*3*1e10/(8*_PI_*_G_)/_Sun_mass_over_kg_*_Mpc_over_m_)/ppm->A_s/(8*_PI_*_PI_*_PI_),1./2);
-          ppm->alpha_cdi = 0.;
-          fprintf(stderr, "A_cdi/A_ad %e rho_cdm %e\n", ppm->f_cdi*ppm->f_cdi, pba->Omega0_cdm*pow(pba->H0*_c_/_Mpc_over_m_,2)*3/(8*_PI_*_G_));
-        }
-        else{
           class_read_double("f_cdi",ppm->f_cdi);
           class_read_double("n_cdi",ppm->n_cdi);
           class_read_double("alpha_cdi",ppm->alpha_cdi);
-        }
 
 
       }
@@ -2703,6 +2619,11 @@ if(pth->PBH_low_mass > 0.){
     if (ppt->has_tensors == _TRUE_) {
 
       class_read_double("r",ppm->r);
+
+
+      if (ppt->has_scalars == _FALSE_) {
+        class_read_double("A_s",ppm->A_s);
+      }
 
       if (ppm->r <= 0) {
         ppt->has_tensors = _FALSE_;
@@ -3075,6 +2996,18 @@ if(pth->PBH_low_mass > 0.){
     }
   }
 
+
+  /** Do we want density and velocity transfer functions in Nbody gauge? */
+  if ((ppt->has_density_transfers == _TRUE_) || (ppt->has_velocity_transfers == _TRUE_)){
+    class_call(parser_read_string(pfc,"Nbody gauge transfer functions",&string1,&flag1,errmsg),
+	       errmsg,
+	       errmsg);
+
+    if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"y") != NULL))) {
+      ppt->has_Nbody_gauge_transfers = _TRUE_;
+    }
+  }
+
   /* deal with selection functions */
   if ((ppt->has_cl_number_count == _TRUE_) || (ppt->has_cl_lensing_potential == _TRUE_)) {
 
@@ -3097,7 +3030,7 @@ if(pth->PBH_low_mass > 0.){
         ppt->selection=dirac;
       }
       else {
-        class_stop(errmsg,"In selection function input: type %s is unclear",string1);
+        class_stop(errmsg,"In selection function input: type '%s' is unclear",string1);
       }
     }
 
@@ -3114,7 +3047,7 @@ if(pth->PBH_low_mass > 0.){
 
       class_test(int1 > _SELECTION_NUM_MAX_,
                  errmsg,
-                 "you want to compute density Cl's for %d different bins, hence you should increase _SELECTION_NUM_MAX_ in include/transfer.h to at least this number",
+                 "you want to compute density Cl's for %d different bins, hence you should increase _SELECTION_NUM_MAX_ in include/perturbations.h to at least this number",
                  int1);
 
       ppt->selection_num = int1;
@@ -3242,8 +3175,9 @@ if(pth->PBH_low_mass > 0.){
                errmsg);
 
     if ((flag1 == _TRUE_)) {
-      if ((strstr(string1,"analytic") != NULL))
+      if ((strstr(string1,"analytic") != NULL)){
         ptr->has_nz_analytic = _TRUE_;
+      }
       else{
         ptr->has_nz_file = _TRUE_;
         class_read_string("dNdz_selection",ptr->nz_file_name);
@@ -3259,8 +3193,10 @@ if(pth->PBH_low_mass > 0.){
                errmsg);
 
     if ((flag1 == _TRUE_)) {
-      if ((strstr(string1,"analytic") != NULL))
+
+      if ((strstr(string1,"analytic") != NULL)){
         ptr->has_nz_evo_analytic = _TRUE_;
+      }
       else{
         ptr->has_nz_evo_file = _TRUE_;
         class_read_string("dNdz_evolution",ptr->nz_evo_file_name);
@@ -3309,7 +3245,8 @@ if(pth->PBH_low_mass > 0.){
 
         for (bin=0; bin<ppt->selection_num; bin++) {
 
-            /* the few lines below should be consistent with their counterpart in transfer.c, in transfer_selection_times() */
+
+          /* the few lines below should be consistent with their counterpart in transfer.c, in transfer_selection_times() */
           if (ppt->selection==gaussian) {
             z_max = ppt->selection_mean[bin]+ppt->selection_width[bin]*ppr->selection_cut_at_sigma;
           }
@@ -3327,7 +3264,13 @@ if(pth->PBH_low_mass > 0.){
   }
   /* end of z_max section */
 
-  class_read_string("root",pop->root);
+  class_call(parser_read_string(pfc,"root",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+  if (flag1 == _TRUE_){
+    class_test(strlen(string1)>_FILENAMESIZE_-32,errmsg,"Root directory name is too long. Please install in other directory, or increase _FILENAMESIZE_ in common.h");
+    strcpy(pop->root,string1);
+  }
 
   class_call(parser_read_string(pfc,
                                 "headers",
@@ -3354,7 +3297,8 @@ if(pth->PBH_low_mass > 0.){
         pop->output_format = camb_format;
       else
         class_stop(errmsg,
-                   "You wrote: format=%s. Could not identify any of the possible formats ('class', 'CLASS', 'camb', 'CAMB')",string1);
+
+                   "You wrote: format='%s'. Could not identify any of the possible formats ('class', 'CLASS', 'camb', 'CAMB')",string1);
     }
   }
 
@@ -3374,9 +3318,78 @@ if(pth->PBH_low_mass > 0.){
 
     if ((strstr(string1,"halofit") != NULL) || (strstr(string1,"Halofit") != NULL) || (strstr(string1,"HALOFIT") != NULL)) {
       pnl->method=nl_halofit;
+
+      ppt->k_max_for_pk = MAX(ppt->k_max_for_pk,MAX(ppr->halofit_min_k_max,ppr->nonlinear_min_k_max));
       ppt->has_nl_corrections_based_on_delta_m = _TRUE_;
     }
+    if ((strstr(string1,"hmcode") != NULL) || (strstr(string1,"HMCODE") != NULL) || (strstr(string1,"HMcode") != NULL) || (strstr(string1,"Hmcode") != NULL)) {
+      pnl->method=nl_HMcode;
+      ppt->k_max_for_pk = MAX(ppt->k_max_for_pk,MAX(ppr->hmcode_min_k_max,ppr->nonlinear_min_k_max));
+      ppt->has_nl_corrections_based_on_delta_m = _TRUE_;
+      class_read_int("extrapolation_method",pnl->extrapolation_method);
 
+      class_call(parser_read_string(pfc,
+                                    "feedback model",
+                                    &(string1),
+                                    &(flag1),
+                                    errmsg),
+                 errmsg,
+                 errmsg);
+
+      if (flag1 == _TRUE_) {
+
+		if (strstr(string1,"emu_dmonly") != NULL) {
+          pnl->feedback = nl_emu_dmonly;
+		}
+		if (strstr(string1,"owls_dmonly") != NULL) {
+          pnl->feedback = nl_owls_dmonly;
+		}
+		if (strstr(string1,"owls_ref") != NULL) {
+          pnl->feedback = nl_owls_ref;
+		}
+		if (strstr(string1,"owls_agn") != NULL) {
+          pnl->feedback = nl_owls_agn;
+		}
+		if (strstr(string1,"owls_dblim") != NULL) {
+          pnl->feedback = nl_owls_dblim;
+		}
+      }
+
+      class_call(parser_read_double(pfc,"eta_0",&param2,&flag2,errmsg),
+                 errmsg,
+                 errmsg);
+      class_call(parser_read_double(pfc,"c_min",&param3,&flag3,errmsg),
+                 errmsg,
+                 errmsg);
+
+      class_test(((flag1 == _TRUE_) && ((flag2 == _TRUE_) || (flag3 == _TRUE_))),
+                 errmsg,
+                 "In input file, you cannot enter both a baryonic feedback model and a choice of baryonic feedback parameters, choose one of both methods");
+
+      if ((flag2 == _TRUE_) && (flag3 == _TRUE_)) {
+		pnl->feedback = nl_user_defined;
+		class_read_double("eta_0", pnl->eta_0);
+		class_read_double("c_min", pnl->c_min);
+      }
+      else if ((flag2 == _TRUE_) && (flag3 == _FALSE_)) {
+		pnl->feedback = nl_user_defined;
+		class_read_double("eta_0", pnl->eta_0);
+		pnl->c_min = (0.98 - pnl->eta_0)/0.12;
+      }
+      else if ((flag2 == _FALSE_) && (flag3 == _TRUE_)) {
+		pnl->feedback = nl_user_defined;
+		class_read_double("c_min", pnl->c_min);
+		pnl->eta_0 = 0.98 - 0.12*pnl->c_min;
+      }
+
+      class_call(parser_read_double(pfc,"z_infinity",&param1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+
+      if (flag1 == _TRUE_) {
+        class_read_double("z_infinity", pnl->z_infinity);
+      }
+    }
   }
 
   /** (g) amount of information sent to standard output (none if all set to zero) */
@@ -3417,41 +3430,11 @@ if(pth->PBH_low_mass > 0.){
   class_read_double("tol_background_integration",ppr->tol_background_integration);
   class_read_double("tol_initial_Omega_r",ppr->tol_initial_Omega_r);
   class_read_double("tol_ncdm_initial_w",ppr->tol_ncdm_initial_w);
-  class_read_double("safe_phi_scf",ppr->safe_phi_scf);
 
   /** - (h.2.) parameters related to the thermodynamics */
 
   class_read_string("sBBN file",ppr->sBBN_file);
-  class_read_string("energy injection coefficient file",ppr->energy_injec_coeff_file);
-  class_read_string("energy injection f_eff file",ppr->energy_injec_f_eff_file);
-  //Temporary : to adjust the energy injection file with the PBH mass
-  if(pth->PBH_accretion_recipe == ADAF_Simulation){
-    if(pth->PBH_high_mass<5){
-      sprintf(ppr->energy_injec_coeff_file,__CLASSDIR__);
-      strcat(ppr->energy_injec_coeff_file,"/PBH_accretion_efficiency_functions/f_z_PBH_accretion_1Msun_All.dat");
-    }
-    else if(pth->PBH_high_mass<50 && pth->PBH_high_mass>=5 ){
-      sprintf(ppr->energy_injec_coeff_file,__CLASSDIR__);
-      strcat(ppr->energy_injec_coeff_file,"/PBH_accretion_efficiency_functions/f_z_PBH_accretion_10Msun_All.dat");
-    }
-    else if(pth->PBH_high_mass<500 && pth->PBH_high_mass>=50 ){
-      sprintf(ppr->energy_injec_coeff_file,__CLASSDIR__);
-      strcat(ppr->energy_injec_coeff_file,"/PBH_accretion_efficiency_functions/f_z_PBH_accretion_100Msun_All.dat");
-    }
-    else if(pth->PBH_high_mass<5000 && pth->PBH_high_mass>=500 ){
-      sprintf(ppr->energy_injec_coeff_file,__CLASSDIR__);
-      strcat(ppr->energy_injec_coeff_file,"/PBH_accretion_efficiency_functions/f_z_PBH_accretion_1000Msun_All.dat");
-    }
-    else{
-      sprintf(ppr->energy_injec_coeff_file,__CLASSDIR__);
-      strcat(ppr->energy_injec_coeff_file,"/PBH_accretion_efficiency_functions/f_z_PBH_accretion_10000Msun_All.dat");
-    }
-  }
-  else if(pth->PBH_accretion_recipe == Ali_Haimoud && pth->PBH_high_mass > 0.){
-    // Since <<Ali_Haimoud>> is the default value of the accretion recipe read the following file only if it is really needed i.e. when PBH_high_mass has a non-zero value
-    sprintf(ppr->energy_injec_coeff_file,__CLASSDIR__);
-    strcat(ppr->energy_injec_coeff_file,"/PBH_accretion_efficiency_functions/f_z_PBH_accretion_spherical_All.dat");
-  }
+
 
 
   class_read_double("recfast_z_initial",ppr->recfast_z_initial);
@@ -3532,6 +3515,7 @@ if(pth->PBH_low_mass > 0.){
 
   class_read_int("tight_coupling_approximation",ppr->tight_coupling_approximation);
 
+
   if (ppt->has_tensors == _TRUE_) {
     /** - ---> Include ur and ncdm shear in tensor computation? */
     class_call(parser_read_string(pfc,"tensor method",&string1,&flag1,errmsg),
@@ -3593,69 +3577,41 @@ if(pth->PBH_low_mass > 0.){
 
   }
 
-  class_read_double("neglect_CMB_sources_below_visibility",ppr->neglect_CMB_sources_below_visibility);
+  if (pba->Omega0_idr != 0.){
+    class_test(ppr->idr_streaming_trigger_tau_over_tau_k==ppr->radiation_streaming_trigger_tau_over_tau_k,
+               errmsg,
+               "please choose different values for precision parameters dark_radiation_trigger_tau_over_tau_k and radiation_streaming_trigger_tau_over_tau_k, in order to avoid switching two approximation schemes at the same time");
 
-  /** - (h.4.) parameter related to the primordial spectra */
+    class_test(ppr->idr_streaming_trigger_tau_over_tau_k==ppr->ur_fluid_trigger_tau_over_tau_k,
+               errmsg,
+               "please choose different values for precision parameters dark_radiation_trigger_tau_over_tau_k and ur_fluid_trigger_tau_over_tau_k, in order to avoid switching two approximation schemes at the same time");
 
-  class_read_double("k_per_decade_primordial",ppr->k_per_decade_primordial);
-  class_read_double("primordial_inflation_ratio_min",ppr->primordial_inflation_ratio_min);
-  class_read_double("primordial_inflation_ratio_max",ppr->primordial_inflation_ratio_max);
-  class_read_int("primordial_inflation_phi_ini_maxit",ppr->primordial_inflation_phi_ini_maxit);
-  class_read_double("primordial_inflation_pt_stepsize",ppr->primordial_inflation_pt_stepsize);
-  class_read_double("primordial_inflation_bg_stepsize",ppr->primordial_inflation_bg_stepsize);
-  class_read_double("primordial_inflation_tol_integration",ppr->primordial_inflation_tol_integration);
-  class_read_double("primordial_inflation_attractor_precision_pivot",ppr->primordial_inflation_attractor_precision_pivot);
-  class_read_double("primordial_inflation_attractor_precision_initial",ppr->primordial_inflation_attractor_precision_initial);
-  class_read_int("primordial_inflation_attractor_maxit",ppr->primordial_inflation_attractor_maxit);
-  class_read_double("primordial_inflation_tol_curvature",ppr->primordial_inflation_tol_curvature);
-  class_read_double("primordial_inflation_aH_ini_target",ppr->primordial_inflation_aH_ini_target);
-  class_read_double("primordial_inflation_end_dphi",ppr->primordial_inflation_end_dphi);
-  class_read_double("primordial_inflation_end_logstep",ppr->primordial_inflation_end_logstep);
-  class_read_double("primordial_inflation_small_epsilon",ppr->primordial_inflation_small_epsilon);
-  class_read_double("primordial_inflation_small_epsilon_tol",ppr->primordial_inflation_small_epsilon_tol);
-  class_read_double("primordial_inflation_extra_efolds",ppr->primordial_inflation_extra_efolds);
+    class_test(ppr->idr_streaming_trigger_tau_over_tau_k==ppr->ncdm_fluid_trigger_tau_over_tau_k,
+               errmsg,
+               "please choose different values for precision parameters dark_radiation_trigger_tau_over_tau_k and ncdm_fluid_trigger_tau_over_tau_k, in order to avoid switching two approximation schemes at the same time");
+  }
 
-  /** - (h.5.) parameter related to the transfer functions */
 
-  class_read_double("l_logstep",ppr->l_logstep);
-  class_read_int("l_linstep",ppr->l_linstep);
-
-  class_read_double("hyper_x_min",ppr->hyper_x_min);
-  class_read_double("hyper_sampling_flat",ppr->hyper_sampling_flat);
-  class_read_double("hyper_sampling_curved_low_nu",ppr->hyper_sampling_curved_low_nu);
-  class_read_double("hyper_sampling_curved_high_nu",ppr->hyper_sampling_curved_high_nu);
-  class_read_double("hyper_nu_sampling_step",ppr->hyper_nu_sampling_step);
-  class_read_double("hyper_phi_min_abs",ppr->hyper_phi_min_abs);
-  class_read_double("hyper_x_tol",ppr->hyper_x_tol);
-  class_read_double("hyper_flat_approximation_nu",ppr->hyper_flat_approximation_nu);
-
-  class_read_double("q_linstep",ppr->q_linstep);
-  class_read_double("q_logstep_spline",ppr->q_logstep_spline);
-  class_read_double("q_logstep_open",ppr->q_logstep_open);
-  class_read_double("q_logstep_trapzd",ppr->q_logstep_trapzd);
-  class_read_double("q_numstep_transition",ppr->q_numstep_transition);
+  /**
+   * Here we can place all obsolete (deprecated) names for the precision parameters,
+   * so they will still get read.
+   * The new parameter names should be used preferrably
+   * */
+  class_read_double("k_scalar_min_tau0",ppr->k_min_tau0); // obsolete precision parameter: read for compatibility with old precision files
+  class_read_double("k_scalar_max_tau0_over_l_max",ppr->k_max_tau0_over_l_max); // obsolete precision parameter: read for compatibility with old precision files
+  class_read_double("k_scalar_step_sub",ppr->k_step_sub); // obsolete precision parameter: read for compatibility with old precision files
+  class_read_double("k_scalar_step_super",ppr->k_step_super); // obsolete precision parameter: read for compatibility with old precision files
+  class_read_double("k_scalar_step_transition",ppr->k_step_transition); // obsolete precision parameter: read for compatibility with old precision files
+  class_read_double("k_scalar_k_per_decade_for_pk",ppr->k_per_decade_for_pk); // obsolete precision parameter: read for compatibility with old precision files
+  class_read_double("k_scalar_k_per_decade_for_bao",ppr->k_per_decade_for_bao); // obsolete precision parameter: read for compatibility with old precision files
+  class_read_double("k_scalar_bao_center",ppr->k_bao_center); // obsolete precision parameter: read for compatibility with old precision files
+  class_read_double("k_scalar_bao_width",ppr->k_bao_width); // obsolete precision parameter: read for compatibility with old precision files
 
   class_read_double("k_step_trans_scalars",ppr->q_linstep); // obsolete precision parameter: read for compatibility with old precision files
   class_read_double("k_step_trans_tensors",ppr->q_linstep); // obsolete precision parameter: read for compatibility with old precision files
   class_read_double("k_step_trans",ppr->q_linstep); // obsolete precision parameter: read for compatibility with old precision files
   class_read_double("q_linstep_trans",ppr->q_linstep); // obsolete precision parameter: read for compatibility with old precision files
   class_read_double("q_logstep_trans",ppr->q_logstep_spline); // obsolete precision parameter: read for compatibility with old precision files
-
-  class_read_double("transfer_neglect_delta_k_S_t0",ppr->transfer_neglect_delta_k_S_t0);
-  class_read_double("transfer_neglect_delta_k_S_t1",ppr->transfer_neglect_delta_k_S_t1);
-  class_read_double("transfer_neglect_delta_k_S_t2",ppr->transfer_neglect_delta_k_S_t2);
-  class_read_double("transfer_neglect_delta_k_S_e",ppr->transfer_neglect_delta_k_S_e);
-  class_read_double("transfer_neglect_delta_k_V_t1",ppr->transfer_neglect_delta_k_V_t1);
-  class_read_double("transfer_neglect_delta_k_V_t2",ppr->transfer_neglect_delta_k_V_t2);
-  class_read_double("transfer_neglect_delta_k_V_e",ppr->transfer_neglect_delta_k_V_e);
-  class_read_double("transfer_neglect_delta_k_V_b",ppr->transfer_neglect_delta_k_V_b);
-  class_read_double("transfer_neglect_delta_k_T_t2",ppr->transfer_neglect_delta_k_T_t2);
-  class_read_double("transfer_neglect_delta_k_T_e",ppr->transfer_neglect_delta_k_T_e);
-  class_read_double("transfer_neglect_delta_k_T_b",ppr->transfer_neglect_delta_k_T_b);
-
-  class_read_double("transfer_neglect_late_source",ppr->transfer_neglect_late_source);
-
-  class_read_double("l_switch_limber",ppr->l_switch_limber);
 
   class_call(parser_read_string(pfc,
                                 "l_switch_limber_for_cl_density_over_z",
@@ -3669,30 +3625,7 @@ if(pth->PBH_low_mass > 0.){
              errmsg,
              "You passed in input a precision parameter called l_switch_limber_for_cl_density_over_z. This syntax is deprecated since v2.5.0. Please use instead the two precision parameters l_switch_limber_for_nc_local_over_z, l_switch_limber_for_nc_los_over_z, defined in include/common.h, and allowing for better performance.");
 
-  class_read_double("l_switch_limber_for_nc_local_over_z",ppr->l_switch_limber_for_nc_local_over_z);
-  class_read_double("l_switch_limber_for_nc_los_over_z",ppr->l_switch_limber_for_nc_los_over_z);
 
-  class_read_double("selection_cut_at_sigma",ppr->selection_cut_at_sigma);
-  class_read_double("selection_sampling",ppr->selection_sampling);
-  class_read_double("selection_sampling_bessel",ppr->selection_sampling_bessel);
-  class_read_double("selection_sampling_bessel_los",ppr->selection_sampling_bessel_los);
-  class_read_double("selection_tophat_edge",ppr->selection_tophat_edge);
-
-  /** - (h.6.) parameters related to nonlinear calculations */
-
-  class_read_double("halofit_dz",ppr->halofit_dz);
-  class_read_double("halofit_min_k_nonlinear",ppr->halofit_min_k_nonlinear);
-  class_read_double("halofit_k_per_decade",ppr->halofit_k_per_decade);
-  class_read_double("halofit_sigma_precision",ppr->halofit_sigma_precision);
-
-  /** - (h.7.) parameter related to lensing */
-
-  class_read_int("accurate_lensing",ppr->accurate_lensing);
-  class_read_int("delta_l_max",ppr->delta_l_max);
-  if (ppr->accurate_lensing == _TRUE_) {
-    class_read_int("num_mu_minus_lmax",ppr->num_mu_minus_lmax);
-    class_read_int("tol_gauss_legendre",ppr->tol_gauss_legendre);
-  }
   /** (i) Write values in file */
   if (ple->has_lensed_cls == _TRUE_)
     ppt->l_scalar_max+=ppr->delta_l_max;
@@ -3762,7 +3695,33 @@ if(pth->PBH_low_mass > 0.){
     pop->write_primordial = _TRUE_;
 
   }
-  // fprintf(stdout, "omega_b %e omega_cdm %e As %e n_s %e z_reio %e decay %e\n", pba->Omega0_b*pba->h*pba->h , pba->Omega0_cdm*pba->h*pba->h ,ppm->A_s,ppm->n_s,pth->z_reio, pth->decay );
+
+  /** - (i.5) special steps if we want Halofit with wa_fld non-zero:
+      so-called "Pk_equal method" of 0810.0190 and 1601.07230 */
+
+  if ((pnl->method == nl_halofit) && (pba->Omega0_fld != 0.) && (pba->wa_fld != 0.)){
+
+    class_call(parser_read_string(pfc,"pk_eq",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+    if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+
+      pnl->has_pk_eq = _TRUE_;
+
+    }
+  }
+
+  if (pnl->has_pk_eq == _TRUE_) {
+
+    if (input_verbose > 0) {
+      printf(" -> since you want to use Halofit with a non-zero wa_fld, calling background module to\n");
+      printf("    extract the effective w(tau), Omega_m(tau) parameters required by the Pk_equal method\n");
+    }
+    class_call(input_prepare_pk_eq(ppr,pba,pth,pnl,input_verbose,errmsg),
+               errmsg,
+               errmsg);
+  }
 
   return _SUCCESS_;
 
@@ -3823,6 +3782,10 @@ int input_default_params(
   pba->T_cmb = 2.7255;
   pba->Omega0_g = (4.*sigma_B/_c_*pow(pba->T_cmb,4.)) / (3.*_c_*_c_*1.e10*pba->h*pba->h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_);
   pba->Omega0_ur = 3.046*7./8.*pow(4./11.,4./3.)*pba->Omega0_g;
+
+  pba->Omega0_idr = 0.0;
+  pba->Omega0_idm_dr = 0.0;
+  pba->T_idr = 0.0;
   pba->Omega0_b = 0.022032/pow(pba->h,2);
   pba->Omega0_cdm = 0.12038/pow(pba->h,2);
   pba->Omega0_dcdmdr = 0.0;
@@ -3839,6 +3802,8 @@ int input_default_params(
   pba->deg_ncdm = NULL;
   pba->ncdm_psd_parameters = NULL;
   pba->ncdm_psd_files = NULL;
+
+
   pba->Omega0_scf = 0.; /* Scalar field defaults */
   pba->log10_fraction_axion_ac = -30; /* Scalar field defaults */
   pba->log10_m_axion= -30.;
@@ -3864,18 +3829,20 @@ int input_default_params(
   ppt->use_big_theta_scf = _FALSE_;
   pba->scf_evolve_as_fluid = _FALSE_;
   pba->scf_evolve_like_axionCAMB = _FALSE_;
+
   pba->Omega0_k = 0.;
   pba->K = 0.;
   pba->sgnK = 0;
-  pba->Omega0_lambda = 1.-pba->Omega0_k-pba->Omega0_g-pba->Omega0_ur-pba->Omega0_b-pba->Omega0_cdm-pba->Omega0_ncdm_tot-pba->Omega0_dcdmdr;
+  pba->Omega0_lambda = 1.-pba->Omega0_k-pba->Omega0_g-pba->Omega0_ur-pba->Omega0_b-pba->Omega0_cdm-pba->Omega0_ncdm_tot-pba->Omega0_dcdmdr-pba->Omega0_idm_dr-pba->Omega0_idr;
   pba->Omega0_fld = 0.;
   pba->a_today = 1.;
-  pba->w0_fld=-1.;
-  pba->wa_fld=0.;
-  pba->cs2_fld=1.;
   pba->use_ppf = _TRUE_;
   pba->c_gamma_over_c_fld = 0.4;
-  pba->threshold_scf_fluid_m_over_H = 3;
+  pba->fluid_equation_of_state = CLP;
+  pba->w0_fld = -1.;
+  pba->wa_fld = 0.;
+  pba->Omega_EDE = 0.;
+  pba->cs2_fld = 1.;
 
   pba->shooting_failed = _FALSE_;
 
@@ -3884,7 +3851,7 @@ int input_default_params(
   pth->YHe=_BBN_;
   pth->recombination=recfast;
   pth->reio_parametrization=reio_camb;
-  pth->star_heating_parametrization=heating_none;
+
   pth->reio_z_or_tau=reio_z;
   pth->z_reio=11.357;
   pth->tau_reio=0.0925;
@@ -3898,59 +3865,11 @@ int input_default_params(
   pth->binned_reio_xe=NULL;
   pth->binned_reio_step_sharpness = 0.3;
 
-  pth->lambda_douspis_et_al = 0.73;
-  pth->zp_douspis_et_al = 6.1;
-  pth->Qp_douspis_et_al = 0.99986;
-  pth->z_end_asymmetric_planck_16 = 6;
-  pth->z_start_asymmetric_planck_16 = 20;
-  pth->alpha_asymmetric_planck_16 = 3;
-  pth->z_10_percent = 0;
-  pth->z_50_percent = 0;
-  pth->z_99_percent = 0;
-  pth->duration_of_reionization = 0.;
-
-  pth->final_IGM_temperature = 1e4;
-  pth->f_esc=0.2;
-  pth->Zeta_ion=pow(10,53.14);
-  pth->fx = 0.2;
-  pth->Ex = 3.4*pow(10,40);
-  pth->model_SFR = model_SFR_free;
-  pth->ap = 0.01376;
-  pth->bp = 3.26;
-  pth->cp = 2.59;
-  pth->dp = 5.68;
-  pth->z_start_reio_stars = 15;
   pth->annihilation = 0.;
-  pth->annihilation_boost_factor = 0.;
-  pth->annihilation_m_DM = -1.;
-  pth->decay_fraction = 0.;
-  pth->PBH_high_mass = 0.;
-  pth->PBH_disk_formation_redshift = 300.;
-  pth->PBH_accretion_recipe = Ali_Haimoud;
-  pth->energy_deposition_treatment = Analytical_approximation;
-  pth->PBH_low_mass = 0.;
-  pth->PBH_fraction = 0.;
-  pth->PBH_accretion_eigenvalue = 0.1; //Standard value in the ADAF scenario choose as benchmark.
-  pth->PBH_relative_velocities = -1 ; //Standard value is the linear result extrapolated to PBH.
-  pth->energy_repart_functions = Galli_et_al_fit;
-  pth->u_gcdm=0.;
-  pth->beta_gcdm=0.;
-  pth->alpha_gcdm=0.;
-  pth->A_21_over_mchi=0.;
-  pth->Lambda_over_theoritical_Lambda = 1.;
 
-  /** Tables specific to evaporating PBH */
-  pth->PBH_table_is_initialized = _FALSE_ ;
-  pth->PBH_table_z = NULL;
-  pth->PBH_table_mass = NULL;
-  pth->PBH_table_mass_dd = NULL;
-  pth->PBH_table_F = NULL;
-  pth->PBH_table_F_dd = NULL;
 
-  /*** Primordial black holes (added by Y. Ali-Haimoud) ***/
-  pth->coll_ion_pbh = 1;  // Default case is most conservative, with collisional ionizations //
-  /************************************************************************/
-  pth->PBH_ADAF_delta = 1e-3; //Default case is most conservative //
+  pth->decay = 0.;
+
   pth->annihilation_variation = 0.;
   pth->annihilation_z = 1000.;
   pth->annihilation_zmax = 2500.;
@@ -3958,21 +3877,19 @@ int input_default_params(
   pth->annihilation_f_halo = 0.;
   pth->annihilation_z_halo = 30.;
   pth->has_on_the_spot = _TRUE_;
-  pth->reio_stars_and_dark_matter = _FALSE_;
+
   pth->compute_cb2_derivatives=_FALSE_;
 
   pth->compute_damping_scale = _FALSE_;
 
-  pth->Lambda_over_theoritical_Lambda = 1.;
-
-  //Default cosmorec parameters
-  pth->cosmorec_runmode = 0; //default runmode of cosmorec
-  pth->cosmorec_accuracy = 0; //default accuracy of cosmorec
-  pth->cosmorec_verbose = 0;  //no output produced by cosmorec
-
 
   /** - perturbation structure */
   ppt->compute_phase_shift=_FALSE_;
+  pth->a_idm_dr = 0.;
+  pth->b_idr = 0.;
+  pth->nindex_idm_dr = 4.;
+  pth->m_idm = 1.e11;
+
 
   ppt->has_cl_cmb_temperature = _FALSE_;
   ppt->has_cl_cmb_polarization = _FALSE_;
@@ -3990,6 +3907,8 @@ int input_default_params(
   ppt->has_nc_rsd = _FALSE_;
   ppt->has_nc_lens = _FALSE_;
   ppt->has_nc_gr = _FALSE_;
+
+  //ppt->pk_only_cdm_bar=_FALSE_;
 
   ppt->switch_sw = 1;
   ppt->switch_eisw = 1;
@@ -4017,22 +3936,17 @@ int input_default_params(
   ppt->l_vector_max=500;
   ppt->l_tensor_max=500;
   ppt->l_lss_max=300;
-  ppt->k_max_for_pk=0.1;
+
+  ppt->k_max_for_pk=1.;
 
   ppt->gauge=synchronous;
-  ppt->gauge_output=synchronous_output;
+
+  ppt->idr_nature=idr_free_streaming;
+
+  ppt->has_Nbody_gauge_transfers = _FALSE_;
 
   ppt->k_output_values_num=0;
   ppt->store_perturbations = _FALSE_;
-  ppt->number_of_scalar_titles=0;
-  ppt->number_of_vector_titles=0;
-  ppt->number_of_tensor_titles=0;
-  for (filenum = 0; filenum<_MAX_NUMBER_OF_K_FILES_; filenum++){
-    ppt->scalar_perturbations_data[filenum] = NULL;
-    ppt->vector_perturbations_data[filenum] = NULL;
-    ppt->tensor_perturbations_data[filenum] = NULL;
-  }
-  ppt->index_k_output_values=NULL;
 
   ppt->three_ceff2_ur=1.;
   ppt->three_cvis2_ur=1.;
@@ -4123,6 +4037,15 @@ int input_default_params(
   ppm->custom9=0.;
   ppm->custom10=0.;
 
+  /** - nonlinear structure */
+
+  pnl->method = nl_none;
+  pnl->extrapolation_method = extrap_max_scaled;
+  pnl->has_pk_eq = _FALSE_;
+
+  pnl->feedback = nl_emu_dmonly;
+  pnl->z_infinity = 10.;
+
   /** - transfer structure */
 
   ptr->selection_bias[0]=1.;
@@ -4135,6 +4058,15 @@ int input_default_params(
   ptr->has_nz_file = _FALSE_;
   ptr->has_nz_evo_analytic = _FALSE_;
   ptr->has_nz_evo_file = _FALSE_;
+
+  /** - spectra structure */
+
+  psp->z_max_pk = pop->z_pk[0];
+  psp->non_diag=0;
+
+  /** - lensing structure */
+
+  ple->has_lensed_cls = _FALSE_;
 
   /** - output structure */
 
@@ -4213,27 +4145,11 @@ int input_default_precision ( struct precision * ppr ) {
    * - parameters related to the thermodynamics
    */
 
-  /* for bbn */
-  sprintf(ppr->sBBN_file,__CLASSDIR__);
-  strcat(ppr->sBBN_file,"/bbn/sBBN.dat");
-  /*For energy injection from DM annihilation or decays */
-  sprintf(ppr->energy_injec_coeff_file,__CLASSDIR__);
-  //strcat(ppr->energy_injec_coeff_file,"/DM_Annihilation_files/DM_Annihilation_coeff.dat");
-  strcat(ppr->energy_injec_coeff_file,"/external_fz/Fallback.dat");
-  sprintf(ppr->energy_injec_f_eff_file,__CLASSDIR__);
-  strcat(ppr->energy_injec_f_eff_file,"/DM_Annihilation_files/f_z_withouthalos_electrons_100GeV.dat");
+  // /* for bbn */
+  // sprintf(ppr->sBBN_file,__CLASSDIR__);
+  // strcat(ppr->sBBN_file,"/bbn/sBBN.dat");
 
-  /* BEGIN: Initializing the parameters related to using an external code for the calculation of f(z) */
-  ppr->fz_is_extern = _FALSE_;
-  // strcat(ppr->command_fz,"NULL");
-  //ppr->command_fz = "python ./Calc_f/DarkAges_CalcF_grid.py";
-  //ppr->command_fz = "Insert external command, like: python ./path/to_external/script.py";
-  ppr->param_fz_1 = 0.;
-  ppr->param_fz_2 = 0.;
-  ppr->param_fz_3 = 0.;
-  ppr->param_fz_4 = 0.;
-  ppr->param_fz_5 = 0.;
-  /* END  */
+
 
   /* for recombination */
 
@@ -4437,7 +4353,6 @@ int input_default_precision ( struct precision * ppr ) {
    * - parameters related to nonlinear module
    */
 
-  ppr->halofit_dz=0.1;
   ppr->halofit_min_k_nonlinear=0.0035;
   ppr->halofit_k_per_decade = 80.;
   ppr->halofit_sigma_precision=0.05;
@@ -4462,7 +4377,11 @@ int input_default_precision ( struct precision * ppr ) {
              ppr->error_message,
              "smallest_allowed_variation = %e < 0",ppr->smallest_allowed_variation);
 
-  ppr->tol_gauss_legendre = ppr->smallest_allowed_variation;
+
+
+#define __ASSIGN_DEFAULT_PRECISION__
+#include "precisions.h"
+#undef __ASSIGN_DEFAULT_PRECISION__
 
   return _SUCCESS_;
 
@@ -4532,7 +4451,8 @@ int class_fzero_ridder(int (*func)(double x, void *param, double *y, ErrorMsg er
      lie between x1 and x2. The root, returned as zriddr, will be found to
      an approximate accuracy xtol.
   */
-  int j,MAXIT=100000;
+
+  int j,MAXIT=1000;
   double ans,fh,fl,fm,fnew,s,xh,xl,xm,xnew;
   if ((Fx1!=NULL)&&(Fx2!=NULL)){
     fl = *Fx1;
@@ -4546,9 +4466,6 @@ int class_fzero_ridder(int (*func)(double x, void *param, double *y, ErrorMsg er
 
     *fevals = (*fevals)+2;
   }
-  if ((fl > 0.0 && fh > 0.0) || (fl < 0.0 && fh < 0.0)){
-    fh = - fh;
-  }
   if ((fl > 0.0 && fh < 0.0) || (fl < 0.0 && fh > 0.0)) {
     xl=x1;
     xh=x2;
@@ -4561,6 +4478,7 @@ int class_fzero_ridder(int (*func)(double x, void *param, double *y, ErrorMsg er
       s=sqrt(fm*fm-fl*fh);
       if (s == 0.0){
         *xzero = ans;
+
         return _SUCCESS_;
       }
       xnew=xm+(xm-xl)*((fl >= fh ? 1.0 : -1.0)*fm/s);
@@ -4574,6 +4492,7 @@ int class_fzero_ridder(int (*func)(double x, void *param, double *y, ErrorMsg er
       *fevals = (*fevals)+1;
       if (fnew == 0.0){
         *xzero = ans;
+
         return _SUCCESS_;
       }
       if (NRSIGN(fm,fnew) != fm) {
@@ -4590,15 +4509,17 @@ int class_fzero_ridder(int (*func)(double x, void *param, double *y, ErrorMsg er
       } else return _FAILURE_;
       if (fabs(xh-xl) <= xtol) {
         *xzero = ans;
+
         return _SUCCESS_;
       }
     }
     class_stop(error_message,"zriddr exceed maximum iterations");
   }
   else {
-    // if (fl == 0.0) return x1;
-    // if (fh == 0.0) return x2;
-    // class_stop(error_message,"root must be bracketed in zriddr.");
+
+    if (fl == 0.0) return x1;
+    if (fh == 0.0) return x2;
+    class_stop(error_message,"root must be bracketed in zriddr.");
   }
   class_stop(error_message,"Failure in int.");
 }
@@ -4621,6 +4542,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
   struct nonlinear nl;        /* for non-linear spectra */
   struct lensing le;          /* for lensed spectra */
   struct output op;           /* for output files */
+
   int i;
   double rho_dcdm_today, rho_dr_today;
   struct fzerofun_workspace * pfzw;
@@ -4628,14 +4550,31 @@ int input_try_unknown_parameters(double * unknown_parameter,
   int flag;
   int param;
   double ac;
+  short compute_sigma8 = _FALSE_;
+
   pfzw = (struct fzerofun_workspace *) voidpfzw;
-// cjcomment
-// Assigns 'new' value for whatever you are shooting to a list held in unknown_parameters_index
-// Can we increase unknown_paramters_size so that it shoots for longer? Where is this assigned?
+  /** - Read input parameters */
   for (i=0; i < unknown_parameters_size; i++) {
     sprintf(pfzw->fc.value[pfzw->unknown_parameters_index[i]],
             "%e",unknown_parameter[i]);
+     // printf(  "try unknown %s %e\n",pfzw->fc.name[pfzw->unknown_parameters_index[i]],unknown_parameter[i]);
   }
+
+  class_call(input_read_precisions(&(pfzw->fc),
+                                   &pr,
+                                   &ba,
+                                   &th,
+                                   &pt,
+                                   &tr,
+                                   &pm,
+                                   &sp,
+                                   &nl,
+                                   &le,
+                                   &op,
+                                   errmsg),
+             errmsg,
+             errmsg);
+
   class_call(input_read_parameters(&(pfzw->fc),
                                    &pr,
                                    &ba,
@@ -4650,6 +4589,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
                                    errmsg),
              errmsg,
              errmsg);
+
   class_call(parser_read_int(&(pfzw->fc),
                              "input_verbose",
                              &param,
@@ -4657,66 +4597,117 @@ int input_try_unknown_parameters(double * unknown_parameter,
                              errmsg),
              errmsg,
              errmsg);
+
   if (flag == _TRUE_)
     input_verbose = param;
   else
     input_verbose = 0;
 
-  /** - Do computations */
+  /** - Optimise flags for sigma8 calculation.*/
+  for (i=0; i < unknown_parameters_size; i++) {
+    if (pfzw->target_name[i] == sigma8) {
+      compute_sigma8 = _TRUE_;
+    }
+  }
+  if (compute_sigma8 == _TRUE_) {
+    pt.k_max_for_pk=1.0;
+    pt.has_pk_matter=_TRUE_;
+    pt.has_perturbations = _TRUE_;
+    pt.has_cl_cmb_temperature = _FALSE_;
+    pt.has_cls = _FALSE_;
+    pt.has_cl_cmb_polarization = _FALSE_;
+    pt.has_cl_cmb_lensing_potential = _FALSE_;
+    pt.has_cl_number_count = _FALSE_;
+    pt.has_cl_lensing_potential=_FALSE_;
+    pt.has_density_transfers=_FALSE_;
+    pt.has_velocity_transfers=_FALSE_;
+
+  }
+
+  /** - Shoot forward into class up to required stage */
   if (pfzw->required_computation_stage >= cs_background){
     if (input_verbose>2)
       printf("Stage 1: background\n");
     ba.background_verbose = 0;
-    class_call(background_init(&pr,&ba), ba.error_message, errmsg);
+
+
+    class_call(background_init(&pr,&ba),
+               ba.error_message,
+               errmsg
+               );
   }
 
   if (pfzw->required_computation_stage >= cs_thermodynamics){
-   if (input_verbose>2)
-     printf("Stage 2: thermodynamics\n");
+    if (input_verbose>2)
+      printf("Stage 2: thermodynamics\n");
     pr.recfast_Nz0 = 10000;
     th.thermodynamics_verbose = 0;
-    pr.fz_is_extern = _FALSE_;
-    // free(pr.command_fz);
-    class_call(thermodynamics_init(&pr,&ba,&th), th.error_message, errmsg);
+    class_call_except(thermodynamics_init(&pr,&ba,&th),
+                      th.error_message,
+                      errmsg,
+                      background_free(&ba)
+                      );
   }
 
   if (pfzw->required_computation_stage >= cs_perturbations){
-       if (input_verbose>2)
-         printf("Stage 3: perturbations\n");
+    if (input_verbose>2)
+      printf("Stage 3: perturbations\n");
     pt.perturbations_verbose = 0;
-    class_call(perturb_init(&pr,&ba,&th,&pt), pt.error_message, errmsg);
+    class_call_except(perturb_init(&pr,&ba,&th,&pt),
+                      pt.error_message,
+                      errmsg,
+                      thermodynamics_free(&th);background_free(&ba)
+                      );
   }
 
   if (pfzw->required_computation_stage >= cs_primordial){
     if (input_verbose>2)
       printf("Stage 4: primordial\n");
     pm.primordial_verbose = 0;
-    class_call(primordial_init(&pr,&pt,&pm), pm.error_message, errmsg);
+
+    class_call_except(primordial_init(&pr,&pt,&pm),
+                      pm.error_message,
+                      errmsg,
+                      perturb_free(&pt);thermodynamics_free(&th);background_free(&ba)
+                      );
   }
 
   if (pfzw->required_computation_stage >= cs_nonlinear){
     if (input_verbose>2)
       printf("Stage 5: nonlinear\n");
     nl.nonlinear_verbose = 0;
-    class_call(nonlinear_init(&pr,&ba,&th,&pt,&pm,&nl), nl.error_message, errmsg);
+
+    class_call_except(nonlinear_init(&pr,&ba,&th,&pt,&pm,&nl),
+                      nl.error_message,
+                      errmsg,
+                      primordial_free(&pm);perturb_free(&pt);thermodynamics_free(&th);background_free(&ba)
+                      );
   }
 
   if (pfzw->required_computation_stage >= cs_transfer){
     if (input_verbose>2)
       printf("Stage 6: transfer\n");
     tr.transfer_verbose = 0;
-    class_call(transfer_init(&pr,&ba,&th,&pt,&nl,&tr), tr.error_message, errmsg);
+
+    class_call_except(transfer_init(&pr,&ba,&th,&pt,&nl,&tr),
+                      tr.error_message,
+                      errmsg,
+                      nonlinear_free(&nl);primordial_free(&pm);perturb_free(&pt);thermodynamics_free(&th);background_free(&ba)
+                      );
   }
 
   if (pfzw->required_computation_stage >= cs_spectra){
     if (input_verbose>2)
       printf("Stage 7: spectra\n");
     sp.spectra_verbose = 0;
-    class_call(spectra_init(&pr,&ba,&pt,&pm,&nl,&tr,&sp),sp.error_message, errmsg);
+    class_call_except(spectra_init(&pr,&ba,&pt,&pm,&nl,&tr,&sp),
+                      sp.error_message,
+                      errmsg,
+                      transfer_free(&tr);nonlinear_free(&nl);primordial_free(&pm);perturb_free(&pt);thermodynamics_free(&th);background_free(&ba)
+                      );
   }
 
-// Cycle through the list of... until the index matches a prearranged cut off...
-  // switch out SOMETHING with new answer. These look to be energy densities for scalar field.
+  /** - Get the corresponding shoot variable and put into output */
   for (i=0; i < pfzw->target_size; i++) {
     switch (pfzw->target_name[i]) {
     case theta_s:
@@ -4780,17 +4771,21 @@ int input_try_unknown_parameters(double * unknown_parameter,
         // printf("K.E (not divided by a, as a=1?): %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]*ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_phi_prime_scf]/2);
         // printf("potential: %e\n",ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_V_scf]);
 
+
       break;
     case Omega_ini_dcdm:
     case omega_ini_dcdm:
       rho_dcdm_today = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_dcdm];
-      // fprintf(stdout, "rho_dcdm_today %e\n",rho_dcdm_today );
 
       if (ba.has_dr == _TRUE_)
         rho_dr_today = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_dr];
       else
         rho_dr_today = 0.;
       output[i] = -(rho_dcdm_today+rho_dr_today)/(ba.H0*ba.H0)+ba.Omega0_dcdmdr;
+      break;
+
+    case sigma8:
+      output[i] = nl.sigma8[nl.index_pk_m]-pfzw->target_value[i];
       break;
     }
   }
@@ -4855,6 +4850,24 @@ int input_get_guess(double *xguess,
   double phi_i; //units of Mpl
   /* Cheat to read only known parameters: */
   pfzw->fc.size -= pfzw->target_size;
+
+
+
+  class_call(input_read_precisions(&(pfzw->fc),
+                                   &pr,
+                                   &ba,
+                                   &th,
+                                   &pt,
+                                   &tr,
+                                   &pm,
+                                   &sp,
+                                   &nl,
+                                   &le,
+                                   &op,
+                                   errmsg),
+             errmsg,
+             errmsg);
+
   class_call(input_read_parameters(&(pfzw->fc),
                                    &pr,
                                    &ba,
@@ -4869,8 +4882,9 @@ int input_get_guess(double *xguess,
                                    errmsg),
              errmsg,
              errmsg);
-  pfzw->fc.size += pfzw->target_size;
 
+
+  pfzw->fc.size += pfzw->target_size;
   /** Summary: */
   /** - Here we should write reasonable guesses for the unknown parameters.
       Also estimate dxdy, i.e. how the unknown parameter responds to the known.
@@ -4880,14 +4894,13 @@ int input_get_guess(double *xguess,
     switch (pfzw->target_name[index_guess]) {
     case theta_s:
       xguess[index_guess] = 3.54*pow(pfzw->target_value[index_guess],2)-5.455*pfzw->target_value[index_guess]+2.548;
-      dxdy[index_guess] = (7.08*pfzw->target_value[index_guess]-5.455);//we changed by a - sign.
+      dxdy[index_guess] = (7.08*pfzw->target_value[index_guess]-5.455);
       /** - Update pb to reflect guess */
       ba.h = xguess[index_guess];
       ba.H0 = ba.h *  1.e5 / _c_;
-
       break;
     case Omega_dcdmdr:
-      Omega_M = ba.Omega0_cdm+ba.Omega0_dcdmdr+ba.Omega0_b;
+      Omega_M = ba.Omega0_cdm+ba.Omega0_idm_dr+ba.Omega0_dcdmdr+ba.Omega0_b;
       /* This formula is exact in a Matter + Lambda Universe, but only
          for Omega_dcdm, not the combined.
          sqrt_one_minus_M = sqrt(1.0 - Omega_M);
@@ -4904,11 +4917,9 @@ int input_get_guess(double *xguess,
       xguess[index_guess] = pfzw->target_value[index_guess]/a_decay;
       dxdy[index_guess] = 1./a_decay;
       //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
-      // printf("dcdmdr, x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
-
       break;
     case omega_dcdmdr:
-      Omega_M = ba.Omega0_cdm+ba.Omega0_dcdmdr+ba.Omega0_b;
+      Omega_M = ba.Omega0_cdm+ba.Omega0_idm_dr+ba.Omega0_dcdmdr+ba.Omega0_b;
       /* This formula is exact in a Matter + Lambda Universe, but only
          for Omega_dcdm, not the combined.
          sqrt_one_minus_M = sqrt(1.0 - Omega_M);
@@ -5103,7 +5114,7 @@ int input_get_guess(double *xguess,
         /* Default: take the passed value as xguess and set dxdy to 1. */
         xguess[index_guess] = ba.scf_parameters[ba.scf_tuning_index];
         dxdy[index_guess] = 1.;
-        // printf("x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+      // printf("x = Omega_scf_guess = %g, dxdy = %g\n",*xguess,*dxdy);
 
       }
       break;
@@ -5119,7 +5130,8 @@ int input_get_guess(double *xguess,
           Omega_ini_dcdm -> Omega_dcdmdr and
           omega_ini_dcdm -> omega_dcdmdr */
       Omega0_dcdmdr *=pfzw->target_value[index_guess];
-      Omega_M = ba.Omega0_cdm+Omega0_dcdmdr+ba.Omega0_b;
+
+      Omega_M = ba.Omega0_cdm+ba.Omega0_idm_dr+Omega0_dcdmdr+ba.Omega0_b;
       gamma = ba.Gamma_dcdm/ba.H0;
       if (gamma < 1)
         a_decay = 1.0;
@@ -5130,10 +5142,18 @@ int input_get_guess(double *xguess,
       if (gamma > 100)
         dxdy[index_guess] *= gamma/100;
 
-      // printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+
+      //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
+      break;
+
+    case sigma8:
+      /* Assume linear relationship between A_s and sigma8 and fix coefficient
+         according to vanilla LambdaCDM. Should be good enough... */
+      xguess[index_guess] = 2.43e-9/0.87659*pfzw->target_value[index_guess];
+      dxdy[index_guess] = 2.43e-9/0.87659;
       break;
     }
-    /* printf("xguess = %g\n",xguess[index_guess]); */
+    //printf("xguess = %g\n",xguess[index_guess]);
   }
 
   for (i=0; i<pfzw->fc.size; i++) {
@@ -5141,7 +5161,7 @@ int input_get_guess(double *xguess,
   }
 
   /** - Deallocate everything allocated by input_read_parameters */
-  // if (pr.command_fz != NULL) free(pr.command_fz);
+
   background_free_input(&ba);
 
   return _SUCCESS_;
@@ -5174,6 +5194,7 @@ int input_find_root(double *xzero,
   else
     input_verbose = 0;
 
+
   /** Summary: */
 
   /** - Fisrt we do our guess */
@@ -5181,6 +5202,8 @@ int input_find_root(double *xzero,
              errmsg, errmsg);
 
   if(input_verbose>3)printf("x1= %g\n",x1);
+  //      printf("x1= %g\n",x1);
+
   class_call(input_fzerofun_1d(x1,
                                pfzw,
                                &f1,
@@ -5203,7 +5226,7 @@ int input_find_root(double *xzero,
         else{
           f_a=1;
         }
-        printf("fa %e\n", f_a);
+        // printf("fa %e\n", f_a);
       }
       else if(pfzw->scf_potential == axionquad)f_a = pfzw->scf_parameters[1];
       if(pfzw->do_shooting == _TRUE_){
@@ -5461,6 +5484,7 @@ for (iter=1; iter<=itermax; iter++){
       return_function = input_fzerofun_1d(x2,pfzw,&f2,errmsg);
       (*fevals)++;
       // printf("x2= %g, f2= %g\n",x2,f2);
+
       //fprintf(stderr,"iter2=%d\n",iter2);
 
       if (return_function ==_SUCCESS_) {
@@ -5477,7 +5501,8 @@ for (iter=1; iter<=itermax; iter++){
     }
 
     if (f1*f2<0.0){
-      ///// root has been bracketed /////
+
+      /** - root has been bracketed */
       if (0==1){
         printf("Root has been bracketed after %d iterations: [%g, %g].\n",iter,x1,x2);
       }
@@ -5517,6 +5542,7 @@ for (iter=1; iter<=itermax; iter++){
     return _SUCCESS_;
   }
 }
+
 int file_exists(const char *fname){
   FILE *file = fopen(fname, "r");
   if (file != NULL){
@@ -5533,10 +5559,7 @@ int input_auxillary_target_conditions(struct file_content * pfc,
                                       ErrorMsg errmsg){
   *aux_flag = _TRUE_;
   /*
-  double param1;
-  int int1, flag1;
-  int input_verbose = 0;
-  class_read_int("input_verbose",input_verbose);
+
   */
   switch (target_name){
   case Omega_dcdmdr:
@@ -5559,11 +5582,12 @@ int input_auxillary_target_conditions(struct file_content * pfc,
 }
 
 int compare_integers (const void * elem1, const void * elem2) {
-    int f = *((int*)elem1);
-    int s = *((int*)elem2);
-    if (f > s) return  1;
-    if (f < s) return -1;
-    return 0;
+
+  int f = *((int*)elem1);
+  int s = *((int*)elem2);
+  if (f > s) return  1;
+  if (f < s) return -1;
+  return 0;
 }
 
 int compare_doubles(const void *a,const void *b) {
@@ -5574,4 +5598,196 @@ int compare_doubles(const void *a,const void *b) {
   else if
     (*x > *y) return 1;
   return 0;
+}
+
+
+
+/**
+ * Perform preliminary steps fur using the method called Pk_equal,
+ * described in 0810.0190 and 1601.07230, extending the range of
+ * validity of HALOFIT from constant w to (w0,wa) models. In that
+ * case, one must compute here some effective values of w0_eff(z_i)
+ * and Omega_m_eff(z_i), that will be interpolated later at arbitrary
+ * redshift in the non-linear module.
+ *
+ * Returns table of values [z_i, tau_i, w0_eff_i, Omega_m_eff_i]
+ * stored in nonlinear structure.
+ *
+ * @param ppr           Input: pointer to precision structure
+ * @param pba           Input: pointer to background structure
+ * @param pth           Input: pointer to thermodynamics structure
+ * @param pnl    Input/Output: pointer to nonlinear structure
+ * @param input_verbose Input: verbosity of this input module
+ * @param errmsg  Input/Ouput: error message
+ */
+
+int input_prepare_pk_eq(
+                        struct precision * ppr,
+                        struct background *pba,
+                        struct thermo *pth,
+                        struct nonlinear *pnl,
+                        int input_verbose,
+                        ErrorMsg errmsg
+                        ) {
+
+  /** Summary: */
+
+  /** - define local variables */
+
+  double tau_of_z;
+  double delta_tau;
+  double error;
+  double delta_tau_eq;
+  double * pvecback;
+  int last_index=0;
+  int index_pk_eq_z;
+  int index_eq;
+  int true_background_verbose;
+  int true_thermodynamics_verbose;
+  double true_w0_fld;
+  double true_wa_fld;
+  double * z;
+
+  /** - store the true cosmological parameters (w0, wa) somwhere before using temporarily some fake ones in this function */
+
+  true_background_verbose = pba->background_verbose;
+  true_thermodynamics_verbose = pth->thermodynamics_verbose;
+  true_w0_fld = pba->w0_fld;
+  true_wa_fld = pba->wa_fld;
+
+  /** - the fake calls of the background and thermodynamics module will be done in non-verbose mode */
+
+  pba->background_verbose = 0;
+  pth->thermodynamics_verbose = 0;
+
+  /** - allocate indices and arrays for storing the results */
+
+  pnl->pk_eq_tau_size = 10;
+  class_alloc(pnl->pk_eq_tau,pnl->pk_eq_tau_size*sizeof(double),errmsg);
+  class_alloc(z,pnl->pk_eq_tau_size*sizeof(double),errmsg);
+
+  index_eq = 0;
+  class_define_index(pnl->index_pk_eq_w,_TRUE_,index_eq,1);
+  class_define_index(pnl->index_pk_eq_Omega_m,_TRUE_,index_eq,1);
+  pnl->pk_eq_size = index_eq;
+  class_alloc(pnl->pk_eq_w_and_Omega,pnl->pk_eq_tau_size*pnl->pk_eq_size*sizeof(double),errmsg);
+  class_alloc(pnl->pk_eq_ddw_and_ddOmega,pnl->pk_eq_tau_size*pnl->pk_eq_size*sizeof(double),errmsg);
+
+  /** - call the background module in order to fill a table of tau_i[z_i] */
+
+  class_call(background_init(ppr,pba), pba->error_message, errmsg);
+  for (index_pk_eq_z=0; index_pk_eq_z<pnl->pk_eq_tau_size; index_pk_eq_z++) {
+    z[index_pk_eq_z] = exp(log(1.+ppr->pk_eq_z_max)/(pnl->pk_eq_tau_size-1)*index_pk_eq_z)-1.;
+    class_call(background_tau_of_z(pba,z[index_pk_eq_z],&tau_of_z),
+               pba->error_message, errmsg);
+    pnl->pk_eq_tau[index_pk_eq_z] = tau_of_z;
+  }
+  class_call(background_free_noinput(pba), pba->error_message, errmsg);
+
+  /** - loop over z_i values. For each of them, we will call the
+      background and thermodynamics module for fake models. The goal is
+      to find, for each z_i, and effective w0_eff[z_i] and
+      Omega_m_eff{z_i], such that: the true model with (w0,wa) and the
+      equivalent model with (w0_eff[z_i],0) have the same conformal
+      distance between z_i and z_recombination, namely chi = tau[z_i] -
+      tau_rec. It is thus necessary to call both the background and
+      thermodynamics module for each fake model and to re-compute
+      tau_rec for each of them. Once the eqauivalent model is found we
+      compute and store Omega_m_effa(z_i) of the equivalent model */
+
+  for (index_pk_eq_z=0; index_pk_eq_z<pnl->pk_eq_tau_size; index_pk_eq_z++) {
+
+    if (input_verbose > 2)
+      printf("    * computing Pk_equal parameters at z=%e\n",z[index_pk_eq_z]);
+
+    /* get chi = (tau[z_i] - tau_rec) in true model */
+
+    pba->w0_fld = true_w0_fld;
+    pba->wa_fld = true_wa_fld;
+
+    class_call(background_init(ppr,pba), pba->error_message, errmsg);
+    class_call(thermodynamics_init(ppr,pba,pth), pth->error_message, errmsg);
+
+    delta_tau = pnl->pk_eq_tau[index_pk_eq_z] - pth->tau_rec;
+
+    /* launch iterations in order to coverge to effective model with wa=0 but the same chi = (tau[z_i] - tau_rec) */
+
+    pba->wa_fld=0.;
+
+    do {
+      class_call(background_free_noinput(pba), pba->error_message, errmsg);
+      class_call(thermodynamics_free(pth), pth->error_message, errmsg);
+
+      class_call(background_init(ppr,pba), pba->error_message, errmsg);
+      class_call(background_tau_of_z(pba,z[index_pk_eq_z],&tau_of_z), pba->error_message, errmsg);
+      class_call(thermodynamics_init(ppr,pba,pth), pth->error_message, errmsg);
+
+      delta_tau_eq = tau_of_z - pth->tau_rec;
+
+      error = 1.-delta_tau_eq/delta_tau;
+      pba->w0_fld = pba->w0_fld*pow(1.+error,10.);
+
+    }
+    while(fabs(error) > ppr->pk_eq_tol);
+
+    /* Equivalent model found. Store w0(z) in that model. Find Omega_m(z) in that model and store it. */
+
+    pnl->pk_eq_w_and_Omega[pnl->pk_eq_size*index_pk_eq_z+pnl->index_pk_eq_w] = pba->w0_fld;
+
+    class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
+    class_call(background_at_tau(pba,
+                                 tau_of_z,
+                                 pba->long_info,
+                                 pba->inter_normal,
+                                 &last_index,
+                                 pvecback),
+               pba->error_message, errmsg);
+    pnl->pk_eq_w_and_Omega[pnl->pk_eq_size*index_pk_eq_z+pnl->index_pk_eq_Omega_m] = pvecback[pba->index_bg_Omega_m];
+    free(pvecback);
+
+    class_call(background_free_noinput(pba), pba->error_message, errmsg);
+    class_call(thermodynamics_free(pth), pth->error_message, errmsg);
+
+  }
+
+  /** - restore cosmological parameters (w0, wa) to their true values before main call to CLASS modules */
+
+  pba->background_verbose = true_background_verbose;
+  pth->thermodynamics_verbose = true_thermodynamics_verbose;
+  pba->w0_fld = true_w0_fld;
+  pba->wa_fld = true_wa_fld;
+
+  /* in verbose mode, report the results */
+
+  if (input_verbose > 1) {
+
+    fprintf(stdout,"    Effective parameters for Pk_equal:\n");
+
+    for (index_pk_eq_z=0; index_pk_eq_z<pnl->pk_eq_tau_size; index_pk_eq_z++) {
+
+      fprintf(stdout,"    * at z=%e, tau=%e w=%e Omega_m=%e\n",
+              z[index_pk_eq_z],
+              pnl->pk_eq_tau[index_pk_eq_z],
+              pnl->pk_eq_w_and_Omega[pnl->pk_eq_size*index_pk_eq_z+pnl->index_pk_eq_w],
+              pnl->pk_eq_w_and_Omega[pnl->pk_eq_size*index_pk_eq_z+pnl->index_pk_eq_Omega_m]
+              );
+    }
+  }
+
+  free(z);
+
+  /** - spline the table for later interpolation */
+
+  class_call(array_spline_table_lines(
+                                      pnl->pk_eq_tau,
+                                      pnl->pk_eq_tau_size,
+                                      pnl->pk_eq_w_and_Omega,
+                                      pnl->pk_eq_size,
+                                      pnl->pk_eq_ddw_and_ddOmega,
+                                      _SPLINE_NATURAL_,
+                                      errmsg),
+             errmsg,errmsg);
+
+  return _SUCCESS_;
+
 }
