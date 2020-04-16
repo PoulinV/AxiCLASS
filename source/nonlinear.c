@@ -1652,7 +1652,8 @@ int nonlinear_free(
     free(pnl->k);
     free(pnl->ln_k);
     free(pnl->ln_tau);
-
+    free(pnl->is_non_zero);
+    
     for (index_pk=0; index_pk<pnl->pk_size; index_pk++) {
       free(pnl->ln_pk_ic_l[index_pk]);
       free(pnl->ln_pk_l[index_pk]);
