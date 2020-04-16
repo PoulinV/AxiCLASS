@@ -239,6 +239,9 @@ int perturb_output_data(
           class_store_double(dataptr,tk[ppt->index_tp_delta_dcdm],ppt->has_source_delta_dcdm,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_delta_dr],ppt->has_source_delta_dr,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_delta_scf],ppt->has_source_delta_scf,storeidx);
+          class_store_double(dataptr,tk[ppt->index_tp_delta_phi_scf],ppt->has_scf,storeidx);
+          class_store_double(dataptr,tk[ppt->index_tp_delta_phi_over_phi_scf],ppt->has_scf,storeidx);
+          class_store_double(dataptr,tk[ppt->index_tp_delta_phi_prime_scf],ppt->has_scf,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_delta_tot],ppt->has_source_delta_tot,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_phi],ppt->has_source_phi,storeidx);
           class_store_double(dataptr,tk[ppt->index_tp_psi],ppt->has_source_psi,storeidx);
@@ -332,7 +335,10 @@ int perturb_output_titles(
       }
       class_store_columntitle(titles,"d_dcdm",pba->has_dcdm);
       class_store_columntitle(titles,"d_dr",pba->has_dr);
-      class_store_columntitle(titles,"d_scf",pba->has_scf);
+      class_store_columntitle(titles,"d_scf",ppt->has_scf);
+      class_store_columntitle(titles,"delta_phi_scf",ppt->has_scf);
+      class_store_columntitle(titles,"delta_phi_over_phi_scf",ppt->has_scf);
+      class_store_columntitle(titles,"delta_phi_prime_scf",ppt->has_scf);
       class_store_columntitle(titles,"d_tot",_TRUE_);
       class_store_columntitle(titles,"phi",ppt->has_source_phi);
       class_store_columntitle(titles,"psi",ppt->has_source_psi);
@@ -360,7 +366,7 @@ int perturb_output_titles(
       }
       class_store_columntitle(titles,"t_dcdm",pba->has_dcdm);
       class_store_columntitle(titles,"t_dr",pba->has_dr);
-      class_store_columntitle(titles,"t__scf",pba->has_scf);
+      class_store_columntitle(titles,"t__scf",ppt->has_scf);
       class_store_columntitle(titles,"t_tot",_TRUE_);
     }
   }
@@ -1159,7 +1165,7 @@ int perturb_indices_of_perturbs(
           ppt->has_source_delta_dcdm = _TRUE_;
         if (pba->has_fld == _TRUE_)
           ppt->has_source_delta_fld = _TRUE_;
-        if (pba->has_scf == _TRUE_)
+        if (ppt->has_scf == _TRUE_)
           ppt->has_source_delta_scf = _TRUE_;
         if (pba->has_ur == _TRUE_)
           ppt->has_source_delta_ur = _TRUE_;
@@ -1190,7 +1196,7 @@ int perturb_indices_of_perturbs(
           ppt->has_source_theta_dcdm = _TRUE_;
         if (pba->has_fld == _TRUE_)
           ppt->has_source_theta_fld = _TRUE_;
-        if (pba->has_scf == _TRUE_)
+        if (ppt->has_scf == _TRUE_)
           ppt->has_source_theta_scf = _TRUE_;
         if (pba->has_ur == _TRUE_)
           ppt->has_source_theta_ur = _TRUE_;
@@ -1267,6 +1273,9 @@ int perturb_indices_of_perturbs(
       class_define_index(ppt->index_tp_delta_dcdm, ppt->has_source_delta_dcdm,index_type,1);
       class_define_index(ppt->index_tp_delta_fld,  ppt->has_source_delta_fld, index_type,1);
       class_define_index(ppt->index_tp_delta_scf,  ppt->has_source_delta_scf, index_type,1);
+      class_define_index(ppt->index_tp_delta_phi_scf,  ppt->has_scf, index_type,1);
+      class_define_index(ppt->index_tp_delta_phi_over_phi_scf,  ppt->has_scf, index_type,1);
+      class_define_index(ppt->index_tp_delta_phi_prime_scf,  ppt->has_scf, index_type,1);
       class_define_index(ppt->index_tp_delta_dr,   ppt->has_source_delta_dr,  index_type,1);
       class_define_index(ppt->index_tp_delta_ur,   ppt->has_source_delta_ur,  index_type,1);
       class_define_index(ppt->index_tp_delta_idr,  ppt->has_source_delta_idr, index_type,1);
@@ -7696,10 +7705,13 @@ int perturb_sources(
     }
 
     /* delta_scf */
-
+    //here we make sure the switch are good
     if (ppt->has_source_delta_scf == _TRUE_) {
       if (ppt->scf_kg_eq[index_md][index_k] == 0){ //evolve as fluid
       _set_source_(ppt->index_tp_delta_scf) = y[ppw->pv->index_pt_delta_scf];
+      _set_source_(ppt->index_tp_delta_phi_scf) = 0;
+      _set_source_(ppt->index_tp_delta_phi_over_phi_scf) = 0;
+      _set_source_(ppt->index_tp_delta_phi_prime_scf) = 0;
       }
       else{ //evolve as KG
         if (ppt->gauge == synchronous){
@@ -7716,21 +7728,24 @@ int perturb_sources(
              + 3.*a_prime_over_a*(1.+pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf])*theta_over_k2;
         }
         _set_source_(ppt->index_tp_delta_scf) = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
+        _set_source_(ppt->index_tp_delta_phi_scf) = y[ppw->pv->index_pt_phi_scf];
+        _set_source_(ppt->index_tp_delta_phi_over_phi_scf) = y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_scf];
+        _set_source_(ppt->index_tp_delta_phi_prime_scf) = y[ppw->pv->index_pt_phi_prime_scf];
       }
     }
 
-    if (ppt->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) {
-      if (ppt->scf_kg_eq[index_md][index_k] == 0){ //evolve as fluid
-      _set_source_(ppt->index_tp_delta_phi_scf) = 0;
-      _set_source_(ppt->index_tp_delta_phi_over_phi_scf) = 0;
-      _set_source_(ppt->index_tp_delta_phi_prime_scf) = 0;
-      }
-      else{ //evolve as KG
-          _set_source_(ppt->index_tp_delta_phi_scf) = y[ppw->pv->index_pt_phi_scf];
-          _set_source_(ppt->index_tp_delta_phi_over_phi_scf) = y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_scf];
-          _set_source_(ppt->index_tp_delta_phi_prime_scf) = y[ppw->pv->index_pt_phi_prime_scf];
-      }
-    }
+    // if (ppt->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) {
+    //   // if (ppt->scf_kg_eq[index_md][index_k] == 0){ //evolve as fluid
+    //   // _set_source_(ppt->index_tp_delta_phi_scf) = 0;
+    //   // _set_source_(ppt->index_tp_delta_phi_over_phi_scf) = 0;
+    //   // _set_source_(ppt->index_tp_delta_phi_prime_scf) = 0;
+    //   // }
+    //   // else{ //evolve as KG
+    //       _set_source_(ppt->index_tp_delta_phi_scf) = y[ppw->pv->index_pt_phi_scf];
+    //       _set_source_(ppt->index_tp_delta_phi_over_phi_scf) = y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_scf];
+    //       _set_source_(ppt->index_tp_delta_phi_prime_scf) = y[ppw->pv->index_pt_phi_prime_scf];
+    //   // }
+    // }
 
 
 
@@ -8486,10 +8501,10 @@ int perturb_print_variables(double tau,
     class_store_double(dataptr, shear_dr, pba->has_dr, storeidx);
     /* Scalar field scf*/
     if (pba->scf_has_perturbations == _TRUE_){
-    class_store_double(dataptr, delta_phi_scf, pba->has_scf, storeidx);
-    class_store_double(dataptr, delta_phi_over_phi_scf, pba->has_scf, storeidx);
-    class_store_double(dataptr, delta_phi_prime_scf, pba->has_scf, storeidx);
-    class_store_double(dataptr, delta_scf, pba->has_scf, storeidx);
+    class_store_double(dataptr, delta_phi_scf, ppt->has_scf, storeidx);
+    class_store_double(dataptr, delta_phi_over_phi_scf, ppt->has_scf, storeidx);
+    class_store_double(dataptr, delta_phi_prime_scf, ppt->has_scf, storeidx);
+    class_store_double(dataptr, delta_scf, ppt->has_scf, storeidx);
     if(ppt->use_big_theta_scf == _TRUE_){
       class_store_double(dataptr, big_theta_scf, pba->has_scf, storeidx);
     }
@@ -8780,6 +8795,8 @@ int perturb_derivs(double tau,
 
     if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
 
+      //defaulting to KG only for debugging
+      // ppt->scf_kg_eq[index_md][index_k] = 1;
 
       //Here, we set a number of parameters that determines the way in which scf perturbations are computed.
       if(pba->scf_evolve_like_axionCAMB == _TRUE_){
