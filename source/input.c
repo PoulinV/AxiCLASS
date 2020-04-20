@@ -11,7 +11,7 @@
  * and/or 'xxx.pre'. They can be the arguments of the main() routine.
  *
  * If class is embedded into another code, you will probably prefer to
- * call directly input_init() in order to pass input parameters
+ * call directly input_init() in order to pass input parameter
  * through a 'file_content' structure.
  */
 
@@ -544,7 +544,6 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
       class_alloc(dxdF,
                   sizeof(double)*unknown_parameters_size,
                   errmsg);
-      printf("berfore get guess\n");
       class_call(input_get_guess(x_inout,
                                  dxdF,
                                  &fzw,
