@@ -210,8 +210,11 @@ int input_init(
   int flag1,flag2;
   int int1,int2;
 
-  double param1;
+  double param1, param2;
+  double sigma_B = 2. * pow(_PI_,5) * pow(_k_B_,4) / 15. / pow(_h_P_,3) / pow(_c_,2);
   int counter, index_target, i;
+  double Omega_m, Omega_r, Omega0_g, Omega0_cdm,Omega0_b, T_cmb, H0, h;
+  short zc_is_zeq;
   double * unknown_parameter;
   int unknown_parameters_size;
   int fevals=0;
@@ -380,6 +383,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
           class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
         }
         else if(fzw.scf_potential == axion){
+          printf("here!!!\n");
           class_read_double("m_axion",fzw.m_scf);
           class_read_double("f_axion",fzw.f_axion);
           fzw.Omega0_axion = 0.0;
@@ -387,6 +391,83 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
           class_read_double("n_axion",fzw.n_axion);
           // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
           class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
+          class_call(parser_read_string(pfc,
+                                        "zc_is_zeq",
+                                        &string1,
+                                        &flag1,
+                                        errmsg),
+                      errmsg,
+                      errmsg);
+
+          if (flag1 == _TRUE_){
+            if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+              zc_is_zeq = _TRUE_;
+            }
+            else {
+              zc_is_zeq = _FALSE_;
+            }
+          }else{
+            zc_is_zeq = _FALSE_;
+          }
+
+          if(zc_is_zeq == _TRUE_){
+
+           class_call(parser_read_double(pfc,"H0",&param1,&flag1,errmsg),
+                      errmsg,
+                      errmsg);
+           class_call(parser_read_double(pfc,"h",&param2,&flag2,errmsg),
+                      errmsg,
+                      errmsg);
+           class_test((flag1 == _TRUE_) && (flag2 == _TRUE_),
+                      errmsg,
+                      "In input file, you cannot enter both h and H0, choose one");
+           if (flag1 == _TRUE_) {
+             h = param1 / 100.;
+           }
+           if (flag2 == _TRUE_) {
+             h = param2;
+           }
+
+            class_call(parser_read_double(pfc,"Omega_cdm",&param1,&flag1,errmsg),
+                       errmsg,
+                       errmsg);
+            class_call(parser_read_double(pfc,"omega_cdm",&param2,&flag2,errmsg),
+                       errmsg,
+                       errmsg);
+            class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+                       errmsg,
+                       "In input file, you can only enter one of Omega_cdm or omega_cdm, choose one");
+            if (flag1 == _TRUE_)
+              Omega0_cdm = param1;
+            if (flag2 == _TRUE_)
+              Omega0_cdm = param2/h/h;
+
+
+
+              class_call(parser_read_double(pfc,"Omega_b",&param1,&flag1,errmsg),
+                         errmsg,
+                         errmsg);
+              class_call(parser_read_double(pfc,"omega_b",&param2,&flag2,errmsg),
+                         errmsg,
+                         errmsg);
+              class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+                         errmsg,
+                         "In input file, you can only enter one of Omega_b or omega_b, choose one");
+              if (flag1 == _TRUE_)
+                Omega0_b = param1;
+              if (flag2 == _TRUE_)
+                Omega0_b = param2/h/h;
+            // printf("log10_axion_ac %e",log10((fzw.Omega0_g+fzw.Omega0_ur)/(fzw.Omega0_b+fzw.Omega0_cdm)));
+            // fzw.log10_axion_ac = log10((fzw.Omega0_g+fzw.Omega0_ur)/(fzw.Omega0_b+fzw.Omega0_cdm));
+
+            Omega0_g = (4.*sigma_B/_c_*pow( 2.7255,4.)) / (3.*_c_*_c_*1.e10*h*h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_);
+            // printf("Omega0_g %e T_cmb %e h %e\n", Omega0_g,T_cmb,h);
+            printf("Omega0_b %e\n", Omega0_b);
+            printf("Omega0_cdm %e\n", Omega0_cdm);
+            Omega_r = Omega0_g * (1. + 3.046 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
+            Omega_m = Omega0_b;
+            if (Omega0_cdm > 0) Omega_m += Omega0_cdm;
+          }
         }
         else if(fzw.scf_potential == phi_2n){
           fzw.Omega0_axion = 0.0;
@@ -480,6 +561,10 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     for (counter = 0; counter < unknown_parameters_size; counter++){
 
       index_target = target_indices[counter];
+      if(target_namestrings[index_target] == "log10_axion_ac" && zc_is_zeq == _TRUE_){
+      param1 = log10(Omega_r/Omega_m); // assumes a flat universe with a=1 today
+      // printf("in shooting zc is zeq: found fzw.log10_axion_ac %e\n", fzw.log10_axion_ac);
+    }else{
       class_call(parser_read_double(pfc,
                                     target_namestrings[index_target],
                                     &param1,
@@ -487,6 +572,8 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                                     errmsg),
                                     errmsg,
                                     errmsg);
+      }
+
 
       // store name of target parameter
       fzw.target_name[counter] = index_target;
@@ -791,7 +878,7 @@ int input_read_parameters(
   double R0,R1,R2,R3,R4;
   double PSR0,PSR1,PSR2,PSR3,PSR4;
   double HSR0,HSR1,HSR2,HSR3,HSR4;
-
+  double Omega_m, Omega_r;
   double z_max=0.;
   int bin;
   int input_verbose=0;
@@ -1691,8 +1778,13 @@ int input_read_parameters(
           }
 
           if(pba->zc_is_zeq == _TRUE_){
-            printf("log10_axion_ac %e",log10((pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm)));
-            pba->log10_axion_ac = log10((pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm));
+            // printf("log10_axion_ac %e",log10((pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm)));
+            // pba->log10_axion_ac = log10((pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm));
+            Omega_r = pba->Omega0_g * (1. + 3.046 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
+            Omega_m = pba->Omega0_b;
+            if (pba->Omega0_cdm > 0) Omega_m += pba->Omega0_cdm;
+            pba->log10_axion_ac = log10(Omega_r/Omega_m); // assumes a flat universe with a=1 today
+            // if(input_verbose>0)printf("zc is zeq: found pba->log10_axion_ac %e\n", pba->log10_axion_ac);
           }else{
             class_call(parser_read_double(pfc,"log10_axion_ac",&param1,&flag1,errmsg),
                        errmsg,
