@@ -383,7 +383,6 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
           class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
         }
         else if(fzw.scf_potential == axion){
-          printf("here!!!\n");
           class_read_double("m_axion",fzw.m_scf);
           class_read_double("f_axion",fzw.f_axion);
           fzw.Omega0_axion = 0.0;
@@ -462,8 +461,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
             Omega0_g = (4.*sigma_B/_c_*pow( 2.7255,4.)) / (3.*_c_*_c_*1.e10*h*h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_);
             // printf("Omega0_g %e T_cmb %e h %e\n", Omega0_g,T_cmb,h);
-            printf("Omega0_b %e\n", Omega0_b);
-            printf("Omega0_cdm %e\n", Omega0_cdm);
+
             Omega_r = Omega0_g * (1. + 3.046 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
             Omega_m = Omega0_b;
             if (Omega0_cdm > 0) Omega_m += Omega0_cdm;
