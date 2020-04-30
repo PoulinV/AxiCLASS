@@ -326,6 +326,9 @@ struct perturbs
   int index_tp_theta_dr;    /**< index value for F1 of decay radiation */
   int index_tp_theta_ncdm1; /**< index value for theta of first non-cold dark matter species (e.g. massive neutrinos) */
 
+  int index_tp_delta_p_over_rho_fld;  /**< index value for delta_p_over_rho of dark energy
+                                      TK ?????? DO we need this? */
+
   int index_tp_phi;          /**< index value for metric fluctuation phi */
   int index_tp_phi_prime;    /**< index value for metric fluctuation phi' */
   int index_tp_phi_plus_psi; /**< index value for metric fluctuation phi+psi */
@@ -342,6 +345,8 @@ struct perturbs
   //@}
 
   short use_big_theta_scf;
+  short use_big_theta_fld; /**< The way EDE is set up, 1+w, which appears in the denominator in eqs for theta_fld, can become 0.
+                                So we redefine Theta = (1+w) theta and use the evolution equation for that instead */
 
 
   /** @name - list of k values for each mode */
@@ -488,7 +493,10 @@ struct perturb_vector
   int index_pt_delta_dcdm; /**< dcdm density */
   int index_pt_theta_dcdm; /**< dcdm velocity */
   int index_pt_delta_fld;  /**< dark energy density in true fluid case */
+  int index_pt_delta_p_over_rho_fld;  /**< dark energy delta_p_over_rho in true fluid case
+                                        TK ????????? do we need this? */
   int index_pt_theta_fld;  /**< dark energy velocity in true fluid case */
+  int index_pt_big_theta_fld;  /**< dark energy velocity divided by (1+w_fld) in true fluid case */
   int index_pt_Gamma_fld;  /**< unique dark energy dynamical variable in PPF case */
   int index_pt_phi_scf;  /**< scalar field density */
   int index_pt_phi_prime_scf;  /**< scalar field velocity */
