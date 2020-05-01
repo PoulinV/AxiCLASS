@@ -568,14 +568,15 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
       if(target_namestrings[index_target] == "log10_axion_ac" && zc_is_zeq == _TRUE_){
       param1 = log10(Omega_r/Omega_m); // assumes a flat universe with a=1 today
       // printf("in shooting zc is zeq: found fzw.log10_axion_ac %e\n", fzw.log10_axion_ac);
-    }else{
-      class_call(parser_read_double(pfc,
+      }
+      else{
+        class_call(parser_read_double(pfc,
                                     target_namestrings[index_target],
                                     &param1,
                                     &flag1,
                                     errmsg),
-                                    errmsg,
-                                    errmsg);
+                    errmsg,
+                    errmsg);
       }
 
 
@@ -1602,8 +1603,12 @@ int input_read_parameters(
           pba->cs2_is_wn = _TRUE_;
           if(input_verbose>5)printf("Asked for cs2 = wn. Will read in cs2 or w_fld_f and accordingly set n_pheno_axion or cs2 respectively. \n");
         }
-        else {
+        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
           pba->cs2_is_wn = _FALSE_;
+          if(input_verbose>5)printf("Set cs2 != wn. Will read in cs2 and either w_fld_f or n_pheno_axion separately. \n");
+        }
+        else {
+          class_stop(errmsg,"incomprehensible input '%s' for the field 'cs2_is_wn'",string1);
         }
       }
 
@@ -1618,32 +1623,34 @@ int input_read_parameters(
         class_call(parser_read_double(pfc,"cs2_fld",&param3,&flag3,errmsg),
                     errmsg,
                     errmsg);
-        class_test(flag1==_TRUE_&&flag2==_TRUE_,"You have passed both 'w_fld_f' and 'n_pheno_axion'. Please pass only one of them.\n",errmsg,errmsg);
-        class_test(flag1==_TRUE_&&flag3==_TRUE_,"You have passed both 'w_fld_f' and 'cs2_fld'. Please pass only one of them as you have set w_f = cs2.\n",errmsg,errmsg);
-        class_test(flag2==_TRUE_&&flag3==_TRUE_,"You have passed both 'n_pheno_axion' and 'cs2_fld'. Please pass only one of them as you have set w_f = cs2.\n",errmsg,errmsg);
+        class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"You have passed both 'w_fld_f' and 'n_pheno_axion'. Please pass only one of them.");
+        class_test(flag1==_TRUE_&&flag3==_TRUE_,errmsg,"You have passed both 'w_fld_f' and 'cs2_fld'. Please pass only one of them as you have set w_f = cs2.");
+        class_test(flag2==_TRUE_&&flag3==_TRUE_,errmsg,"You have passed both 'n_pheno_axion' and 'cs2_fld'. Please pass only one of them as you have set w_f = cs2.");
         // Input w_fld_f
         if (flag1 == _TRUE_){
           pba->w_fld_f = param1;
           pba->cs2_fld = pba->w_fld_f;
-          if(pba->cs2_fld != 1.) pba->n_pheno_axion = (pba->cs2_fld + 1) / (1 - pba->cs2_fld);
-          else pba->n_pheno_axion = 1000;
-          if(input_verbose>5)printf("Read in w_fld_f = %e \n and set cs2_fld = %e \nand n_pheno_axion = %e\n", pba->w_fld_f, pba->cs2_fld, pba->n_pheno_axion);
+          if(pba->cs2_fld != 1.) {
+            pba->n_pheno_axion = (pba->cs2_fld + 1.) / (1. - pba->cs2_fld);
+          }
+          else pba->n_pheno_axion = 1000.;
+          if(input_verbose>5)printf("Read in w_fld_f = %e \n\tand set cs2_fld = %e \n\tand n_pheno_axion = %e\n", pba->w_fld_f, pba->cs2_fld, pba->n_pheno_axion);
         }
         // Input n_pheno_axion
         else if (flag2 == _TRUE_){
           pba->n_pheno_axion = param2;
-          if (pba->n_cap_infinity > pba->n_pheno_axion) pba->w_fld_f = (pba->n_pheno_axion-1)/(pba->n_pheno_axion+1);
-          else pba->w_fld_f = 1;
+          if (pba->n_cap_infinity > pba->n_pheno_axion) pba->w_fld_f = (pba->n_pheno_axion-1.)/(pba->n_pheno_axion+1.);
+          else pba->w_fld_f = 1.;
           pba->cs2_fld = pba->w_fld_f;
-          if(input_verbose>5)printf("Read in n_pheno_axion = %e\n and set cs2_fld = %e \nand w_fld_f = %e\n", pba->n_pheno_axion, pba->cs2_fld, pba->w_fld_f);
+          if(input_verbose>5)printf("Read in n_pheno_axion = %e\n\tand set cs2_fld = %e \n\tand w_fld_f = %e\n", pba->n_pheno_axion, pba->cs2_fld, pba->w_fld_f);
         }
         // Input cs2_fld
         else if (flag3 == _TRUE_){
           pba->cs2_fld = param3;
           pba->w_fld_f = pba->cs2_fld;
-          if(pba->cs2_fld != 1.) pba->n_pheno_axion = (pba->cs2_fld + 1) / (1 - pba->cs2_fld);
-          else pba->n_pheno_axion = 1000;
-          if(input_verbose>5)printf("Read in cs2_fld = %e \nand set w_fld_f = %e \nand n_pheno_axion = %e\n", pba->cs2_fld, pba->w_fld_f, pba->n_pheno_axion);
+          if(pba->cs2_fld != 1.) pba->n_pheno_axion = (pba->cs2_fld + 1.) / (1. - pba->cs2_fld);
+          else pba->n_pheno_axion = 1000.;
+          if(input_verbose>5)printf("Read in cs2_fld = %e \n\tand set w_fld_f = %e \n\tand n_pheno_axion = %e\n", pba->cs2_fld, pba->w_fld_f, pba->n_pheno_axion);
         }
       }
 
@@ -1657,20 +1664,20 @@ int input_read_parameters(
         class_call(parser_read_double(pfc,"cs2_fld",&param3,&flag3,errmsg),
                     errmsg,
                     errmsg);
-        class_test(flag1==_TRUE_&&flag2==_TRUE_,"You have passed both 'w_fld_f' and 'n_pheno_axion'. Please pass only one of them.\n",errmsg,errmsg);
+        class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"You have passed both 'w_fld_f' and 'n_pheno_axion'. Please pass only one of them.\n");
         // Input w_fld_f
         if (flag1 == _TRUE_){
           pba->w_fld_f = param1;
-          if(pba->w_fld_f != 1.) pba->n_pheno_axion = (pba->w_fld_f + 1) / (1 - pba->w_fld_f);
-          else pba->n_pheno_axion = 1000;
-          if(input_verbose>5)printf("Read in w_fld_f = %e \n and set n_pheno_axion = %e\n", pba->w_fld_f, pba->n_pheno_axion);
+          if(pba->w_fld_f != 1.) pba->n_pheno_axion = (pba->w_fld_f + 1.) / (1. - pba->w_fld_f);
+          else pba->n_pheno_axion = 1000.;
+          if(input_verbose>5)printf("Read in w_fld_f = %e \n\tand set n_pheno_axion = %e\n", pba->w_fld_f, pba->n_pheno_axion);
         }
         // Input n_pheno_axion
         else if (flag2 == _TRUE_){
           pba->n_pheno_axion = param2;
-          if (pba->n_cap_infinity > pba->n_pheno_axion) pba->w_fld_f = (pba->n_pheno_axion-1)/(pba->n_pheno_axion+1);
-          else pba->w_fld_f = 1;
-          if(input_verbose>5)printf("Read in n_pheno_axion = %e\n and set w_fld_f = %e\n", pba->n_pheno_axion, pba->w_fld_f);
+          if (pba->n_cap_infinity > pba->n_pheno_axion) pba->w_fld_f = (pba->n_pheno_axion-1.)/(pba->n_pheno_axion+1.);
+          else pba->w_fld_f = 1.;
+          if(input_verbose>5)printf("Read in n_pheno_axion = %e\n\tand set w_fld_f = %e\n", pba->n_pheno_axion, pba->w_fld_f);
         }
         // cs2 also still read in and allocated here
         if (flag3 == _TRUE_){
@@ -1689,7 +1696,7 @@ int input_read_parameters(
       class_call(parser_read_double(pfc,"a_peak_eq",&param2,&flag2,errmsg),
                   errmsg,
                   errmsg);
-      class_test(flag1==_TRUE_&&flag2==_TRUE_,"You have passed both 'a_c' and 'ac_from_aeq'. The second tells CLASS that you want to shoot for a_peak = a_eq, so giving a_c also is confusing. Pick one. \n",errmsg,errmsg);
+      class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"You have passed both 'a_c' and 'ac_from_aeq'. The second tells CLASS that you want to shoot for a_peak = a_eq, so giving a_c also is confusing. Pick one. \n");
       // Have we directly passed a_c
       if (flag1 == _TRUE_){
         pba->a_c = param1;
@@ -1698,8 +1705,8 @@ int input_read_parameters(
       // Do we want to shoot for it based on mathing a_peak = a_eq
       else if (flag2 == _TRUE_){
         if(input_verbose>5) printf("Shooting for a_c based on a_peak_eq because you asked for a_peak = a_eq with a_peak_eq.\n");
-        pba->a_c = 1; //assign dummy value for memory issue // do we still need this?
-        class_read_double("ac_from_aeq",pba->a_c);
+        // pba->a_c = 1; //assign dummy value for memory issue // do we still need this? // TK ?????????????? won't this prevent shooting
+        class_read_double("ac_from_aeq",pba->a_c); // TK ?????? or no because it's immediately reassigned?
         if(input_verbose>2) printf("Got a_c = %e from a_peak = a_eq\n", pba->a_c);
       }
 
@@ -1727,17 +1734,17 @@ int input_read_parameters(
         class_call(parser_read_double(pfc,"Omega_fld_ac",&param4,&flag4,errmsg), // fractional density at ac defined w/r to rho_crit_today
                   errmsg,
                   errmsg);
-        class_call(parser_read_double(pfc,"fraction_axion_ac",&param5,&flag5,errmsg), // fractional density at a_c
+        class_call(parser_read_double(pfc,"fraction_fld_ac",&param5,&flag5,errmsg), // fractional density at a_c
                   errmsg,
                   errmsg);
         // test to ensure we haven't multiply input ede density
         if(flag1 == _TRUE_ || flag2!=_FALSE_ || flag3!=_FALSE_ ||flag4!=_FALSE_ ||flag5!=_FALSE_ ){
-          class_test(flag1==_TRUE_&&flag2==_TRUE_,"you have passed both 'omega_fld' and 'Omega_fld'. Please pass only one of them.",errmsg,errmsg);
-          class_test(flag1==_TRUE_&&flag4==_TRUE_,"you have passed both 'omega_fld' and 'Omega_fld_ac'. Please pass only one of them.",errmsg,errmsg);
-          class_test(flag1==_TRUE_&&flag5==_TRUE_,"you have passed both 'omega_fld' and 'fraction_axion_ac'. Please pass only one of them.",errmsg,errmsg);
-          class_test(flag2==_TRUE_&&flag4==_TRUE_,"you have passed both 'Omega_fld' and 'Omega_fld_ac'. Please pass only one of them.",errmsg,errmsg);
-          class_test(flag2==_TRUE_&&flag5==_TRUE_,"you have passed both 'Omega_fld' and 'fraction_axion_ac'. Please pass only one of them.",errmsg,errmsg);
-          class_test(flag4==_TRUE_&&flag5==_TRUE_,"you have passed both 'Omega_fld_ac' and 'fraction_axion_ac'. Please pass only one of them.",errmsg,errmsg);
+          class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld'. Please pass only one of them.");
+          class_test(flag1==_TRUE_&&flag4==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld_ac'. Please pass only one of them.");
+          class_test(flag1==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'fraction_fld_ac'. Please pass only one of them.");
+          class_test(flag2==_TRUE_&&flag4==_TRUE_,errmsg,"you have passed both 'Omega_fld' and 'Omega_fld_ac'. Please pass only one of them.");
+          class_test(flag2==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld' and 'fraction_fld_ac'. Please pass only one of them.");
+          class_test(flag4==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld_ac' and 'fraction_fld_ac'. Please pass only one of them.");
 
           // If you passed omega_fld today in input
           if (flag1 == _TRUE_){
@@ -1769,7 +1776,7 @@ int input_read_parameters(
             wn = pba->w_fld_f;
             pba->Omega_fld_ac = param5;
             Omega_tot_ac = (pba->Omega0_cdm+pba->Omega0_b)*pow(pba->a_c,-3)+(pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+pba->Omega0_lambda;
-            class_test(pba->Omega_fld_ac==1.0,"you cannot have pba->Omega_fld_ac=1.0!",errmsg,errmsg);
+            class_test(pba->Omega_fld_ac==1.0,errmsg,"you cannot have pba->Omega_fld_ac=1.0!");
             if(pba->Omega_fld_ac!=1.0)pba->Omega_fld_ac = Omega_tot_ac*pba->Omega_fld_ac/(1-pba->Omega_fld_ac);
 
             pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
@@ -1802,6 +1809,26 @@ int input_read_parameters(
      pba->use_ppf = _FALSE_;
    }
   }
+  class_call(parser_read_string(pfc,
+                                "use_big_theta_fld",
+                                &string1,
+                                &flag1,
+                                errmsg),
+              errmsg,
+              errmsg);
+  if (flag1 == _TRUE_){
+    if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+      ppt->use_big_theta_fld = _TRUE_;
+    }
+    else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
+      ppt->use_big_theta_fld = _FALSE_;
+    }
+  }
+  else if ((pba->fluid_equation_of_state == EDE) && (pba->ede_parametrization == tracker)){
+    ppt->use_big_theta_fld = _TRUE_; // if no input given, but we're in the pheno_axion EDE regime, just use big theta.
+  }
+
+
 
 
   /** - Omega_0_lambda (cosmological constant), Omega0_fld (dark energy fluid), Omega0_scf (scalar field) */
@@ -4316,6 +4343,8 @@ int input_default_params(
   ppt->three_ceff2_ur=1.;
   ppt->three_cvis2_ur=1.;
 
+  ppt->use_big_theta_fld = _FALSE_;
+
   ppt->z_max_pk=0.;
 
   ppt->selection_num=1;
@@ -5150,7 +5179,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
       break;
     case a_peak_eq:
       output[i] = ba.a_peak-ba.a_eq;
-      if(input_verbose>2)printf("a_peak from bg = %e \t a_peak - a_eq = %e\n", ba.a_peak, output[i]);
+      if(input_verbose>2) printf("a_peak from bg = %e \t a_peak - a_eq = %e\n", ba.a_peak, output[i]);
       break;
     case sigma8:
       output[i] = nl.sigma8[nl.index_pk_m]-pfzw->target_value[i];
@@ -5518,6 +5547,7 @@ int input_get_guess(double *xguess,
       Omega_rad = ba.Omega0_g+ba.Omega0_ur;
       xguess[index_guess] = 0.94*Omega_rad/Omega_M;
       dxdy[index_guess] = 1.;
+      printf("Gave guess a_c_from_a_eq = %.2e", xguess[index_guess]);
       /* That is, currently, this is set up assuming you want the peak to match a_eq
       Our guess for a_c in that case, which is very close to a_peak is also a_eq */
       break;

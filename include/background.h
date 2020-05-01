@@ -78,10 +78,8 @@ struct background
 
   short  fld_has_perturbations; /**< TK ?????? eventually remove this flag as we will always want perturbations to be calculated */
   double nu_fld; /**< parameter controlling width of ede transition from -1 to whatever w_f is */
-  int n_pheno_axion; /**< exponent of (1-cos) in axion potential that fld is mimicing such that final eq of state of fld is n-1/n+1 */
-  double Omega_fld_ac; /**< fractional energy density of EDE at a_c
-                      TK ??????? Do we need to read this in because we should simply set this in input, likely don't need it as a separate parameter?
-                      Unless we want it to be a recognised param for output.  */
+  double n_pheno_axion; /**< exponent of (1-cos) in axion potential that fld is mimicing such that final eq of state of fld is n-1/n+1 */
+  double Omega_fld_ac; /**< fractional energy density of EDE at a_c */
   double n_cap_infinity; /**< n_fld higher than this is assumed to be infinite. Helps set w_fld_final = 1 */
   double w_fld_f; /**< Final eq of state of EDE */
   double a_peak; /**< scale factor when EDE energy density peaks */
@@ -242,6 +240,7 @@ struct background
   int index_bg_rho_lambda;    /**< cosmological constant density */
   int index_bg_rho_fld;       /**< fluid density */
   int index_bg_w_fld;         /**< fluid equation of state */
+  int index_bg_Omega_fld;     /**< fluid fractional energy density Omega_fld / Omega_tot as a function of a, needed to calculate the "peak" of pheno_axion EDE type fluid */
   int index_bg_rho_ur;        /**< relativistic neutrinos/relics density */
   int index_bg_rho_idm_dr;    /**< density of dark matter interacting with dark radiation */
   int index_bg_rho_idr;       /**< density of interacting dark radiation */
