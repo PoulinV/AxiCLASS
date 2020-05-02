@@ -2178,7 +2178,7 @@ if(pth->annihilation>0.){
       ppt->has_cls = _TRUE_;
       class_read_double("A_lens",psp->A_lens);
       class_read_double("A_lens_TTTEEE",ple->A_lens_TTTEEE);
-
+      // ple->A_lens_TTTEEE = psp->A_lens * ple->A_lens_TTTEEE;//if A_lens is != 1, we rescale A_lens_TTTEEE.
     }
 
     if ((strstr(string1,"nCl") != NULL) || (strstr(string1,"NCl") != NULL) || (strstr(string1,"NCL") != NULL) ||
