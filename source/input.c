@@ -4227,6 +4227,7 @@ int input_default_params(
   pba->wa_fld = 0.;
   pba->Omega_EDE = 0.;
   pba->cs2_fld = 1.;
+  pba->a_c = 1.;
   pba->ede_parametrization = tracker;
   pba->fld_has_perturbations = _TRUE_;
   pba->nu_fld = 1.;
