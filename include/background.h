@@ -76,7 +76,6 @@ struct background
   double wa_fld; /**< \f$ wa_{DE} \f$: fluid equation of state parameter derivative */
   double Omega_EDE; /**< \f$ wa_{DE} \f$: Early Dark Energy density parameter */
 
-  short  fld_has_perturbations; /**< TK ?????? eventually remove this flag as we will always want perturbations to be calculated */
   double nu_fld; /**< parameter controlling width of ede transition from -1 to whatever w_f is */
   double n_pheno_axion; /**< exponent of (1-cos) in axion potential that fld is mimicing such that final eq of state of fld is n-1/n+1 */
   double Omega_fld_ac; /**< fractional energy density of EDE at a_c */

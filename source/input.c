@@ -4229,7 +4229,6 @@ int input_default_params(
   pba->cs2_fld = 1.;
   pba->a_c = 1.;
   pba->ede_parametrization = tracker;
-  pba->fld_has_perturbations = _TRUE_;
   pba->nu_fld = 1.;
   pba->n_pheno_axion = 1000;
   pba->n_cap_infinity = 500;
