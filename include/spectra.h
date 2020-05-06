@@ -31,7 +31,7 @@ struct spectra {
                    and number of bins minus one means all
                    correlations */
 
-  double A_lens;
+  double A_lens; /**<  A_lens parameter rescaling the phiphi power spectrum amplitude */
   //@}
 
   /** @name - information on number of modes and pairs of initial conditions */
