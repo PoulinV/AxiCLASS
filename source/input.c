@@ -5547,7 +5547,7 @@ int input_get_guess(double *xguess,
       Omega_rad = ba.Omega0_g+ba.Omega0_ur;
       xguess[index_guess] = 0.94*Omega_rad/Omega_M;
       dxdy[index_guess] = 1.;
-      printf("Gave guess a_c_from_a_eq = %.2e", xguess[index_guess]);
+      //printf("Gave guess a_c_from_a_eq = %.2e", xguess[index_guess]);
       /* That is, currently, this is set up assuming you want the peak to match a_eq
       Our guess for a_c in that case, which is very close to a_peak is also a_eq */
       break;
