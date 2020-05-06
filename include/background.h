@@ -21,6 +21,7 @@ enum spatial_curvature {flat,open,closed};
 /** list of possible parametrisations of the DE equation of state */
 
 enum equation_of_state {CLP,EDE};
+enum ede_parametrization {tracker,pheno_axion};
 
 /**
  * All background parameters and evolution that other modules need to know.
@@ -69,10 +70,20 @@ struct background
   double Omega0_fld; /**< \f$ \Omega_{0 de} \f$: fluid */
 
   enum equation_of_state fluid_equation_of_state; /**< parametrisation scheme for fluid equation of state */
+  enum ede_parametrization ede_parametrization; /**< parametrisation scheme for ede type of fluid */
 
   double w0_fld; /**< \f$ w0_{DE} \f$: current fluid equation of state parameter */
   double wa_fld; /**< \f$ wa_{DE} \f$: fluid equation of state parameter derivative */
   double Omega_EDE; /**< \f$ wa_{DE} \f$: Early Dark Energy density parameter */
+
+  double nu_fld; /**< parameter controlling width of ede transition from -1 to whatever w_f is */
+  double n_pheno_axion; /**< exponent of (1-cos) in axion potential that fld is mimicing such that final eq of state of fld is n-1/n+1 */
+  double Omega_fld_ac; /**< fractional energy density of EDE at a_c */
+  double n_cap_infinity; /**< n_fld higher than this is assumed to be infinite. Helps set w_fld_final = 1 */
+  double w_fld_f; /**< Final eq of state of EDE */
+  double a_peak; /**< scale factor when EDE energy density peaks */
+  double f_ede_peak; /**< maximum fractional energy density of EDE */
+  short cs2_is_wn; /**< Switch in input to check if wn = cs2, read in cs2 and accordingly reset n_pheno_axion or w_final */
 
   double cs2_fld; /**< \f$ c^2_{s~DE} \f$: sound speed of the fluid
 		     in the frame comoving with the fluid (so, this is
@@ -228,6 +239,7 @@ struct background
   int index_bg_rho_lambda;    /**< cosmological constant density */
   int index_bg_rho_fld;       /**< fluid density */
   int index_bg_w_fld;         /**< fluid equation of state */
+  int index_bg_Omega_fld;     /**< fluid fractional energy density Omega_fld / Omega_tot as a function of a, needed to calculate the "peak" of pheno_axion EDE type fluid */
   int index_bg_rho_ur;        /**< relativistic neutrinos/relics density */
   int index_bg_rho_idm_dr;    /**< density of dark matter interacting with dark radiation */
   int index_bg_rho_idr;       /**< density of interacting dark radiation */

@@ -134,10 +134,13 @@
  * temporary parameters for background fzero function
  */
 
-enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr, Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,log10_fraction_axion_ac,log10_axion_ac,log10_fraction_axion_ac_phi2n,log10_axion_ac_phi2n,sigma8};
+enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr,
+                  Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,
+                  log10_fraction_axion_ac, log10_axion_ac, log10_fraction_axion_ac_phi2n,
+                  log10_axion_ac_phi2n, a_peak_eq, sigma8};
 enum computation_stage {cs_background, cs_thermodynamics, cs_perturbations,
                         cs_primordial, cs_nonlinear, cs_transfer, cs_spectra};
-#define _NUM_TARGETS_ 11 //Keep this number as number of target_names
+#define _NUM_TARGETS_ 12 //Keep this number as number of target_names
 enum scf_pot_inp{
   pol_times_exp_inp, /** scf_potential set to pol_times_exp:V equals ((\phi-B)^\alpha + A)exp(-lambda*phi), see http://arxiv.org/abs/astro-ph/9908085.*/
   double_exp_inp, /* scf_potential set to double_exp: V equals \Lambda_1^4e^{-\lambda\phi}+\Lambda_2^4e^{-\mu\phi} */

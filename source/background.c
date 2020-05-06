@@ -470,6 +470,7 @@ int background_functions(
   }
 
   /* fluid with w(a) and constant cs2 */
+  /* or whatever other fluid species you have defined under background_w_fld */
   if (pba->has_fld == _TRUE_) {
 
     /* get rho_fld from vector of integrated variables */
@@ -563,6 +564,14 @@ int background_functions(
     /*  */
     /*  */
 
+    /** - compute and store fractional energy density of fluid
+          to later calculate the location of the peak of f_EDE */
+    if( (pba->has_fld == _TRUE_) && ((pba->fluid_equation_of_state == EDE) && (pba->ede_parametrization == pheno_axion)) ){
+      // TK ????????? do we want to make this only for the pheno_axion case of EDE?
+      pvecback[pba->index_bg_Omega_fld] = pvecback[pba->index_bg_rho_fld] / rho_tot;
+    }
+
+
   }
 
   return _SUCCESS_;
@@ -595,6 +604,7 @@ int background_w_fld(
   double dOmega_ede_over_da = 0.;
   double d2Omega_ede_over_da2 = 0.;
   double a_eq, Omega_r, Omega_m;
+  double w,dw,intw;
 
   /** - first, define the function w(a) */
   switch (pba->fluid_equation_of_state) {
@@ -602,27 +612,34 @@ int background_w_fld(
     *w_fld = pba->w0_fld + pba->wa_fld * (1. - a / pba->a_today);
     break;
   case EDE:
-    // Omega_ede(a) taken from eq. (10) in 1706.00730
-    Omega_ede = (pba->Omega0_fld - pba->Omega_EDE*(1.-pow(a,-3.*pba->w0_fld)))
-      /(pba->Omega0_fld+(1.-pba->Omega0_fld)*pow(a,3.*pba->w0_fld))
-      + pba->Omega_EDE*(1.-pow(a,-3.*pba->w0_fld));
+    if (pba->ede_parametrization == pheno_axion){
+      // w_ede(a) defined from a mash-up of 1811.04083 and 1905.12618
+      w = pba->w_fld_f; //e.o.s. once the field starts oscillating
+      *w_fld = (1+w)/(1+pow(pba->a_c/a,3*(1+w)/pba->nu_fld))-1+1e-10; //we add 1e-10 to avoid a crashing of the solver. Checked to be totally invisible.
+    }
+    else {
+      // Omega_ede(a) taken from eq. (10) in 1706.00730
+      Omega_ede = (pba->Omega0_fld - pba->Omega_EDE*(1.-pow(a,-3.*pba->w0_fld)))
+        /(pba->Omega0_fld+(1.-pba->Omega0_fld)*pow(a,3.*pba->w0_fld))
+        + pba->Omega_EDE*(1.-pow(a,-3.*pba->w0_fld));
 
-    // d Omega_ede / d a taken analytically from the above
-    dOmega_ede_over_da = - pba->Omega_EDE* 3.*pba->w0_fld*pow(a,-3.*pba->w0_fld-1.)/(pba->Omega0_fld+(1.-pba->Omega0_fld)*pow(a,3.*pba->w0_fld))
-      - (pba->Omega0_fld - pba->Omega_EDE*(1.-pow(a,-3.*pba->w0_fld)))*(1.-pba->Omega0_fld)*3.*pba->w0_fld*pow(a,3.*pba->w0_fld-1.)/pow(pba->Omega0_fld+(1.-pba->Omega0_fld)*pow(a,3.*pba->w0_fld),2)
-      + pba->Omega_EDE*3.*pba->w0_fld*pow(a,-3.*pba->w0_fld-1.);
+      // d Omega_ede / d a taken analytically from the above
+      dOmega_ede_over_da = - pba->Omega_EDE* 3.*pba->w0_fld*pow(a,-3.*pba->w0_fld-1.)/(pba->Omega0_fld+(1.-pba->Omega0_fld)*pow(a,3.*pba->w0_fld))
+        - (pba->Omega0_fld - pba->Omega_EDE*(1.-pow(a,-3.*pba->w0_fld)))*(1.-pba->Omega0_fld)*3.*pba->w0_fld*pow(a,3.*pba->w0_fld-1.)/pow(pba->Omega0_fld+(1.-pba->Omega0_fld)*pow(a,3.*pba->w0_fld),2)
+        + pba->Omega_EDE*3.*pba->w0_fld*pow(a,-3.*pba->w0_fld-1.);
 
-    // find a_equality (needed because EDE tracks first radiation, then matter)
-    Omega_r = pba->Omega0_g * (1. + 3.046 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
-    Omega_m = pba->Omega0_b;
-    if (pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
-    if (pba->has_idm_dr == _TRUE_) Omega_m += pba->Omega0_idm_dr;
-    if (pba->has_dcdm == _TRUE_)
-      class_stop(pba->error_message,"Early Dark Energy not compatible with decaying Dark Matter because we omitted to code the calculation of a_eq in that case, but it would not be difficult to add it if necessary, should be a matter of 5 minutes");
-    a_eq = Omega_r/Omega_m; // assumes a flat universe with a=1 today
+      // find a_equality (needed because EDE tracks first radiation, then matter)
+      Omega_r = pba->Omega0_g * (1. + 3.046 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
+      Omega_m = pba->Omega0_b;
+      if (pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
+      if (pba->has_idm_dr == _TRUE_) Omega_m += pba->Omega0_idm_dr;
+      if (pba->has_dcdm == _TRUE_)
+        class_stop(pba->error_message,"Early Dark Energy not compatible with decaying Dark Matter because we omitted to code the calculation of a_eq in that case, but it would not be difficult to add it if necessary, should be a matter of 5 minutes");
+      a_eq = Omega_r/Omega_m; // assumes a flat universe with a=1 today
 
-    // w_ede(a) taken from eq. (11) in 1706.00730
-    *w_fld = - dOmega_ede_over_da*a/Omega_ede/3./(1.-Omega_ede)+a_eq/3./(a+a_eq);
+      // w_ede(a) taken from eq. (11) in 1706.00730
+      *w_fld = - dOmega_ede_over_da*a/Omega_ede/3./(1.-Omega_ede)+a_eq/3./(a+a_eq);
+    }
     break;
   }
 
@@ -637,11 +654,16 @@ int background_w_fld(
     *dw_over_da_fld = - pba->wa_fld / pba->a_today;
     break;
   case EDE:
-    d2Omega_ede_over_da2 = 0.;
-    *dw_over_da_fld = - d2Omega_ede_over_da2*a/3./(1.-Omega_ede)/Omega_ede
-      - dOmega_ede_over_da/3./(1.-Omega_ede)/Omega_ede
-      + dOmega_ede_over_da*dOmega_ede_over_da*a/3./(1.-Omega_ede)/(1.-Omega_ede)/Omega_ede
-      + a_eq/3./(a+a_eq)/(a+a_eq);
+    if (pba->ede_parametrization == pheno_axion) {
+      *dw_over_da_fld = 0; // calculated directly in perturbations to avoid zeroes in the denominator
+    }
+    else {
+      d2Omega_ede_over_da2 = 0.;
+      *dw_over_da_fld = - d2Omega_ede_over_da2*a/3./(1.-Omega_ede)/Omega_ede
+        - dOmega_ede_over_da/3./(1.-Omega_ede)/Omega_ede
+        + dOmega_ede_over_da*dOmega_ede_over_da*a/3./(1.-Omega_ede)/(1.-Omega_ede)/Omega_ede
+        + a_eq/3./(a+a_eq)/(a+a_eq);
+    }
     break;
   }
 
@@ -661,7 +683,14 @@ int background_w_fld(
     *integral_fld = 3.*((1.+pba->w0_fld+pba->wa_fld)*log(pba->a_today/a) + pba->wa_fld*(a/pba->a_today-1.));
     break;
   case EDE:
-    class_stop(pba->error_message,"EDE implementation not finished: to finish it, read the comments in background.c just before this line\n");
+    if (pba->ede_parametrization == pheno_axion) {
+      *integral_fld = //-3*(1+w)*log(a/pba->a_today) - pba->nu_fld*log(1+ pow(pba->a_c[n]/a,3*(1+w)/pba->nu_fld));
+        3*(1+w)*( log(pba->a_today/a)
+        + pba->nu_fld/3/(1+w)*log( (1 + pow((pba->a_c/pba->a_today),3*(1+w)/pba->nu_fld) ) / (1 + pow((pba->a_c/a),3*(1+w)/pba->nu_fld) ) ) );
+    }
+    else{
+      class_stop(pba->error_message,"EDE implementation not finished: to finish it, read the comments in background.c just before this line\n");
+    }
     break;
   }
 
@@ -780,6 +809,8 @@ int background_init(
 
   /* fluid equation of state */
   if (pba->has_fld == _TRUE_) {
+    pba->f_ede_peak = 0.0;
+    pba->a_peak = 0.0;
 
     class_call(background_w_fld(pba,0.,&w_fld,&dw_over_da,&integral_fld), pba->error_message, pba->error_message);
 
@@ -1166,6 +1197,7 @@ int background_indices(
   /* - index for fluid */
   class_define_index(pba->index_bg_rho_fld,pba->has_fld,index_bg,1);
   class_define_index(pba->index_bg_w_fld,pba->has_fld,index_bg,1);
+  class_define_index(pba->index_bg_Omega_fld,(pba->has_fld)&&(pba->ede_parametrization == pheno_axion),index_bg,1);
 
   /* - index for ultra-relativistic neutrinos/species */
   class_define_index(pba->index_bg_rho_ur,pba->has_ur,index_bg,1);
@@ -1869,6 +1901,8 @@ int background_solve(
   double comoving_radius=0.;
   /* scalar field critical reshift and fractional energy density at z_c */
   double z_c_new, f_ede_new, phi_c_new, counter_scf = 0;
+  /* parameters to find peak of pheno_axion EDE fluid */
+  double z_peak_new;
 
   double integration_stepsize;
   double ac, n, anow, Tosc;
@@ -2099,7 +2133,7 @@ int background_solve(
     class_call(background_functions(pba,pData+i*pba->bi_size, pba->long_info, pvecback),
                pba->error_message,
                pba->error_message);
-   if(pba->scf_potential == axion || pba->scf_potential == phi_2n){
+    if(pba->scf_potential == axion || pba->scf_potential == phi_2n){
      /* Scalar field critical redshift and fractional energy density at z_c calculations */
      z_c_new = pba->z_table[i];
      f_ede_new = pvecback[pba->index_bg_Omega_scf];
@@ -2110,7 +2144,18 @@ int background_solve(
        pba->phi_scf_c = pvecback[pba->index_bg_phi_scf];
        // printf("z %e pba->f_ede %e\n", pba->z_table[i],pba->f_ede);
      }
-   }
+    }
+
+    /* EDE pheno_axion fluid calculations to determine f_ede_peak */
+    if( (pba->has_fld) && (pba->ede_parametrization == pheno_axion) ){
+      z_peak_new = pba->z_table[i];
+      f_ede_new = pvecback[pba->index_bg_Omega_fld];
+      if(f_ede_new > pba->f_ede_peak){
+        pba->a_peak = 1./(1+z_peak_new);
+        pba->f_ede_peak = f_ede_new;
+      }
+      if(pba->background_verbose>8) printf("f_ede_peak = %.2e \t>= %.2e = f_ede_now\n", pba->f_ede_peak, f_ede_new);
+    }
 
     /* -> compute growth functions (valid in dust universe) */
 
@@ -2126,6 +2171,8 @@ int background_solve(
                pba->error_message,
                "cannot copy data back to pba->background_table");
   }
+
+  if(pba->background_verbose>2) printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
 
   /** - free the growTable with gt_free() */
 
