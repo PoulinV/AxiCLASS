@@ -872,7 +872,7 @@ int input_read_parameters(
   double n_cor=0.;
   double c_cor=0.;
   double stat_f_idr = 7./8.;
-  double wn, Omega_tot_ac;
+  double wn, Omega_tot_ac, Omega0_rad;
   double Omega_tot;
 
   int i;
@@ -1775,10 +1775,12 @@ int input_read_parameters(
           else if(flag5 == _TRUE_){
             wn = pba->w_fld_f;
             pba->Omega_fld_ac = param5;
-            Omega_tot_ac = (pba->Omega0_cdm+pba->Omega0_b)*pow(pba->a_c,-3)+(pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+pba->Omega0_lambda;
+            // Omega_tot_ac = (pba->Omega0_cdm+pba->Omega0_b)*pow(pba->a_c,-3)+(pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+pba->Omega0_lambda;
+            Omega0_rad = (4.*sigma_B/_c_*pow(pba->T_cmb,4.)) / (3.*_c_*_c_*1.e10*pba->h*pba->h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_)*(1+3.046*7./8.*pow(4./11.,4./3.));
+            Omega_tot_ac = (pba->Omega0_b+pba->Omega0_cdm)*pow(pba->a_c,-3)+(Omega0_rad)*pow(pba->a_c,-4);
             class_test(pba->Omega_fld_ac==1.0,errmsg,"you cannot have pba->Omega_fld_ac=1.0!");
             if(pba->Omega_fld_ac!=1.0)pba->Omega_fld_ac = Omega_tot_ac*pba->Omega_fld_ac/(1-pba->Omega_fld_ac);
-
+            // printf("here!\n");
             pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
                             /pow(pba->a_today/pba->a_c,3*(wn+1))
                             /pow((1+ pow( pba->a_c/pba->a_today , 3*(1+wn)/pba->nu_fld )) , pba->nu_fld);
