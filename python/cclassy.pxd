@@ -92,6 +92,8 @@ cdef extern from "class.h":
         double cs2_fld
         double phi_ini_scf
         double V0_phi2n
+        double f_ede_peak
+        double a_peak
         int bt_size
         double Omega0_ur
         double Omega0_dcdmdr

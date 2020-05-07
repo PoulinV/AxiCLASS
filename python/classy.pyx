@@ -1744,7 +1744,10 @@ cdef class Class:
                 value = self.ba.phi_ini_scf
             elif name == 'V0_phi2n':
                 value = self.ba.V0_phi2n
-
+            elif name == 'f_ede_peak':
+                value = self.ba.f_ede_peak
+            elif name == 'a_peak':
+                value = self.ba.a_peak
 
             elif name == 'Omega_m':
                 value = self.ba.Omega0_m
