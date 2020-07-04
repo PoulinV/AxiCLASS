@@ -81,6 +81,7 @@ struct background
   double Omega_fld_ac; /**< fractional energy density of EDE at a_c */
   double n_cap_infinity; /**< n_fld higher than this is assumed to be infinite. Helps set w_fld_final = 1 */
   double w_fld_f; /**< Final eq of state of EDE */
+  double log10_a_c; /**< log10(a_c) to set a_c */ 
   double a_peak; /**< scale factor when EDE energy density peaks */
   double f_ede_peak; /**< maximum fractional energy density of EDE */
   short cs2_is_wn; /**< Switch in input to check if wn = cs2, read in cs2 and accordingly reset n_pheno_axion or w_final */

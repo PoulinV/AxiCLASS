@@ -1707,10 +1707,18 @@ int input_read_parameters(
       class_call(parser_read_double(pfc,"a_peak_eq",&param2,&flag2,errmsg),
                   errmsg,
                   errmsg);
+      class_call(parser_read_double(pfc,"log10_a_c",&param3,&flag3,errmsg),
+		  errmsg,
+                  errmsg);
+      class_test(flag1==_TRUE_&&flag3==_TRUE_,errmsg,"You have passed both 'a_c' and 'log10(a_c)'. You cannot define a_c twice, pick one method of input.\n");
       class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"You have passed both 'a_c' and 'ac_from_aeq'. The second tells CLASS that you want to shoot for a_peak = a_eq, so giving a_c also is confusing. Pick one. \n");
       // Have we directly passed a_c
-      if (flag1 == _TRUE_){
-        pba->a_c = param1;
+      if (flag1 == _TRUE_ || flag3 == _TRUE_ ){
+        if (flag1 == _TRUE_) pba->a_c = param1;
+	else if (flag3 == _TRUE_) {
+	  pba->log10_a_c = param3;
+	  pba->a_c = pow(10,pba->log10_a_c);
+	} 
         if(input_verbose>5) printf("Read in a_c = %e\n", pba->a_c);
       }
       // Do we want to shoot for it based on mathing a_peak = a_eq
@@ -5581,7 +5589,7 @@ int input_get_guess(double *xguess,
       Omega_rad = ba.Omega0_g+ba.Omega0_ur;
       xguess[index_guess] = 0.94*Omega_rad/Omega_M;
       dxdy[index_guess] = 1.;
-      printf("Gave guess a_c_from_a_eq = %.2e", xguess[index_guess]);
+      //printf("Gave guess a_c_from_a_eq = %.2e", xguess[index_guess]);
       /* That is, currently, this is set up assuming you want the peak to match a_eq
       Our guess for a_c in that case, which is very close to a_peak is also a_eq */
       break;
