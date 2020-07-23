@@ -1061,11 +1061,18 @@ cdef class Class:
 
     def fEDE(self):
         return self.ba.f_ede
+
     def omega_axion(self):
         return self.ba.omega_axion
 
     def zc(self):
         return 10**self.ba.log10_z_c
+
+    def log10_zc(self):
+        return -1*self.ba.log10_axion_ac
+
+    def thetai_scf(self):
+        return self.ba.scf_parameters[0]
 
     def log10_f_axion(self):
         return self.ba.log10_f_axion
