@@ -1544,6 +1544,8 @@ int input_read_parameters(
   }
   /** flag1 below corresponds to whether we have input an ede_parametrization */
   if ((pba->Omega0_fld != 0.) || (flag1 == _TRUE_)) {
+
+
     class_call(parser_read_string(pfc,"fluid_equation_of_state",&string1,&flag1,errmsg),
               errmsg,
               errmsg);
@@ -1922,6 +1924,19 @@ int input_read_parameters(
     class_test( (pba->fluid_equation_of_state == EDE) && (pba->ede_parametrization == pheno_axion),
                errmsg,
                "Something went wrong or this is a bug. Omega0_fld is being reset outside its input block when fluid is specified to be EDE pheno_axion. This should never happen.");
+
+     class_call(parser_read_string(pfc,"fluid_equation_of_state",&string1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+     if (flag1 == _TRUE_) {
+      if ((strstr(string1,"CLP") != NULL) || (strstr(string1,"clp") != NULL)) {
+        pba->fluid_equation_of_state = CLP;
+        class_read_double("w0_fld",pba->w0_fld);
+        class_read_double("wa_fld",pba->wa_fld);
+        class_read_double("cs2_fld",pba->cs2_fld);
+      }
+     }
+
   }
   else if ((flag3 == _TRUE_) && (param3 < 0.)){
     // Fill up with scalar field
