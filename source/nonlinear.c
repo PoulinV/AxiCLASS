@@ -1351,8 +1351,9 @@ int nonlinear_init(
   if (pnl->nonlinear_verbose>0) {
 
     if (pnl->has_pk_m == _TRUE_)
-      fprintf(stdout," -> sigma8=%g for total matter (computed till k = %g h/Mpc)\n",
-              pnl->sigma8[pnl->index_pk_m],
+      fprintf(stdout," -> sigma8=%g for total matter (computed till k = %g h/Mpc)\n -> S8=%g for total matter (computed till k = %g h/Mpc)\n",
+              pnl->sigma8[pnl->index_pk_m],  pnl->k[pnl->k_size-1]/pba->h,
+              pnl->sigma8[pnl->index_pk_m]*pow((pba->Omega0_m/0.3),0.5),
               pnl->k[pnl->k_size-1]/pba->h);
 
     if (pnl->has_pk_cb == _TRUE_)
@@ -1653,7 +1654,7 @@ int nonlinear_free(
     free(pnl->ln_k);
     free(pnl->ln_tau);
     free(pnl->is_non_zero);
-    
+
     for (index_pk=0; index_pk<pnl->pk_size; index_pk++) {
       free(pnl->ln_pk_ic_l[index_pk]);
       free(pnl->ln_pk_l[index_pk]);
