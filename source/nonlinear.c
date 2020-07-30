@@ -1351,10 +1351,11 @@ int nonlinear_init(
   if (pnl->nonlinear_verbose>0) {
 
     if (pnl->has_pk_m == _TRUE_)
-      fprintf(stdout," -> sigma8=%g for total matter (computed till k = %g h/Mpc)\n -> S8=%g for total matter (computed till k = %g h/Mpc)\n",
+      fprintf(stdout," -> sigma8=%g for total matter (computed till k = %g h/Mpc)\n -> S8=%g for total matter (computed till k = %g h/Mpc) with Omega_m = %g \n",
               pnl->sigma8[pnl->index_pk_m],  pnl->k[pnl->k_size-1]/pba->h,
               pnl->sigma8[pnl->index_pk_m]*pow((pba->Omega0_m/0.3),0.5),
-              pnl->k[pnl->k_size-1]/pba->h);
+              pnl->k[pnl->k_size-1]/pba->h,
+              pba->Omega0_m);
 
     if (pnl->has_pk_cb == _TRUE_)
       fprintf(stdout," -> sigma8=%g for baryons+cdm  (computed till k = %g h/Mpc)\n",
