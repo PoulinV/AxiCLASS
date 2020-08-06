@@ -132,7 +132,44 @@ int primordial_spectrum_at_k(
   /** - otherwise, interpolate in the pre-computed table */
 
   else {
+    // printf("interpolate! need to bypass\n");
 
+    if(ppm->is_primordial_Pk_different ==_TRUE_){
+      if (ppm->is_non_zero[index_md][index_ic1_ic2] == _TRUE_) {
+
+        class_call(primordial_analytic_spectrum(ppm,
+                                                index_md,
+                                                index_ic1_ic2,
+                                                exp(lnk),
+                                                &(output[index_ic1_ic2])),
+                   ppm->error_message,
+                   ppm->error_message);
+      }
+      else {
+        output[index_ic1_ic2] = 0.;
+      }
+
+      /* if mode==linear, output is already in the correct format. Otherwise, apply necessary transformation. */
+
+      if (mode == logarithmic) {
+
+        for (index_ic1 = 0; index_ic1 < ppm->ic_size[index_md]; index_ic1++) {
+          index_ic1_ic2 = index_symmetric_matrix(index_ic1,index_ic1,ppm->ic_size[index_md]);
+          output[index_ic1_ic2] = log(output[index_ic1_ic2]);
+        }
+        for (index_ic1 = 0; index_ic1 < ppm->ic_size[index_md]; index_ic1++) {
+          for (index_ic2 = index_ic1+1; index_ic2 < ppm->ic_size[index_md]; index_ic2++) {
+            index_ic1_ic2 = index_symmetric_matrix(index_ic1,index_ic2,ppm->ic_size[index_md]);
+            if (ppm->is_non_zero[index_md][index_ic1_ic2] == _TRUE_) {
+              output[index_ic1_ic2] /= sqrt(output[index_symmetric_matrix(index_ic1,index_ic1,ppm->ic_size[index_md])]*
+                                            output[index_symmetric_matrix(index_ic2,index_ic2,ppm->ic_size[index_md])]);
+            }
+          }
+        }
+      }
+
+
+    }else{
     class_call(array_interpolate_spline(
                                         ppm->lnk,
                                         ppm->lnk_size,
@@ -167,6 +204,7 @@ int primordial_spectrum_at_k(
           }
         }
       }
+    }
     }
   }
 
@@ -935,11 +973,18 @@ int primordial_analytic_spectrum(
                                  double * pk
                                  ) {
 
+
   if (ppm->is_non_zero[index_md][index_ic1_ic2] == _TRUE_) {
+    // printf("in primordial_spec_init %d %d\n",ppm->is_primordial_Pk_different,ppm->calling_from_pk);
+    if(ppm->is_primordial_Pk_different == _TRUE_ && ppm->calling_from_pk == _TRUE_){
+      *pk = ppm->A_s_pk
+        *exp((ppm->ns_pk-1.)*log(k/ppm->k_pivot)
+             + 0.5 * ppm->running_pk * pow(log(k/ppm->k_pivot), 2.));
+    }else{
     *pk = ppm->amplitude[index_md][index_ic1_ic2]
       *exp((ppm->tilt[index_md][index_ic1_ic2]-1.)*log(k/ppm->k_pivot)
            + 0.5 * ppm->running[index_md][index_ic1_ic2] * pow(log(k/ppm->k_pivot), 2.));
-
+    }
   }
   else {
     *pk = 0.;

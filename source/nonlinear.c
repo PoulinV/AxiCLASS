@@ -605,6 +605,7 @@ int nonlinear_pk_at_k_and_z(
                   sizeof(double)*pnl->ic_ic_size,
                   pnl->error_message);
 
+      ppm->calling_from_pk = _TRUE_;
       class_call(primordial_spectrum_at_k(ppm,
                                           pnl->index_md_scalars,
                                           linear,
@@ -612,7 +613,7 @@ int nonlinear_pk_at_k_and_z(
                                           pk_primordial_k),
                  ppm->error_message,
                  pnl->error_message);
-
+      ppm->calling_from_pk = _FALSE_;
       /* compute P_primordial(kmin) */
 
       kmin = exp(pnl->ln_k[0]);
@@ -621,6 +622,7 @@ int nonlinear_pk_at_k_and_z(
                   sizeof(double)*pnl->ic_ic_size,
                   pnl->error_message);
 
+      ppm->calling_from_pk = _TRUE_;
       class_call(primordial_spectrum_at_k(ppm,
                                           pnl->index_md_scalars,
                                           linear,
@@ -628,7 +630,7 @@ int nonlinear_pk_at_k_and_z(
                                           pk_primordial_kmin),
                  ppm->error_message,
                  pnl->error_message);
-
+      ppm->calling_from_pk = _FALSE_;
       /* finally, infer P(k) */
 
       *out_pk *= (k*pk_primordial_k[0]/kmin/pk_primordial_kmin[0]);
@@ -2146,13 +2148,14 @@ int nonlinear_pk_linear(
   }
 
   /** - loop over k values */
-
   for (index_k=0; index_k<k_size; index_k++) {
 
     /** --> get primordial spectrum */
+    ppm->calling_from_pk = _TRUE_;
     class_call(primordial_spectrum_at_k(ppm,pnl->index_md_scalars,logarithmic,pnl->ln_k[index_k],primordial_pk),
                ppm->error_message,
                pnl->error_message);
+    ppm->calling_from_pk = _FALSE_;
 
     /** --> initialize a local variable for P_m(k) and P_cb(k) to zero */
     pk = 0.;

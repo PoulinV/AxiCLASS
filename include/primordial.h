@@ -298,6 +298,12 @@ struct primordial {
 
   ErrorMsg error_message; /**< zone for writing error messages */
 
+  short is_primordial_Pk_different;  /**< only useful if different primordial spectrum */ //VP
+  short calling_from_pk;  /**< calling_from_pk? only useful if different primordial spectrum */ //VP
+  double A_s_pk;  /**< only useful if different primordial spectrum */ //VP
+  double ns_pk;  /**< only useful if different primordial spectrum */ //VP
+  double running_pk;  /**< only useful if different primordial spectrum */ //VP
+
 };
 
 struct primordial_inflation_parameters_and_workspace {

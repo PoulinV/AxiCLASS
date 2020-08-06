@@ -2940,6 +2940,21 @@ if(pth->annihilation>0.){
 
     if (ppt->has_scalars == _TRUE_) {
 
+      /** Do we have different primordial Pk for Cl and matter Pk? **/
+      class_call(parser_read_string(pfc,"is_primordial_Pk_different",&string1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+
+      if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+
+        ppm->is_primordial_Pk_different = _TRUE_;
+
+      }
+      else{
+        ppm->is_primordial_Pk_different = _FALSE_;
+      }
+
+      // printf("ppm->is_primordial_Pk_different %d\n", ppm->is_primordial_Pk_different);
       class_call(parser_read_double(pfc,"A_s",&param1,&flag1,errmsg),
                  errmsg,
                  errmsg);
@@ -2953,11 +2968,30 @@ if(pth->annihilation>0.){
         ppm->A_s = param1;
       else if (flag2 == _TRUE_)
         ppm->A_s = exp(param2)*1.e-10;
+      if(ppm->is_primordial_Pk_different == _TRUE_){
+        // printf("yes here\n");
+        class_call(parser_read_double(pfc,"A_s_pk",&param1,&flag1,errmsg),
+                   errmsg,
+                   errmsg);
+        class_call(parser_read_double(pfc,"ln10^{10}A_s_pk",&param2,&flag2,errmsg),
+                   errmsg,
+                   errmsg);
+        class_test((flag1 == _TRUE_) && (flag2 == _TRUE_),
+                   errmsg,
+                   "In input file, you cannot enter both A_s and ln10^{10}A_s, choose one");
+        if (flag1 == _TRUE_)
+          ppm->A_s_pk = param1;
+        else if (flag2 == _TRUE_)
+          ppm->A_s_pk = exp(param2)*1.e-10;
+      }
+
 
       if (ppt->has_ad == _TRUE_) {
 
         class_read_double("n_s",ppm->n_s);
+        if(ppm->is_primordial_Pk_different == _TRUE_)class_read_double("ns_pk",ppm->ns_pk);
         class_read_double("alpha_s",ppm->alpha_s);
+        if(ppm->is_primordial_Pk_different == _TRUE_)class_read_double("running_pk",ppm->running_pk);
 
       }
 
@@ -4416,6 +4450,10 @@ int input_default_params(
   ppm->A_s = 2.215e-9;
   ppm->n_s = 0.9619;
   ppm->alpha_s = 0.;
+  ppm->A_s_pk = 2.215e-9;
+  ppm->ns_pk = 0.9619;
+  ppm->running_pk = 0.;
+  ppm->is_primordial_Pk_different = _FALSE_;
   ppm->f_bi = 1.;
   ppm->n_bi = 1.;
   ppm->alpha_bi = 0.;

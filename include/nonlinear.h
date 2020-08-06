@@ -68,6 +68,7 @@ struct nonlinear {
 
   //@{
 
+   
   short has_pk_m;  /**< do we want spectra for total matter? */
   short has_pk_cb; /**< do we want spectra for cdm+baryons? */
 
