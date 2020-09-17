@@ -566,7 +566,8 @@ int background_functions(
 
     /** - compute and store fractional energy density of fluid
           to later calculate the location of the peak of f_EDE */
-    if( (pba->has_fld == _TRUE_) && ((pba->fluid_equation_of_state == EDE) && (pba->ede_parametrization == pheno_axion)) ){
+    // if( (pba->has_fld == _TRUE_) && ((pba->fluid_equation_of_state == EDE) && (pba->ede_parametrization == pheno_axion)) ){
+    if( (pba->has_fld == _TRUE_)){
       // TK ????????? do we want to make this only for the pheno_axion case of EDE?
       pvecback[pba->index_bg_Omega_fld] = pvecback[pba->index_bg_rho_fld] / rho_tot;
     }
@@ -1990,9 +1991,11 @@ int background_solve(
       // printf("a %e pvecback[pba->index_bg_Omega_scf] %e pba->threshold_scf_fluid_m_over_H %e\n", pvecback_integration[pba->index_bi_a],pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H);
       // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H || a>pba->threshold_for_fluid*pba->a_c){ //We switch for fluid equations
       // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
-      // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
-      ac = pow(10,pba->log10_axion_ac);
-      if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback_integration[pba->index_bi_a] > ac){ //We switch for fluid equations
+      if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
+      // ac = pow(10,pba->log10_axion_ac);
+      // printf("ac %e\n", ac);
+      // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback_integration[pba->index_bi_a] > ac){ //We switch for fluid equations
+      // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
         pba->scf_kg_eq = _FALSE_;
       }
       else{
@@ -2172,7 +2175,7 @@ int background_solve(
                "cannot copy data back to pba->background_table");
   }
 
-  if(pba->background_verbose>2) printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
+  if(pba->background_verbose>2 && pba->ede_parametrization == pheno_axion) printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
 
   /** - free the growTable with gt_free() */
 
@@ -2462,11 +2465,13 @@ int background_initial_conditions(
       /** - --> If no attractor initial conditions are assigned, gets the provided ones. */
       pvecback_integration[pba->index_bi_phi_scf] = pba->phi_ini_scf;
       pvecback_integration[pba->index_bi_phi_prime_scf] = pba->phi_prime_ini_scf;
-      //printf("initial phi = %e ",pba->phi_ini_scf);
-      //printf("phi prime = %e ", pba->phi_prime_ini_scf);
-      //printf(" phi / fa = %e ", (pba->phi_ini_scf/pba->scf_parameters[1]));
-      //printf(" phi / fa radians = %e ", ((pba->phi_ini_scf/pba->scf_parameters[1])*_PI_/180));
-      //printf("cos(phi_init) = %e ", cos((pba->phi_ini_scf/pba->scf_parameters[1])*_PI_/180));
+      // printf("initial phi = %e ",pvecback_integration[pba->index_bi_phi_scf] );
+      // printf("phi prime = %e ", pba->phi_prime_ini_scf);
+      // printf("here! after after\n");
+
+      // printf(" phi / fa = %e ", (pba->phi_ini_scf/pba->scf_parameters[1]));
+      // printf(" phi / fa radians = %e ", ((pba->phi_ini_scf/pba->scf_parameters[1])*_PI_/180));
+      // printf("cos(phi_init) = %e ", cos((pba->phi_ini_scf/pba->scf_parameters[1])*_PI_/180));
       // printf("phi ini = %e \n", pba->phi_ini_scf);
     }
     class_test(!isfinite(pvecback_integration[pba->index_bi_phi_scf]) ||
@@ -2827,7 +2832,7 @@ int background_derivs(
   if (pba->has_scf == _TRUE_){
     /** - Scalar field equation: \f$ \phi'' + 2 a H \phi' + a^2 dV = 0 \f$  (note H is wrt cosmic time) */
     /*COComment - add if statement, dependent on flag, to either use KG equation or fluid equation  */
-    //printf("inside SF evolution call\n");
+    // printf("inside SF evolution call\n");
     if (pba->scf_kg_eq == _TRUE_) {
 
     dy[pba->index_bi_phi_scf] = y[pba->index_bi_phi_prime_scf];
