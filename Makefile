@@ -17,7 +17,7 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc-7
+CC       = gcc-10
 #CC       = icc
 #CC       = pgcc
 
@@ -47,9 +47,12 @@ CCFLAG = -g -fPIC
 LDFLAG = -g -fPIC
 
 #GSL FLAGS
+GSL_LIB = /usr/local/lib/
+
 GSLFLAG += -lgsl -lgslcblas -lm
 # leave blank to compile without HyRec, or put path to HyRec directory
 # (with no slash at the end: e.g. hyrec or ../hyrec)
+
 HYREC = hyrec
 
 ########################################################
@@ -68,11 +71,13 @@ EXTERNAL =
 # eventually update flags for including HyRec
 ifneq ($(HYREC),)
 vpath %.c $(HYREC)
-CCFLAG += -DHYREC
-#LDFLAGS += -DHYREC
+#CCFLAG += -DHYREC
+LDFLAGS += -DHYREC -lstdc++ -L$(GSL_LIB) -lgsl -lgslcblas
 INCLUDES += -I../hyrec
 EXTERNAL += hyrectools.o helium.o hydrogen.o history.o
 endif
+
+INCLUDES += -I/usr/local/include
 
 %.o:  %.c .base
 	cd $(WRKDIR);$(CC) $(OPTFLAG) $(OMPFLAG) $(CCFLAG) $(INCLUDES) -c ../$< -o $*.o

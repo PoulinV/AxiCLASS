@@ -7050,6 +7050,7 @@ int perturb_total_stress_energy(
             cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
           }
           else if(pba->scf_potential == axion){
+            // printf("omega_axion %e\n", pba->omega_axion);
             cs2_scf = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
             // pba->cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
           }
@@ -8383,19 +8384,19 @@ int perturb_print_variables(double tau,
     if (pba->has_scf == _TRUE_&& pba->scf_has_perturbations == _TRUE_){
       if (ppt->scf_kg_eq[index_md][index_k] == 1){
       //If we are following KG:
-        if (ppt->gauge == synchronous){
+          if (ppt->gauge == synchronous){
             delta_rho_scf =  1./3.*
               (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
                + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
           }
-        else{
+          else{
             delta_rho_scf =  1./3.*
               (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
                 + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]
                 - 1./a2*pow(ppw->pvecback[pba->index_bg_phi_prime_scf],2)*ppw->pvecmetric[ppw->index_mt_psi]);
           }
 
-        rho_plus_p_theta_scf =  1./3.*
+          rho_plus_p_theta_scf =  1./3.*
           k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
 
           delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
@@ -8909,11 +8910,12 @@ int perturb_derivs(double tau,
           ppt->scf_kg_eq[index_md][index_k] = 1;
         }
         else{
-          // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){
-          if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback[pba->index_bg_a] > pba->a_c){
+          if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){
+          // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback[pba->index_bg_a] > pba->a_c){
             // printf("pvecback[pba->index_bg_a] %e pba->a_c %e\n",pvecback[pba->index_bg_a], pba->a_c);
             // printf("fluid: a %e k %e\n", pvecback[pba->index_bg_a],k);
             ppt->scf_kg_eq[index_md][index_k] = 0; //We switch to fluid equations
+            // printf("here fld a %e\n", pvecback[pba->index_bg_a]);
             // pba->scf_fluid_eq = 1;
           }
           else if(pba->scf_evolve_as_fluid_always == _TRUE_){ //We switch for fluid equations
@@ -8922,6 +8924,8 @@ int perturb_derivs(double tau,
           else {
             // printf("KG: a %e k %e\n", pvecback[pba->index_bg_a],k);
             ppt->scf_kg_eq[index_md][index_k] = 1;
+            // printf("here scf! a %e\n", pvecback[pba->index_bg_a]);
+
             // pba->scf_fluid_eq = _FALSE_; //We follow standard equations
           }
           // printf("here pvecback[pba->index_bg_Omega_scf] %e threshold_scf_fluid_m_over_H %e a %e ppt->scf_kg_eq %d pba->scf_fluid_eq %d\n",pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H,a,ppt->scf_kg_eq,pba->scf_fluid_eq);
@@ -9491,6 +9495,7 @@ int perturb_derivs(double tau,
         cs2 = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
         // pba->m_scf = pba->scf_parameters[1]*pba->H0;
         a_over_ac = a/pow(10,pba->log10_axion_ac);
+        // printf("a_c %e\n",pba->log10_axion_ac);
         ca2 = (pow(a,3)*pow(a_over_ac,3*pba->n_axion/(1+pba->n_axion))*(-1+pba->n_axion)-pow(a_over_ac,3/(1+pba->n_axion))*pow(pba->a_c,3)*(1+3*pba->n_axion))
               /(pow(a,3)*pow(a_over_ac,3*pba->n_axion/(1+pba->n_axion))+pow(a_over_ac,3/(1+pba->n_axion))*pow(pba->a_c,3))/(1+pba->n_axion);
 

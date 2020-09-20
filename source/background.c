@@ -405,7 +405,6 @@ int background_functions(
     else{
       pvecback[pba->index_bg_w_scf] = pba->w_scf;
     }
-
     // if(pba->n_axion < pba->n_axion_security && pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
     // }
     // else{
@@ -840,6 +839,16 @@ int background_init(
         }
         else if(pba->scf_potential == axion){
             if(pba->f_axion > 0 && pba->m_scf > 0){
+              cos_initial = cos(pba->phi_ini_scf);
+              sin_initial = sin(pba->phi_ini_scf);
+              // printf("%e %e %e \n",cos_initial,sin_initial,p);
+
+              n = pba->n_axion;
+
+
+              Gac =sqrt(_PI_)*gsl_sf_gamma((n+1.)/(2*n))/gsl_sf_gamma(1+1./(2*n))*pow(2,-(n*n+1)/(2*n))*pow(3,0.5*(1./n-1))
+              *pow(pba->a_c,3-6./(1+n))*pow(pow(pba->a_c,6*n/(1+n))+1,0.5*(1./n-1));
+              pba->omega_axion = pba->H0*pba->m_scf*pow(1-cos_initial,0.5*(n-1))*Gac;
 
             }
         else if(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac > -30){
@@ -863,6 +872,7 @@ int background_init(
           }
           pba->f_axion = sqrt(pow(10,pba->alpha_squared));
 
+          // printf("pba->f_axion %r\n", );
           pba->log10_f_axion = log10(pba->f_axion);
           pba->log10_m_axion = log10(pba->m_scf);
 
@@ -920,7 +930,6 @@ int background_init(
           }
 
             pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
-
 
             // pba->scf_parameters[0]*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
             // pba->scf_parameters[1]*=pba->f_axion; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
@@ -2140,13 +2149,22 @@ int background_solve(
      /* Scalar field critical redshift and fractional energy density at z_c calculations */
      z_c_new = pba->z_table[i];
      f_ede_new = pvecback[pba->index_bg_Omega_scf];
-     if(f_ede_new > pba->f_ede){
+     if(f_ede_new > pba->f_ede && pba->n_axion >1.1){//there's a small problem when axion behaves like DM
        pba->log10_z_c = log10(z_c_new);
        // pba->axion_ac = 1/z_c_new-1;
        pba->f_ede = f_ede_new;
        pba->phi_scf_c = pvecback[pba->index_bg_phi_scf];
        // printf("z %e pba->f_ede %e\n", pba->z_table[i],pba->f_ede);
+     }else{
+       if(f_ede_new > pba->f_ede && pba->m_scf*pba->H0/pvecback[pba->index_bg_H] <= pba->threshold_scf_fluid_m_over_H){
+         pba->f_ede = f_ede_new;
+         pba->phi_scf_c = pvecback[pba->index_bg_phi_scf];
+         pba->log10_z_c = log10(z_c_new);
+
+       }
      }
+
+
     }
 
     /* EDE pheno_axion fluid calculations to determine f_ede_peak */
@@ -2177,6 +2195,11 @@ int background_solve(
 
   if(pba->background_verbose>2 && pba->ede_parametrization == pheno_axion) printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
 
+  if(pba->log10_axion_ac == -30 && pba->has_scf == _TRUE_ && pba->scf_potential == axion){
+    pba->log10_axion_ac = -1*pba->log10_z_c;
+    pba->a_c = pow(10,pba->log10_axion_ac);
+    // printf("pba->log10_axion_ac %e w_scf %e\n", pba->log10_axion_ac,pba->w_scf);
+  }
   /** - free the growTable with gt_free() */
 
   class_call(gt_free(&gTable),

@@ -4280,6 +4280,8 @@ int input_default_params(
 
   pba->Omega0_scf = 0.; /* Scalar field defaults */
   pba->log10_fraction_axion_ac = -30; /* Scalar field defaults */
+  pba->power_of_mu = -30; /* Scalar field defaults */
+  pba->alpha_squared = -30; /* Scalar field defaults */
   pba->log10_m_axion= -30.;
   pba->attractor_ic_scf = _TRUE_;
   pba->adptative_stepsize = 0;
@@ -4296,7 +4298,7 @@ int input_default_params(
   pba->scf_has_perturbations = _TRUE_;
   pba->threshold_scf_fluid_m_over_H = 3;
   pba->security_small_Omega_scf = -10;//set to a negative number so it is never used by default.
-  pba->n_axion_security = 2.5;//set to a negative number so it is never used by default.
+  pba->n_axion_security = -2.5;//set to a negative number so it is never used by default.
   //MZ: initial conditions are as multiplicative factors of the radiation attractor values
   pba->phi_ini_scf = 1;
   pba->phi_prime_ini_scf = 1;
