@@ -402,7 +402,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
         else if(fzw.scf_potential == axion){
           class_read_double("m_axion",fzw.m_scf);
           class_read_double("f_axion",fzw.f_axion);
-          fzw.Omega0_axion = 0.0;
+          // fzw.Omega0_axion = 0.0;
           fzw.log10_axion_ac = 0.0;
           class_read_double("n_axion",fzw.n_axion);
           // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
@@ -485,7 +485,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
           }
         }
         else if(fzw.scf_potential == phi_2n){
-          fzw.Omega0_axion = 0.0;
+          // fzw.Omega0_axion = 0.0;
           fzw.log10_axion_ac = 0.0;
           class_read_double("n_axion",fzw.n_axion);
         }
@@ -494,8 +494,10 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
         // }
 
   }
-
+  class_read_double("precision_newton_method_x",pba->precision_newton_method_x);
+  class_read_double("precision_newton_method_F",pba->precision_newton_method_F);
   class_read_int("input_verbose",input_verbose);
+  fzw.input_verbose=input_verbose;
   if (input_verbose >0) printf("Reading input parameters\n");
 
   /** - Do we need to fix unknown parameters? */
@@ -657,8 +659,8 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                                   x_inout,
                                   dxdF,
                                   unknown_parameters_size,
-                                  1e-3,//1e-2 TLS
-                                  1e-3,//1e-2 TLS
+                                  pba->precision_newton_method_x,//change to 1e-2 or 1e-3 for ede
+                                  pba->precision_newton_method_F,//change to 1e-2 or 1e-3 for ede
                                     &fzw,
                                   &fevals,
                                   errmsg),
@@ -958,6 +960,8 @@ int input_read_parameters(
       if ((strstr(string1,"synchronous") != NULL) || (strstr(string1,"sync") != NULL) || (strstr(string1,"Synchronous") != NULL)) {
         ppt->gauge_output = synchronous_output;
       }
+    }else{
+        ppt->gauge_output = synchronous_output;
     }
 
   /** (a) background parameters */
@@ -1958,7 +1962,9 @@ int input_read_parameters(
   class_read_double("m_axion",pba->m_scf);
   class_read_double("f_axion",pba->f_axion);
 
-  if (pba->Omega0_scf != 0.  || pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0){
+  if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0){
+    // if (input_verbose > 0) printf(" adjusted to incorporate the axion contribution Omega_Lambda = %e\n",pba->Omega0_lambda);
+
     /** - Assign a given scalar field potential */
     class_call(parser_read_string(pfc,"scf_has_perturbations",&string1,&flag1,errmsg),
              errmsg,
@@ -2140,7 +2146,7 @@ int input_read_parameters(
                      errmsg,
                      errmsg);
           if(flag1 == _TRUE_){
-          pba->Omega0_axion = param1;
+          pba->Omega0_axion = param1;// not used for the moment
           }
           else{
             class_call(parser_read_double(pfc,"log10_fraction_axion_ac",&param1,&flag1,errmsg),
@@ -4277,6 +4283,8 @@ int input_default_params(
   pba->ncdm_psd_parameters = NULL;
   pba->ncdm_psd_files = NULL;
 
+  pba->precision_newton_method_x = 1e-4;  //precision for shooting
+  pba->precision_newton_method_F = 1e-6;  //precision for shooting
 
   pba->Omega0_scf = 0.; /* Scalar field defaults */
   pba->log10_fraction_axion_ac = -30; /* Scalar field defaults */
@@ -5093,6 +5101,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     input_verbose = param;
   else
     input_verbose = 0;
+  pfzw->input_verbose = input_verbose;
 
   /** - Optimise flags for sigma8 calculation.*/
   for (i=0; i < unknown_parameters_size; i++) {
@@ -5497,8 +5506,7 @@ int input_get_guess(double *xguess,
         xguess[index_guess] = log10(guess);
         dxdy[index_guess] = log10(guess);
 
-
-         // printf("log10_fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",ba.log10_fraction_axion_ac,xguess[index_guess],dxdy[index_guess]);
+         if(pfzw->input_verbose>10)printf("get guess: log10_fraction_axion_ac %e alpha_squared %e dxdy[index_guess] %e\n",ba.log10_fraction_axion_ac,xguess[index_guess],dxdy[index_guess]);
 
          break;
 
@@ -5542,7 +5550,7 @@ int input_get_guess(double *xguess,
          dxdy[index_guess] = log10(guess/1.6);
          // dxdy[index_guess] = 100;
 
-        // printf("axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],(ba.Omega0_cdm+ba.Omega0_b),(ba.Omega0_g+ba.Omega0_ur));
+        if(pfzw->input_verbose>10)printf("get guess: axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],(ba.Omega0_cdm+ba.Omega0_b),(ba.Omega0_g+ba.Omega0_ur));
 
          break;
 

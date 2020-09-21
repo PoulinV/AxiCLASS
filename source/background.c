@@ -365,6 +365,7 @@ int background_functions(
     // pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
     // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
+    // printf("here %e\n", pvecback[pba->index_bg_w_scf]);
     pvecback_B[pba->index_bi_rho_scf] = pvecback[pba->index_bg_rho_scf];
     // if(pba->n_axion < pba->n_axion_security && pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
     // }
@@ -380,7 +381,7 @@ int background_functions(
     // printf("here KG equation, phi: %e, phi': %e rho_scf: %e \n", pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
     // printf("%e %e %e %e\n",a,phi,phi_prime,V_scf(pba,phi));
     //printf("3H = %e \n", 3*pvecback[pba->index_bg_H]);
-    //printf("KE = %e, V = %e \n", (phi_prime*phi_prime/(2*a*a) , V_scf(pba,phi)));
+    // printf("KE = %e, V = %e \n", (phi_prime*phi_prime/(2*a*a) , V_scf(pba,phi)));
   }
   else if(pba->has_scf == _TRUE_ &&  pba->scf_kg_eq == _FALSE_){
     // phi = pvecback[pba->index_bg_phi_scf]; //phi is frozen to its last value.
@@ -405,6 +406,7 @@ int background_functions(
     else{
       pvecback[pba->index_bg_w_scf] = pba->w_scf;
     }
+    // printf("hereafter %e\n",   pvecback[pba->index_bg_w_scf]);
     // if(pba->n_axion < pba->n_axion_security && pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
     // }
     // else{
@@ -890,7 +892,7 @@ int background_init(
           pba->omega_axion = pba->H0*pba->m_scf*pow(1-cos_initial,0.5*(n-1))*Gac;
 
           // printf("pba->axion_ac %e pba->log10_fraction_axion_ac %e pba->m_scf %e pba->f_axion %e\n",pba->log10_axion_ac,pba->log10_fraction_axion_ac,pba->m_scf,pba->f_axion);
-          // printf("pba->m_scf %e pba->f_axion %e pba->omega_axion  %e\n",pba->m_scf,pba->f_axion,pba->omega_axion);
+          if(pba->background_verbose>10)printf("pba->m_scf %e pba->f_axion %e pba->omega_axion  %e\n",pba->m_scf,pba->f_axion,pba->omega_axion);
           }
 
           else if(pba->alpha_squared > -30 && pba->log10_fraction_axion_ac > -30){
@@ -1916,11 +1918,16 @@ int background_solve(
 
   double integration_stepsize;
   double ac, n, anow, Tosc;
-
+  short is_axion_converged = _FALSE_;
+  double Omega0_axion_used;
   bpaw.pba = pba;
   class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
   bpaw.pvecback = pvecback;
 
+  Omega0_axion_used = 0;
+
+  while(is_axion_converged == _FALSE_){
+    //NEW! To correctly incorporate the axion contribution to Omega_Lambda
   /** - allocate vector of quantities to be integrated */
   class_alloc(pvecback_integration,pba->bi_size*sizeof(double),pba->error_message);
 
@@ -1943,13 +1950,14 @@ int background_solve(
      tau_start = tau_end) */
   tau_end=pvecback_integration[pba->index_bi_tau];
 
+
+  /* initialize the counter for the number of steps */
+  pba->bt_size=0;
   /** - create a growTable with gt_init() */
   class_call(gt_init(&gTable),
              gTable.error_message,
              pba->error_message);
 
-  /* initialize the counter for the number of steps */
-  pba->bt_size=0;
 
   /** - loop over integration steps: call background_functions(), find step size, save data in growTable with gt_add(), perform one step with generic_integrator(), store new value of tau */
 
@@ -1972,7 +1980,7 @@ int background_solve(
           if(pba->m_scf!=0 && pba->f_axion != 0)Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*pow((pba->phi_ini_scf/pba->f_axion)*pow(1.65*anow/ac,-3./(n+1.)),1.-n)*gsl_sf_gamma(1.+1./(2.*n))/((pba->m_scf)*gsl_sf_gamma((1.+n)/(2.*n))*(pba->H0));
           // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
           // printf("pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize %e %e \n", pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize,integration_stepsize);
-          if(pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize<integration_stepsize) {
+          if(pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize<integration_stepsize && pba->scf_evolve_as_fluid == _FALSE_) {
             // printf("old integration_stepsize %e\n", integration_stepsize);
             integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize;
             // printf("updated integration_stepsize %e\n", integration_stepsize);
@@ -2010,6 +2018,8 @@ int background_solve(
       else{
         pba->scf_kg_eq = _TRUE_;
       }
+      // printf("pba->scf_kg_eq  %d\n", pba->scf_kg_eq);
+
     }
 
     if ((pvecback_integration[pba->index_bi_a]*(1.+integration_stepsize)) < pba->a_today) {
@@ -2097,12 +2107,31 @@ int background_solve(
   if (pba->has_dcdm == _TRUE_){
     pba->Omega0_dcdm = pvecback_integration[pba->index_bi_rho_dcdm]/pba->H0/pba->H0;
   }
+  if (pba->has_scf == _TRUE_ && pba->scf_potential == axion || pba->scf_potential == phi_2n){
+    pba->Omega0_axion = pvecback_integration[pba->index_bi_rho_scf]/pba->H0/pba->H0;
+    pba->Omega0_lambda-=pba->Omega0_axion;
+    pba->Omega0_lambda+=Omega0_axion_used;//initially, this is 0. As the code shoots it will be updated
+    if(pba->background_verbose>0)printf(" adjusted Omega_Lambda to incorporate the axion contribution; new Omega_Lambda = %e  \n",pba->Omega0_lambda);
+  }
   if (pba->has_dr == _TRUE_){
     pba->Omega0_dr = pvecback_integration[pba->index_bi_rho_dr]/pba->H0/pba->H0;
   }
 
   if(pba->has_scf == _TRUE_){
     pba->f_ede = 0.0;
+  }
+
+
+  //VP: NEW test that the budget equation is satisfied or loop.
+  if(fabs(pba->Omega0_axion-Omega0_axion_used)<1e-3){
+    is_axion_converged = _TRUE_;
+  }
+  else{Omega0_axion_used = pba->Omega0_axion;
+    class_call(gt_free(&gTable),
+             gTable.error_message,
+             pba->error_message);
+   }
+             // is_lambda_converged = _TRUE_;
   }
 
   /** - allocate background tables */
@@ -2139,6 +2168,24 @@ int background_solve(
     pvecback[pba->index_bg_ang_distance] = pba->a_today*comoving_radius/(1.+pba->z_table[i]);
     pvecback[pba->index_bg_lum_distance] = pba->a_today*comoving_radius*(1.+pba->z_table[i]);
     pvecback[pba->index_bg_rs] = pData[i*pba->bi_size+pba->index_bi_rs];
+
+    if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ ){
+      // printf("a %e pvecback[pba->index_bg_Omega_scf] %e pba->threshold_scf_fluid_m_over_H %e\n", pvecback_integration[pba->index_bi_a],pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H);
+      // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H || a>pba->threshold_for_fluid*pba->a_c){ //We switch for fluid equations
+      // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
+      if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
+      // ac = pow(10,pba->log10_axion_ac);
+      // printf("ac %e\n", ac);
+      // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback_integration[pba->index_bi_a] > ac){ //We switch for fluid equations
+      // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
+        pba->scf_kg_eq = _FALSE_;
+      }
+      else{
+        pba->scf_kg_eq = _TRUE_;
+      }
+      // printf("pba->scf_kg_eq  %d\n", pba->scf_kg_eq);
+
+    }
 
     /* -> compute all other quantities depending only on {B} variables.
        The value of {B} variables in pData are also copied to pvecback.*/
@@ -2733,6 +2780,7 @@ int background_output_data(
 
     class_store_double(dataptr,pvecback[pba->index_bg_rho_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_Omega_scf],pba->has_scf,storeidx);
+    // printf("a %e pvecback[pba->index_bg_w_scf] %e\n",a,pvecback[pba->index_bg_w_scf]);
     class_store_double(dataptr,pvecback[pba->index_bg_p_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_prime_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_w_scf],pba->has_scf,storeidx);
@@ -2865,7 +2913,7 @@ int background_derivs(
        // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])/(pow(pba->scf_parameters[1],2))) ;
     dy[pba->index_bi_rho_scf] = 0; //Update the scf density until the fluid equation starts.
     //y[pba->index_bi_rho_scf] = y[pba->index_bg_rho_scf];
-    //printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
+    // printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
     }
     else if(pba->scf_kg_eq == _FALSE_) {
 
@@ -3339,8 +3387,12 @@ int background_output_budget(
       budget_other+=pba->Omega0_fld;
     }
     if(pba->has_scf){
-      _class_print_species_("Scalar Field",scf);
+      _class_print_species_("Scalar Field (except axions)",scf);
       budget_other+=pba->Omega0_scf;
+    }
+    if(pba->has_scf && (pba->scf_potential == axion || pba->scf_potential == phi_2n)){
+      _class_print_species_("Axion",axion);
+      budget_other+=pba->Omega0_axion;
     }
     if(pba->has_curvature){
       _class_print_species_("Spatial Curvature",k);
