@@ -8925,9 +8925,6 @@ int perturb_derivs(double tau,
             // printf("here fld a %e\n", pvecback[pba->index_bg_a]);
             // pba->scf_fluid_eq = 1;
           }
-          // else if(pba->scf_evolve_as_fluid_always == _TRUE_){ //We switch for fluid equations
-          //   ppt->scf_kg_eq[index_md][index_k] = 0;
-          // }
           else {
             // printf("KG: a %e k %e\n", pvecback[pba->index_bg_a],k);
             ppt->scf_kg_eq[index_md][index_k] = 1;

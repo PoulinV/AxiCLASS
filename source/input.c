@@ -380,17 +380,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
         else {
           fzw.scf_evolve_as_fluid = _FALSE_;
         }
-       // class_call(parser_read_string(pfc,"scf_evolve_as_fluid_always",&string1,&flag1,errmsg),
-       //           errmsg,
-       //           errmsg);
-       //
-       //  if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
-       //  fzw.scf_evolve_as_fluid_always = _TRUE_;
-       //  pba->scf_evolve_as_fluid = _TRUE_;
-       //  }
-       //  else {
-       //    fzw.scf_evolve_as_fluid_always = _FALSE_;
-       //  }
+
 
 
 
@@ -2016,29 +2006,6 @@ int input_read_parameters(
     else {
       pba->scf_evolve_as_fluid = _FALSE_;
     }
-    // class_call(parser_read_string(pfc,
-    //                               "scf_evolve_as_fluid_always",
-    //                               &string1,
-    //                               &flag1,
-    //                               errmsg),
-    //             errmsg,
-    //             errmsg);
-    //
-    // if (flag1 == _TRUE_){
-    //   if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
-    //     pba->scf_evolve_as_fluid_always = _TRUE_;
-    //     pba->scf_evolve_as_fluid = _TRUE_;
-    //   }
-    //   else {
-    //     pba->scf_evolve_as_fluid_always = _FALSE_;
-    //   }
-    // }
-    // else {
-    //   pba->scf_evolve_as_fluid_always = _FALSE_;
-    // }
-    // class_test(ppt->gauge == newtonian && pba->scf_evolve_as_fluid == _FALSE_,errmsg,
-    //   "You are running a scalar field without the fluid approximation however the perturbed KG equation is only written in the synchronous gauge, please switch your gauge!")
-
 
 
     class_call(parser_read_string(pfc,
@@ -4316,7 +4283,6 @@ int input_default_params(
   pba->phi_prime_ini_scf = 1;
   ppt->use_big_theta_scf = _FALSE_;
   pba->scf_evolve_as_fluid = _FALSE_;
-  // pba->scf_evolve_as_fluid_always = _FALSE_;
   pba->scf_evolve_like_axionCAMB = _FALSE_;
 
   pba->Omega0_k = 0.;
