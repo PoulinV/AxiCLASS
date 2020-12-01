@@ -645,16 +645,18 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                                  errmsg),
                  errmsg, errmsg);
 
-     // class_read_double("precision_newton_method_x",pba->precision_newton_method_x);
-     // class_read_double("precision_newton_method_F",pba->precision_newton_method_F);
+     class_read_double("precision_newton_method_x",pba->precision_newton_method_x);
+     class_read_double("precision_newton_method_F",pba->precision_newton_method_F);
+     // printf("pba->precision_newton_method_x %e\n", pba->precision_newton_method_x);
+     // printf("pba->precision_newton_method_F %e\n", pba->precision_newton_method_F);
       class_call_try(fzero_Newton(input_try_unknown_parameters,
                                   x_inout,
                                   dxdF,
                                   unknown_parameters_size,
-                                  1e-3,//default 1e-4, changed for EDE 
-                                  1e-3,//default 1e-6, changed for EDE
-                                  // pba->precision_newton_method_x,//in the future need to understand why the option to pass precision from file fails.
-                                  // pba->precision_newton_method_F,//in the future need to understand why the option to pass precision from file fails.
+                                  // 1e-2,//default 1e-4, changed for EDE
+                                  // 1e-2,//default 1e-6, changed for EDE
+                                  pba->precision_newton_method_x,//in the future need to understand why the option to pass precision from file fails.
+                                  pba->precision_newton_method_F,//in the future need to understand why the option to pass precision from file fails.
                                     &fzw,
                                   &fevals,
                                   errmsg),
@@ -4257,8 +4259,8 @@ int input_default_params(
   pba->ncdm_psd_parameters = NULL;
   pba->ncdm_psd_files = NULL;
 
-  pba->precision_newton_method_x = 1e-2;  //precision for shooting #1e-4
-  pba->precision_newton_method_F = 1e-2;  //precision for shooting #1e-6
+  pba->precision_newton_method_x = 1e-3;  //precision for shooting #1e-4 in standard CLASS
+  pba->precision_newton_method_F = 1e-3;  //precision for shooting #1e-6 in standard CLASS
 
   pba->Omega0_scf = 0.; /* Scalar field defaults */
   pba->log10_fraction_axion_ac = -30; /* Scalar field defaults */
