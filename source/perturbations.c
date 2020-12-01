@@ -705,6 +705,11 @@ int perturb_init(
 #pragma omp parallel
   {
     number_of_threads = omp_get_num_threads();
+    if(pba->scf_evolve_as_fluid == _TRUE_ && pba->scf_evolve_like_axionCAMB == _FALSE_){
+      if (ppt->perturbations_verbose > 0)
+        printf(" You are running EDE with a switch from scf to fluid approximation; this currently leads to a crash if several cores are used. defaulting to computation on one core. TBDebug in the future.\n");
+      number_of_threads = 1;
+    }
   }
 #endif
 
