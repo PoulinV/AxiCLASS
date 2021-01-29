@@ -340,10 +340,11 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
     if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
       class_alloc(fzw.scf_parameters,2*sizeof(double),errmsg);
+      fzw.scf_parameters_size = 2;
       class_read_double("scf_theta_ini_cobaya",fzw.scf_parameters[0]);
       class_read_double("scf_thetadot_ini_cobaya",fzw.scf_parameters[1]);
     }
-  
+
     class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
                    errmsg,
                    errmsg);
@@ -2228,6 +2229,7 @@ int input_read_parameters(
 
    if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
      class_alloc(pba->scf_parameters,2*sizeof(double),errmsg);
+     pba->scf_parameters_size = 2;
      class_read_double("scf_theta_ini_cobaya",pba->scf_parameters[0]);
      class_read_double("scf_thetadot_ini_cobaya",pba->scf_parameters[1]);
    }
