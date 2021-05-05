@@ -169,7 +169,8 @@ struct fzerofun_workspace {
   double f_axion;
   double Omega0_axion;
   double log10_axion_ac;
-  int n_axion;
+  double n_axion;
+  double amp;
   double w_scf;
   double threshold_scf_fluid_m_over_H;
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */

@@ -409,6 +409,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
           // fzw.Omega0_axion = 0.0;
           fzw.log10_axion_ac = 0.0;
           class_read_double("n_axion",fzw.n_axion);
+          class_read_double("amp",fzw.amp);
           // fzw.w_scf = (fzw.scf_parameters[0]-1)/(fzw.scf_parameters[0]+1);
           class_read_double("threshold_scf_fluid_m_over_H",fzw.threshold_scf_fluid_m_over_H);
           class_call(parser_read_string(pfc,
@@ -1983,6 +1984,7 @@ int input_read_parameters(
   class_read_double("log10_axion_ac",pba->log10_axion_ac);
   class_read_double("m_axion",pba->m_scf);
   class_read_double("f_axion",pba->f_axion);
+  class_read_double("amp",pba->amp);
 
   if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0){
     // if (input_verbose > 0) printf(" adjusted to incorporate the axion contribution Omega_Lambda = %e\n",pba->Omega0_lambda);
@@ -4302,7 +4304,8 @@ int input_default_params(
   pba->V0_phi2n = 0.0;
   pba->f_axion = 0.0;
   pba->m_scf = 0.0;
-  pba->n_axion = 1;
+  pba->n_axion = 3.0;
+  pba->amp = 0.0;
   pba->log10_axion_ac = -30;
   pba->Omega0_axion = 0.0;
   pba->scf_has_perturbations = _TRUE_;

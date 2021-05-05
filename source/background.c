@@ -934,8 +934,8 @@ int background_init(
               // printf("pba->m_scf %e pba->power_of_mu %e \n",pba->m_scf,pba->power_of_mu);
           }
 
-            pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
-
+            //pba->w_scf = (pba->n_axion-1.0)/(pba->n_axion+1.0);
+              pba->w_scf = 0; //TLS
             // pba->scf_parameters[0]*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
             // pba->scf_parameters[1]*=pba->f_axion; //conversion from theta_dot_i to phi_dot_i; multiplying by fa
             pba->phi_ini_scf*=pba->f_axion; //conversion from theta_i to phi_i; multiplying by fa
@@ -979,6 +979,8 @@ int background_init(
   class_call(background_output_budget(pba),
              pba->error_message,
              pba->error_message);
+
+  //pba->scf_evolve_as_fluid = _FALSE_;
 
   return _SUCCESS_;
 
@@ -2011,7 +2013,7 @@ int background_solve(
       // printf("a %e pvecback[pba->index_bg_Omega_scf] %e pba->threshold_scf_fluid_m_over_H %e\n", pvecback_integration[pba->index_bi_a],pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H);
       // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H || a>pba->threshold_for_fluid*pba->a_c){ //We switch for fluid equations
       // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
-      if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
+      if(sqrt(pba->amp)*pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
       // ac = pow(10,pba->log10_axion_ac);
       // printf("ac %e\n", ac);
       // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback_integration[pba->index_bi_a] > ac){ //We switch for fluid equations
@@ -3108,10 +3110,12 @@ double V_axion_scf(
     // double fa = pba->scf_parameters[2];
     double fa = pba->f_axion;
     double m = pba->m_scf*pba->H0;
+    double amp=pba->amp;
     double result;
     // printf("n %d fa %e V %e phi/fa %e \n",n,fa,m*m/pow(2,n),phi/fa);
-    if(n>1)result = pow(m,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
-    else result = pow(m,2)*pow(fa,2)*(1 - cos(phi/fa));
+    //if(n>1)
+    result = pow(m,2)*pow(fa,2)*pow(1 - cos(phi/fa),n)+pow(m,2)*pow(fa,2)*amp*(1 - cos(phi/fa));
+    //else result = pow(m,2)*pow(fa,2)*(1 - cos(phi/fa));
     // printf("result %e phi %e m^2 %e\n",result,phi,m*m);
     return result;
 
@@ -3125,9 +3129,11 @@ double dV_axion_scf(
     // double fa = pba->scf_parameters[2];
     double fa = pba->f_axion;
     double m = pba->m_scf*pba->H0;
+    double amp=pba->amp;
     double result;
-    if(n>1)result = n*pow(m,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa);
-    else result = pow(m,2)*fa*sin(phi/fa);
+    // if(n>1)result = n*pow(m,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa);
+    // else result = pow(m,2)*fa*sin(phi/fa);
+    result = n*pow(m,2)*fa*pow(1-cos(phi/fa),n-1.)*sin(phi/fa)+amp*pow(m,2)*fa*sin(phi/fa);
 
     return result;
 
@@ -3142,10 +3148,14 @@ double ddV_axion_scf(
      // double fa = pba->scf_parameters[2];
      double fa = pba->f_axion;
      double m = pba->m_scf*pba->H0;
+     double amp=pba->amp;
      double result;
-     if(n==1) result = n*pow(m,2)*cos(phi/fa);
-     else if (n==2) result =  n*pow(m,2)*(pow(sin(phi/fa),2)+(1-cos(phi/fa))*cos(phi/fa));
-     else result = n*pow(m,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)); //this formula bugs sometimes for n=1
+     //if(n==1) result = n*pow(m,2)*cos(phi/fa);
+     //else if (n==2) result =  n*pow(m,2)*(pow(sin(phi/fa),2)+(1-cos(phi/fa))*cos(phi/fa));
+     //else result = n*pow(m,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)); //this formula bugs sometimes for n=1
+
+     result = n*pow(m,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)) +
+     amp*pow(m,2)*cos(phi/fa); //this formula bugs sometimes for n=1
 
      return result;
 }
