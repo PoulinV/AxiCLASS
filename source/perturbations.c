@@ -8936,7 +8936,7 @@ int perturb_derivs(double tau,
           ppt->scf_kg_eq[index_md][index_k] = 1;
         }
         else{
-          if(sqrt(pba->amp)*pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= 15*pba->threshold_scf_fluid_m_over_H){
+          if(sqrt(pba->amp)*pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){
           // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback[pba->index_bg_a] > pba->a_c){
             // printf("pvecback[pba->index_bg_a] %e pba->a_c %e\n",pvecback[pba->index_bg_a], pba->a_c);
             // printf("fluid: a %e k %e\n", pvecback[pba->index_bg_a],k);
