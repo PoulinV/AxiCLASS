@@ -1747,6 +1747,8 @@ cdef class Class:
                 value = self.ba.log10_z_c
             elif name == 'phi_scf_c':
                 value = self.ba.phi_scf_c
+            elif name == 'tau_thresh':
+                value = self.ba.tau_thresh
             elif name == 'phi_ini_scf':
                 value = self.ba.phi_ini_scf
             elif name == 'V0_phi2n':

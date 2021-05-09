@@ -88,6 +88,7 @@ cdef extern from "class.h":
         double f_ede
         double omega_axion
         double phi_scf_c
+        double tau_thresh
         double w0_fld
         double wa_fld
         double cs2_fld

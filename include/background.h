@@ -144,6 +144,7 @@ struct background
   double zc_is_zeq; //enforce zc=zeq, with zeq=(Omega0_b+Omega0_cdm)/(Omega0_g+Omega0_ur);
   double f_ede; // TK added doubles to fill with values of the exact z_c and fraction_ede eventually
   double phi_scf_c; // Added for debugging. Trying to see whether the value of phi at z_c is really 7/8 phi_ini
+  double tau_thresh;
   double n_axion;
   double amp;
   double w_scf;

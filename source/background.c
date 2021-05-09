@@ -1907,7 +1907,7 @@ int background_solve(
   /* final conformal time */
   double tau_end;
   /* an index running over bi indices */
-  int i;
+  int i,nn=0;
   /* vector of quantities to be integrated */
   double * pvecback_integration;
   /* vector of all background quantities */
@@ -2018,9 +2018,14 @@ int background_solve(
       // printf("ac %e\n", ac);
       // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback_integration[pba->index_bi_a] > ac){ //We switch for fluid equations
       // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
+      if(nn==0){
+        pba->tau_thresh = pvecback_integration[pba->index_bi_tau];
+        pba->scf_kg_eq = _FALSE_;
+        nn+=1;
+      } else {
         pba->scf_kg_eq = _FALSE_;
       }
-      else{
+    }else{
         pba->scf_kg_eq = _TRUE_;
       }
       // printf("pba->scf_kg_eq  %d\n", pba->scf_kg_eq);
