@@ -5434,7 +5434,7 @@ int perturb_initial_conditions(struct precision * ppr,
                 cs2_scf = k*k/(4*pba->m_scf*pba->m_scf*a*a)/(1+k*k/(4*pba->m_scf*pba->m_scf*a*a));
               }
               else if(pba->scf_potential == axion){
-                cs2_scf = k2/(4*pow(sqrt(pba->amp)*pba->m_scf*a,2))/(1.0+k2/(4*pow(sqrt(pba->amp)*pba->m_scf*a,2)));
+                cs2_scf = k*k/(4*pow(sqrt(pba->amp)*pba->m_scf*pba->H0*a,2))/(1.0+k*k/(4*pow(sqrt(pba->amp)*pba->m_scf*pba->H0*a,2)));
                 //cs2_scf = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
                 // pba->cs2_scf = k*k/(4*pba->m_scf*pba->m_scf*a*a)/(1+k*k/(4*pba->m_scf*pba->m_scf*a*a));//To be eventually modified
               }
@@ -7062,7 +7062,7 @@ int perturb_total_stress_energy(
           }
           else if(pba->scf_potential == axion){
             // printf("omega_axion %e\n", pba->omega_axion);
-            cs2_scf = k2/(4*pow(sqrt(pba->amp)*pba->m_scf*a,2))/(1.0+k2/(4*pow(sqrt(pba->amp)*pba->m_scf*a,2)));
+            cs2_scf = k*k/(4*pow(sqrt(pba->amp)*pba->m_scf*pba->H0*a,2))/(1.0+k*k/(4*pow(sqrt(pba->amp)*pba->m_scf*pba->H0*a,2)));
             // pba->cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
           }
         delta_rho_scf = ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_delta_scf]; //identical to fld above
@@ -7094,7 +7094,7 @@ int perturb_total_stress_energy(
                   cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
                 }
                 else if(pba->scf_potential == axion){
-                  cs2_scf = k2/(4*pow(sqrt(pba->amp)*pba->m_scf*a,2))/(1.0+k2/(4*pow(sqrt(pba->amp)*pba->m_scf*a,2)));
+                  cs2_scf = k*k/(4*pow(sqrt(pba->amp)*pba->m_scf*pba->H0*a,2))/(1.0+k*k/(4*pow(sqrt(pba->amp)*pba->m_scf*pba->H0*a,2)));
                   //cs2_scf = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
                   // pba->cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));//To be eventually modified
                 }
@@ -9515,7 +9515,8 @@ int perturb_derivs(double tau,
 
         tau_b = (pba->Omega0_cdm + pba->Omega0_b + pba->Omega0_scf)*pba->H0*tau/(4*sqrt(pba->Omega0_g+pba->Omega0_ur));
         // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ XXX
-        cs2 = k*k/(4*pba->m_scf*pba->m_scf*a*a)/(1.0+k*k/(4*pba->m_scf*pba->m_scf*a*a));
+        cs2 = k*k/(4*pow(sqrt(pba->amp)*pba->m_scf*pba->H0*a,2))/(1.0+k*k/(4*pow(sqrt(pba->amp)*pba->m_scf*pba->H0*a,2))); //TLS
+        //printf("cs2=%f\n",cs2);
         //cs2 = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
         // pba->m_scf = pba->scf_parameters[1]*pba->H0;
         a_over_ac = a/pow(10,pba->log10_axion_ac);
