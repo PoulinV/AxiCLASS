@@ -1717,6 +1717,8 @@ cdef class Class:
                 value = self.ba.Omega0_lambda
             elif name == 'Omega0_fld':
                 value = self.ba.Omega0_fld
+            elif name == 'Omega0_scf':
+                value = self.ba.Omega0_scf
             elif name == 'age':
                 value = self.ba.age
             elif name == 'conformal_age':
