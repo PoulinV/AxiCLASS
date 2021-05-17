@@ -7124,7 +7124,13 @@ int perturb_total_stress_energy(
         }
         if(pba->scf_evolve_as_fluid == _TRUE_){
           if(ppt->use_big_theta_scf == _TRUE_){
-            y[ppw->pv->index_pt_big_theta_scf] = (1./3.*k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf])/ppw->pvecback[pba->index_bg_rho_scf];
+
+            // rho_plus_p_theta_scf = 1./3.*
+            //   k*k/a2_rel*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
+            // _set_source_(ppt->index_tp_theta_scf) = rho_plus_p_theta_scf/
+            //   (pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf])
+
+            y[ppw->pv->index_pt_big_theta_scf] = (1./3.*k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf])/ppw->pvecback[pba->index_bg_rho_scf]; //TLS
           }
           else{
             y[ppw->pv->index_pt_theta_scf] = (1./3.*k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf]) / (ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf]);
@@ -8092,7 +8098,7 @@ int perturb_sources(
  * @param error_message            Output: error message
  *
  */
-
+//TLS
 int perturb_print_variables(double tau,
                             double * y,
                             double * dy,
@@ -8422,7 +8428,11 @@ int perturb_print_variables(double tau,
           k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
 
           delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
-          theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
+          if(ppt->use_big_theta_scf == _FALSE_)  {
+            theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
+          } else {
+              big_theta_scf =rho_plus_p_theta_scf/pvecback[pba->index_bg_rho_scf];
+          }
 
           delta_phi_scf = y[ppw->pv->index_pt_phi_scf];
           delta_phi_over_phi_scf = y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_scf];
