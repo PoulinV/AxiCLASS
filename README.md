@@ -103,6 +103,21 @@ Thanks a lot for using the code!
 It is still consider "work in progress" so, our apologies if it is not as user-friendly and bug-free as we'd like.
 
 
+-------------------updates------------------------
+
+2022-02-28
+
+* Improving readability of the folder. 
+
+-- Moved scripts in python_scripts folder. Most of the scripts are old and deprecated, need to be removed / updated.
+-- Created a folder with MP param files / covmat / bestfit / conf file.
+
+* Updated the log10_fraction_axion_ac parameter to fraction_axion_ac to ease the compatibility with montepython, which perform searches on "fraction_axion_ac".
+
+-- updated the .ini file
+-- added an ini file based on SPT+ACT+PlanckTT650TEEE run
+
+* to do: create a notebook / scripts.
 
 
 --------known issues with compilation-------------
@@ -121,7 +136,8 @@ classy_ext = Extension("classy", [os.path.join(classy_folder, "classy.pyx")],
 #                           extra_link_args=['-lgomp','-lgsl','-lgslcblas']
 )
 
-Many thanks to Pierre Zhang for finding out this bug!
+This workaround does not always solve the problem unfortunately... One solution is to recompile with gcc.
+Many thanks to Pierre Zhang for finding out this bug, and helping with debugging.
 
 
 ------- THE REST IS THE STANDARD CLASS README -------

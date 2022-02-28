@@ -136,7 +136,7 @@
 
 enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr,
                   Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,
-                  log10_fraction_axion_ac, log10_axion_ac, log10_fraction_axion_ac_phi2n,
+                  fraction_axion_ac, log10_axion_ac, log10_fraction_axion_ac_phi2n,
                   log10_axion_ac_phi2n, a_peak_eq, sigma8};
 enum computation_stage {cs_background, cs_thermodynamics, cs_perturbations,
                         cs_primordial, cs_nonlinear, cs_transfer, cs_spectra};

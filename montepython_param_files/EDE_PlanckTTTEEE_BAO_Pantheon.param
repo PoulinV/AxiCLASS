@@ -42,7 +42,7 @@ data.parameters['tau_reio']     = [0.078,  0.004,0.12, 0.0044,1,   'cosmo']
 
 
 #EDE param
-data.parameters['f_axion_ac'] = [0.13,0.0001,0.3,0.05,1,'cosmo']
+data.parameters['fraction_axion_ac'] = [0.13,0.0001,0.3,0.05,1,'cosmo']
 data.parameters['scf_parameters__1'] = [2.8,0.01,3.1,1,1,'cosmo']
 data.parameters['log10_axion_ac'] = [-3.5,-4.5,-3.,0.5,1,'cosmo']
 data.parameters['scf_parameters__2'] = [0,0.,0.00000001,0,1,'cosmo']

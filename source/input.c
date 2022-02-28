@@ -308,7 +308,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
    *  for and the corresponding new parameter */
   char * const target_namestrings[] = {"100*theta_s","Omega_dcdmdr","omega_dcdmdr",
                                        "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm",
-                                       "log10_fraction_axion_ac","log10_axion_ac","log10_fraction_axion_ac_phi2n",
+                                       "fraction_axion_ac","log10_axion_ac","log10_fraction_axion_ac_phi2n",
                                        "log10_axion_ac_phi2n","a_peak_eq","sigma8"};
   char * const unknown_namestrings[] = {"h","Omega_ini_dcdm","Omega_ini_dcdm",
                                         "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr",
@@ -529,7 +529,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
         if(input_verbose > 10){
           printf("Found target: %s, target value =  %e\n",target_namestrings[index_target],param1);
         }
-        if(fzw.do_shooting_scf ==_FALSE_ && (target_namestrings[index_target]=="Omega_scf"|| target_namestrings[index_target]=="log10_fraction_axion_ac" ||  target_namestrings[index_target]=="log10_fraction_axion_ac_phi2n"||  target_namestrings[index_target]=="log10_axion_ac_phi2n")){
+        if(fzw.do_shooting_scf ==_FALSE_ && (target_namestrings[index_target]=="Omega_scf"|| target_namestrings[index_target]=="fraction_axion_ac" ||  target_namestrings[index_target]=="log10_fraction_axion_ac_phi2n"||  target_namestrings[index_target]=="log10_axion_ac_phi2n")){
           // printf("I will not add it!\n");
         }else{
           target_indices[unknown_parameters_size] = index_target; /*setting up correct variable that we have defined to shoot for as an answer */
@@ -1978,7 +1978,11 @@ int input_read_parameters(
              "It looks like you want to fulfil the closure relation sum Omega = 1 using the scalar field, so you have to specify both Omega_lambda and Omega_fld in the .ini file");
 
   /* Additional SCF parameters: */
-  class_read_double("log10_fraction_axion_ac",pba->log10_fraction_axion_ac);
+  class_read_double("fraction_axion_ac",pba->log10_fraction_axion_ac);
+  class_test(pba->log10_fraction_axion_ac < 0,errmsg,"you have pba->fraction_axion_ac negative in your input file. You may have given 'log10_fraction_axion_ac', however it is now deprecated since feb 2022 to improve compatibility with MontePython: please give fraction_axion_ac");
+  if(pba->log10_fraction_axion_ac>0)pba->log10_fraction_axion_ac=log10(pba->log10_fraction_axion_ac);
+  else if(pba->log10_fraction_axion_ac==0)pba->log10_fraction_axion_ac = -30; //random default value.
+  // printf("pba->log10_fraction_axion_ac %e\n", pba->log10_fraction_axion_ac);
   class_read_double("log10_fraction_axion_ac_phi2n",pba->log10_fraction_axion_ac);
   class_read_double("log10_axion_ac",pba->log10_axion_ac);
   class_read_double("m_axion",pba->m_scf);
@@ -2148,19 +2152,30 @@ int input_read_parameters(
           pba->Omega0_axion = param1;// not used for the moment
           }
           else{
-            class_call(parser_read_double(pfc,"log10_fraction_axion_ac",&param1,&flag1,errmsg),
+            class_call(parser_read_double(pfc,"fraction_axion_ac",&param1,&flag1,errmsg),
                        errmsg,
                        errmsg);
            if(flag1 == _TRUE_){
-            pba->log10_fraction_axion_ac = param1;
+            // pba->log10_fraction_axion_ac = param1;
+            class_test(param1 < 0,errmsg,"you have pba->fraction_axion_ac negative in your input file.");
+            if(param1>0)pba->log10_fraction_axion_ac=log10(param1);
+            else if(param1==0)pba->log10_fraction_axion_ac = -30; //random default value.
+
           }
-            // printf("pba->log10_fraction_axion_ac %e \n", pba->log10_fraction_axion_ac);
+          else{
+            class_call(parser_read_double(pfc,"log10_fraction_axion_ac",&param1,&flag1,errmsg),
+                       errmsg,
+                       errmsg);
+           class_test(flag1==_TRUE_,errmsg,"log10_fraction_axion_ac as an input is deprecated since feb 2022 to improve compatibility with MontePython: please give fraction_axion_ac.");
+          }
+          // printf("pba->log10_fraction_axion_ac %e \n", pba->log10_fraction_axion_ac);
           }
 
 
         }
-        class_test(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac == -30,errmsg,"you must define both pba->log10_axion_ac and pba->log10_fraction_axion_ac in your input file.");
-        class_test(pba->log10_axion_ac == -30 && pba->log10_fraction_axion_ac > -30,errmsg,"you must define both pba->log10_axion_ac and pba->log10_fraction_axion_ac in your input file.");
+        // printf("pba->log10_fraction_axion_ac %e\n", pba->log10_fraction_axion_ac);
+        class_test(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac == -30,errmsg,"you must define both pba->log10_axion_ac and pba->fraction_axion_ac in your input file.");
+        class_test(pba->log10_axion_ac == -30 && pba->log10_fraction_axion_ac > -30,errmsg,"you must define both pba->log10_axion_ac and pba->fraction_axion_ac in your input file.");
         // class_test(pba->log10_axion_ac > -30 && pba->m_scf > 0,errmsg,"you cannot choose both pba->log10_axion_ac && pba->m_scf because m_scf is used to shoot for ac. Please adapt your param file.");
         // class_test(pba->log10_fraction_axion_ac > -30 && pba->f_axion > 0,errmsg,"you cannot choose both pba->log10_fraction_axion_ac && pba->f_axion because f_axion is used to shoot for log10_fraction_axion_ac. Please adapt your param file.");
         // class_test(pba->log10_fraction_axion_ac != 0 && pba->Omega0_axion > 0, errmsg,"you cannot choose both Omega0_axion && log10_fraction_axion_ac. Please adapt your param file.");
@@ -2190,7 +2205,7 @@ int input_read_parameters(
         pba->log10_fraction_axion_ac = param1;
       }
       else{
-        class_stop(errmsg,"incomprehensible input '%e' for the field 'log10_fraction_axion_ac'",param1);
+        class_stop(errmsg,"incomprehensible input '%e' for the field 'log10_fraction_axion_ac_phi2n'",param1);
       }
       class_call(parser_read_double(pfc,"log10_axion_ac_phi2n",&param1,&flag1,errmsg),
                  errmsg,
@@ -5232,8 +5247,9 @@ int input_try_unknown_parameters(double * unknown_parameter,
         rho_dr_today = 0.;
       output[i] = (rho_dcdm_today+rho_dr_today)/(ba.H0*ba.H0)-pfzw->target_value[i]/ba.h/ba.h;
       break;
-    case log10_fraction_axion_ac: // TLS where to print out log10_fraction_axion_ac and axion_ac
-      output[i] = log10(ba.f_ede)-pfzw->target_value[i];
+    case fraction_axion_ac: // TLS where to print out log10_fraction_axion_ac and axion_ac
+      // output[i] = log10(ba.f_ede)-pfzw->target_value[i];
+      output[i] = ba.f_ede-pfzw->target_value[i];
       if(input_verbose>10)printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
       break;
     case log10_axion_ac:
@@ -5474,7 +5490,7 @@ int input_get_guess(double *xguess,
         // printf("phi_i %e dxdy[index_guess] %e fxc %e\n", phi_i,dxdy[index_guess],fxc);
         break;
 
-    case log10_fraction_axion_ac:
+    case fraction_axion_ac:
         /*OLD*/
         // phi_initial = ba.scf_parameters[0];
         //  // xguess[index_guess] = pfzw->target_value[index_guess];
@@ -6076,7 +6092,7 @@ int input_auxillary_target_conditions(struct file_content * pfc,
   case Omega_dcdmdr:
   case omega_dcdmdr:
   case Omega_scf:
-  case log10_fraction_axion_ac:
+  case fraction_axion_ac:
   case log10_axion_ac:
   case Omega_ini_dcdm:
   case omega_ini_dcdm:
