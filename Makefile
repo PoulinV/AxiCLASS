@@ -17,7 +17,7 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc-10
+CC       = gcc
 #CC       = icc
 #CC       = pgcc
 
@@ -38,7 +38,7 @@ OPTFLAG = -O4 -ffast-math #-march=native
 #OPTFLAG = -fast
 
 # your openmp flag (comment for compiling without openmp)
-OMPFLAG   = -fopenmp
+#OMPFLAG   = -fopenmp
 #OMPFLAG   = -mp -mp=nonuma -mp=allcores -g
 #OMPFLAG   = -openmp
 
@@ -72,7 +72,7 @@ EXTERNAL =
 ifneq ($(HYREC),)
 vpath %.c $(HYREC)
 #CCFLAG += -DHYREC
-LDFLAGS += -DHYREC -lstdc++ -L$(GSL_LIB) -lgsl -lgslcblas
+LDFLAG += -DHYREC -lstdc++ -L$(GSL_LIB) -lgsl -lgslcblas
 INCLUDES += -I../hyrec
 EXTERNAL += hyrectools.o helium.o hydrogen.o history.o
 endif
