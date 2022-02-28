@@ -79,8 +79,9 @@
  */
 
 #include "background.h"
-#include "gsl/gsl_sf_gamma.h"
-#include "gsl/gsl_sf_hyperg.h"
+//#include "gsl/gsl_sf_gamma.h"
+//#include "gsl/gsl_sf_hyperg.h"
+
 
 /**
  * Background quantities at given conformal time tau.
@@ -1981,12 +1982,12 @@ int background_solve(
           n = pba->n_axion;
           anow = pvecback_integration[pba->index_bi_a];
           if(pba->m_scf!=0 && pba->f_axion != 0)Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*pow((pba->phi_ini_scf/pba->f_axion)*pow(1.65*anow/ac,-3./(n+1.)),1.-n)*gsl_sf_gamma(1.+1./(2.*n))/((pba->m_scf)*gsl_sf_gamma((1.+n)/(2.*n))*(pba->H0));
-          // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
+          //printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
           // printf("pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize %e %e \n", pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize,integration_stepsize);
           if(pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize<integration_stepsize && pba->scf_evolve_as_fluid == _FALSE_) {
             // printf("old integration_stepsize %e\n", integration_stepsize);
             integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize;
-            // printf("updated integration_stepsize %e\n", integration_stepsize);
+            //printf("updated integration_stepsize %e\n", integration_stepsize);
           }
         }
       }

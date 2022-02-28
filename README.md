@@ -117,28 +117,16 @@ It is still consider "work in progress" so, our apologies if it is not as user-f
 -- updated the .ini file
 -- added an ini file based on SPT+ACT+PlanckTT650TEEE run
 
+* Implemented the Gamma function in background.h, removed dependency to GSL.
+
 * to do: create a notebook / scripts.
 
 
 --------known issues with compilation-------------
 
 2022-02-28
-
-The code makes use of GSL to compute some gamma and hypergeometric function.
-Sometimes the classy part can be problematic if you have compiled with clang without the option "-fopenmp"
-The following function of "python/setup.py" must be modified:
-
-classy_ext = Extension("classy", [os.path.join(classy_folder, "classy.pyx")],
-                           include_dirs=[nm.get_include(), include_folder],
-                           libraries=liblist,
-                           library_dirs=[root_folder, GCCPATH],
-                           extra_link_args=['-lgsl','-lgslcblas']
-#                           extra_link_args=['-lgomp','-lgsl','-lgslcblas']
-)
-
-This workaround does not always solve the problem unfortunately... One solution is to recompile with gcc.
-Many thanks to Pierre Zhang for finding out this bug, and helping with debugging.
-
+The code used to make use of GSL to compute the Gamma function. This was creating problem sometimes when "cythoning" classy if clang was used.
+We now implemented the Gamma function explicitely in background.h. Many thanks to Pierre Zhang for finding out this bug, and helping with debugging.
 
 ------- THE REST IS THE STANDARD CLASS README -------
 
