@@ -1978,15 +1978,33 @@ int input_read_parameters(
              "It looks like you want to fulfil the closure relation sum Omega = 1 using the scalar field, so you have to specify both Omega_lambda and Omega_fld in the .ini file");
 
   /* Additional SCF parameters: */
-  class_read_double("fraction_axion_ac",pba->log10_fraction_axion_ac);
-  class_test(pba->log10_fraction_axion_ac < 0,errmsg,"you have pba->fraction_axion_ac negative in your input file. You may have given 'log10_fraction_axion_ac', however it is now deprecated since feb 2022 to improve compatibility with MontePython: please give fraction_axion_ac");
-  if(pba->log10_fraction_axion_ac>0)pba->log10_fraction_axion_ac=log10(pba->log10_fraction_axion_ac);
-  else if(pba->log10_fraction_axion_ac==0)pba->log10_fraction_axion_ac = -30; //random default value.
-  // printf("pba->log10_fraction_axion_ac %e\n", pba->log10_fraction_axion_ac);
-  class_read_double("log10_fraction_axion_ac_phi2n",pba->log10_fraction_axion_ac);
-  class_read_double("log10_axion_ac",pba->log10_axion_ac);
-  class_read_double("m_axion",pba->m_scf);
-  class_read_double("f_axion",pba->f_axion);
+  class_call(parser_read_double(pfc,"fraction_axion_ac",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+ class_call(parser_read_double(pfc,"log10_fraction_axion_ac",&param2,&flag2,errmsg),
+            errmsg,
+            errmsg);
+  if(flag1==_TRUE_){
+    // class_read_double("fraction_axion_ac",pba->log10_fraction_axion_ac);
+    class_test(param1 < 0,errmsg,"you have pba->fraction_axion_ac negative in your input file!!");
+    class_test(param1 >= 1,errmsg,"you have pba->fraction_axion_ac greater or equal to 1 in your input file!!");
+    if(param1>0)pba->log10_fraction_axion_ac=log10(param1);
+    else if(param1==0)pba->log10_fraction_axion_ac = -30; //random default value.
+    // printf("pba->log10_fraction_axion_ac %e\n", pba->log10_fraction_axion_ac);
+  }
+
+  if(flag2 == _TRUE_){
+    class_test(param2 >= 0,errmsg,"you have pba->fraction_axion_ac greater or equal to than 1 in your input file!!");
+    pba->log10_fraction_axion_ac=param2;
+  }
+
+  if(flag1 == _TRUE_ || flag2 == _TRUE_){
+    class_read_double("log10_fraction_axion_ac_phi2n",pba->log10_fraction_axion_ac);
+    class_read_double("log10_axion_ac",pba->log10_axion_ac);
+    class_read_double("m_axion",pba->m_scf);
+    class_read_double("f_axion",pba->f_axion);
+  }
+
 
   if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0){
     // if (input_verbose > 0) printf(" adjusted to incorporate the axion contribution Omega_Lambda = %e\n",pba->Omega0_lambda);
