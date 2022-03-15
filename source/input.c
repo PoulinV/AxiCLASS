@@ -1050,7 +1050,6 @@ int input_read_parameters(
   }
 
   Omega_tot = pba->Omega0_g;
-                printf("coucou");
 
   /** - Omega_0_b (baryons) */
   class_call(parser_read_double(pfc,"Omega_b",&param1,&flag1,errmsg),
