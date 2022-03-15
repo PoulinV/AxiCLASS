@@ -105,6 +105,14 @@ It is still consider "work in progress" so, our apologies if it is not as user-f
 
 -------------------updates------------------------
 
+2022-03-15
+
+Found a bug in perturbation when the user request switching from scf to fluid. the code seem to get stuck.
+Probably an issue with tables handling, to be investigated. 
+For now, we encourage the user to use either "full scalar field" or "full fluid", as presented in the 
+example files.
+
+
 2022-02-28
 
 * Improving readability of the folder. 
