@@ -116,7 +116,6 @@ data.parameters['f_ede'] = [0, None, None, 0,     1,   'derived']
 data.parameters['log10_z_c'] = [0, None, None, 0,     1,   'derived']
 
 
-data.cosmo_arguments['sBBN file'] = data.path['cosmo']+'/bbn/sBBN.dat'
 data.cosmo_arguments['k_pivot'] = 0.05
 
 # The base model features two massless

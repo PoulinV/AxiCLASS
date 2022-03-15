@@ -463,7 +463,6 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
               Omega0_cdm = param2/h/h;
 
 
-
               class_call(parser_read_double(pfc,"Omega_b",&param1,&flag1,errmsg),
                          errmsg,
                          errmsg);
@@ -1051,6 +1050,7 @@ int input_read_parameters(
   }
 
   Omega_tot = pba->Omega0_g;
+                printf("coucou");
 
   /** - Omega_0_b (baryons) */
   class_call(parser_read_double(pfc,"Omega_b",&param1,&flag1,errmsg),
@@ -1978,6 +1978,29 @@ int input_read_parameters(
              "It looks like you want to fulfil the closure relation sum Omega = 1 using the scalar field, so you have to specify both Omega_lambda and Omega_fld in the .ini file");
 
   /* Additional SCF parameters: */
+
+  /** Do we have to loop over background to correctly enforce the closure relation? this way be useful for species whose contribution today is not known **/
+  class_call(parser_read_string(pfc,"loop_over_background_for_closure_relation",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+
+    pba->loop_over_background_for_closure_relation = _TRUE_;
+
+  }
+  class_call(parser_read_double(pfc,"precision_loop_over_background",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+
+  if(flag1==_TRUE_)pba->precision_loop_over_background = param1;
+  else{
+    pba->precision_loop_over_background = 1e-3; //default value.
+  }
+  // else{
+  //   pba->loop_over_background_for_closure_relation = _FALSE_;
+  // }
+
   class_call(parser_read_double(pfc,"fraction_axion_ac",&param1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -4322,6 +4345,8 @@ int input_default_params(
   pba->precision_newton_method_F = 1e-3;  //precision for shooting #1e-6 in standard CLASS
 
   pba->Omega0_scf = 0.; /* Scalar field defaults */
+  pba->loop_over_background_for_closure_relation = _TRUE_; /* for security the default is that we loop, but in background we will check that it is truly necessary because we have an axion */
+  pba->precision_loop_over_background = 1e-3; /* for security the default is that we loop, but in background we will check that it is truly necessary because we have an axion */
   pba->log10_fraction_axion_ac = -30; /* Scalar field defaults */
   pba->power_of_mu = -30; /* Scalar field defaults */
   pba->alpha_squared = -30; /* Scalar field defaults */

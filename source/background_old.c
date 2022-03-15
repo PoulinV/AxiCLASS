@@ -79,9 +79,8 @@
  */
 
 #include "background.h"
-//#include "gsl/gsl_sf_gamma.h"
-//#include "gsl/gsl_sf_hyperg.h"
-
+#include "gsl/gsl_sf_gamma.h"
+#include "gsl/gsl_sf_hyperg.h"
 
 /**
  * Background quantities at given conformal time tau.
@@ -485,15 +484,13 @@ int background_functions(
     // Obsolete: at the beginning, we had here the analytic integral solution corresponding to the case w=w0+w1(1-a/a0):
     // pvecback[pba->index_bg_rho_fld] = pba->Omega0_fld * pow(pba->H0,2) / pow(a_rel,3.*(1.+pba->w0_fld+pba->wa_fld)) * exp(3.*pba->wa_fld*(a_rel-1.));
     // But now everthing is integrated numerically for a given w_fld(a) defined in the function background_w_fld.
-    // printf("pvecback[pba->index_bg_rho_fld] %e\n", pvecback[pba->index_bg_rho_fld]);
+
     rho_tot += pvecback[pba->index_bg_rho_fld];
     p_tot += w_fld * pvecback[pba->index_bg_rho_fld];
     dp_dloga += (a*dw_over_da-3*(1+w_fld)*w_fld)*pvecback[pba->index_bg_rho_fld];
 
-    if(w_fld>0){
-      rho_m += pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]; //the rest contributes matter
-      printf("w_fld %e pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld] %e\n", w_fld,pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]);
-    }
+    rho_m += pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]; //the rest contributes matter
+
   }
 
   /* relativistic neutrinos (and all relativistic relics) */
@@ -1215,7 +1212,7 @@ int background_indices(
   /* - index for fluid */
   class_define_index(pba->index_bg_rho_fld,pba->has_fld,index_bg,1);
   class_define_index(pba->index_bg_w_fld,pba->has_fld,index_bg,1);
-  class_define_index(pba->index_bg_Omega_fld,(pba->has_fld),index_bg,1);
+  class_define_index(pba->index_bg_Omega_fld,(pba->has_fld)&&(pba->ede_parametrization == pheno_axion),index_bg,1);
 
   /* - index for ultra-relativistic neutrinos/species */
   class_define_index(pba->index_bg_rho_ur,pba->has_ur,index_bg,1);
@@ -1931,8 +1928,8 @@ int background_solve(
   bpaw.pvecback = pvecback;
 
   Omega0_axion_used = 0;
+
   while(is_axion_converged == _FALSE_){
-    // is_axion_converged = _TRUE_;
     //NEW! To correctly incorporate the axion contribution to Omega_Lambda
   /** - allocate vector of quantities to be integrated */
   class_alloc(pvecback_integration,pba->bi_size*sizeof(double),pba->error_message);
@@ -1984,12 +1981,12 @@ int background_solve(
           n = pba->n_axion;
           anow = pvecback_integration[pba->index_bi_a];
           if(pba->m_scf!=0 && pba->f_axion != 0)Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*pow((pba->phi_ini_scf/pba->f_axion)*pow(1.65*anow/ac,-3./(n+1.)),1.-n)*gsl_sf_gamma(1.+1./(2.*n))/((pba->m_scf)*gsl_sf_gamma((1.+n)/(2.*n))*(pba->H0));
-          //printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
+          // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
           // printf("pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize %e %e \n", pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize,integration_stepsize);
           if(pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize<integration_stepsize && pba->scf_evolve_as_fluid == _FALSE_) {
             // printf("old integration_stepsize %e\n", integration_stepsize);
             integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize;
-            //printf("updated integration_stepsize %e\n", integration_stepsize);
+            // printf("updated integration_stepsize %e\n", integration_stepsize);
           }
         }
       }
@@ -2113,42 +2110,12 @@ int background_solve(
   if (pba->has_dcdm == _TRUE_){
     pba->Omega0_dcdm = pvecback_integration[pba->index_bi_rho_dcdm]/pba->H0/pba->H0;
   }
-
-  if(pba->loop_over_background_for_closure_relation == _TRUE_){
-    if (pba->has_scf == _TRUE_ && pba->scf_potential == axion || pba->scf_potential == phi_2n){
-      pba->Omega0_axion = pvecback_integration[pba->index_bi_rho_scf]/pba->H0/pba->H0;
-
-      if(pba->has_lambda == _TRUE_){
-        pba->Omega0_lambda-=pba->Omega0_axion;//we remove the axion contribution that we had "forgotten"
-        pba->Omega0_lambda+=Omega0_axion_used;//initially, this is 0. As the code shoots it will be updated
-        if(pba->background_verbose>0)printf(" adjusted Omega_Lambda to incorporate the axion contribution; new Omega_Lambda = %e  \n",pba->Omega0_lambda);
-      }else if(pba->has_fld==_TRUE_){
-        //if pba->has_lambda == _FALSE_ and pba->has_fld==_TRUE_ it means we are using pba->Omega0_fld to enforce the closure equation.
-        pba->Omega0_fld -=pba->Omega0_axion;
-        pba->Omega0_fld +=Omega0_axion_used;
-        if(pba->background_verbose>0)printf(" adjusted Omega0_fld to incorporate the axion contribution; new Omega0_fld = %e  \n",pba->Omega0_fld);
-
-      }
-      //VP: NEW test that the budget equation is satisfied or loop.
-      if(fabs(pba->Omega0_axion-Omega0_axion_used)<pba->precision_loop_over_background){
-        //default is 1e-3
-        is_axion_converged = _TRUE_;
-      }
-      else{Omega0_axion_used = pba->Omega0_axion;
-        class_call(gt_free(&gTable),
-                 gTable.error_message,
-                 pba->error_message);
-       }
-    }else{
-      //no axion so we ignore the loop.
-      is_axion_converged = _TRUE_;
-    }
-  }else{
-    //the user required not to loop.
-    //flag set to True to ignore the loop.
-    is_axion_converged = _TRUE_;
+  if (pba->has_scf == _TRUE_ && pba->scf_potential == axion || pba->scf_potential == phi_2n){
+    pba->Omega0_axion = pvecback_integration[pba->index_bi_rho_scf]/pba->H0/pba->H0;
+    pba->Omega0_lambda-=pba->Omega0_axion;
+    pba->Omega0_lambda+=Omega0_axion_used;//initially, this is 0. As the code shoots it will be updated
+    if(pba->background_verbose>0)printf(" adjusted Omega_Lambda to incorporate the axion contribution; new Omega_Lambda = %e  \n",pba->Omega0_lambda);
   }
-
   if (pba->has_dr == _TRUE_){
     pba->Omega0_dr = pvecback_integration[pba->index_bi_rho_dr]/pba->H0/pba->H0;
   }
@@ -2158,7 +2125,15 @@ int background_solve(
   }
 
 
-
+  //VP: NEW test that the budget equation is satisfied or loop.
+  if(fabs(pba->Omega0_axion-Omega0_axion_used)<1e-3){
+    is_axion_converged = _TRUE_;
+  }
+  else{Omega0_axion_used = pba->Omega0_axion;
+    class_call(gt_free(&gTable),
+             gTable.error_message,
+             pba->error_message);
+   }
              // is_lambda_converged = _TRUE_;
   }
 
