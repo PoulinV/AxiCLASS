@@ -3851,7 +3851,7 @@ if(pth->annihilation>0.){
   /** (f) parameter related to the non-linear spectra computation */
 
   class_call(parser_read_string(pfc,
-                                "non linear",
+                                "non_linear",
                                 &(string1),
                                 &(flag1),
                                 errmsg),

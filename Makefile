@@ -17,7 +17,7 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc-7
+CC       = gcc
 #CC       = icc
 #CC       = pgcc
 
@@ -30,7 +30,7 @@ AR        = ar rv
 # add a compilation option on the terminal command line:
 # "PYTHON=python3 make all" (THanks to Marius Millea for pyhton3
 # compatibility)
-PYTHON ?= python3
+PYTHON ?= python
 
 # your optimization flag
 OPTFLAG = -O4 -ffast-math #-march=native
@@ -146,7 +146,7 @@ libclass.a: $(TOOLS) $(SOURCE) $(EXTERNAL)
 	$(AR)  $@ $(addprefix build/, $(TOOLS) $(SOURCE) $(EXTERNAL))
 
 class: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(CLASS)
-	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(GSLFLAG) -o class $(addprefix build/,$(notdir $^))
+	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(GSLFLAG) -o class $(addprefix build/,$(notdir $^)) -lgsl -lgslcblas -lm
 
 test_loops: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_LOOPS)
 	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) -o $@ $(addprefix build/,$(notdir $^)) -lm
