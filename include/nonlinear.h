@@ -70,7 +70,7 @@ struct nonlinear {
 
   //@{
 
-   
+
   short has_pk_m;  /**< do we want spectra for total matter? */
   short has_pk_cb; /**< do we want spectra for cdm+baryons? */
 
@@ -147,6 +147,7 @@ struct nonlinear {
   double ** ddln_pk_nl; /**< second derivative of above array with respect to log(tau), for spline interpolation. */
 
   double * sigma8;   /**< sigma8[index_pk] */
+  double sigma12;    /**< sigma12 */
 
   //@}
 

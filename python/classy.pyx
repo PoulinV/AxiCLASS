@@ -1886,6 +1886,8 @@ cdef class Class:
                 value = self.nl.sigma8[self.nl.index_pk_m]
             elif name == 'sigma8_cb':
                 value = self.nl.sigma8[self.nl.index_pk_cb]
+            elif name == 'sigma12':
+                value = self.nl.sigma12
             elif name == 'k_eq':
                 value = self.ba.a_eq*self.ba.H_eq
 

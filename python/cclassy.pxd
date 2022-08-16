@@ -304,6 +304,7 @@ cdef extern from "class.h":
         double ** ln_pk_l
         double ** ln_pk_nl
         double * sigma8
+        double sigma12
         int has_pk_m
         int has_pk_cb
         int index_pk_m

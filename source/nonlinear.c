@@ -1350,6 +1350,21 @@ int nonlinear_init(
                pnl->error_message);
   }
 
+  /** - compute and store sigma12 (variance of density fluctuations in
+        spheres of radius 12 Mpc at z=0, always computed by
+        convention using the linear power spectrum) */
+
+  class_call(nonlinear_sigmas_at_z(ppr,
+                                   pba,
+                                   pnl,
+                                   12.,
+                                   0.,
+                                   pnl->index_pk_m,
+                                   out_sigma,
+                                   &(pnl->sigma12)),
+             pnl->error_message,
+             pnl->error_message);
+
   if (pnl->nonlinear_verbose>0) {
 
     if (pnl->has_pk_m == _TRUE_)
@@ -1363,7 +1378,10 @@ int nonlinear_init(
       fprintf(stdout," -> sigma8=%g for baryons+cdm  (computed till k = %g h/Mpc)\n",
               pnl->sigma8[pnl->index_pk_cb],
               pnl->k[pnl->k_size-1]/pba->h);
+
+    printf(" -> sigma_12 = %e for total matter \n", pnl->sigma12 );
   }
+
 
   /** - get the non-linear power spectrum at each time */
 
