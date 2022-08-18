@@ -2358,6 +2358,11 @@ int input_read_parameters(
     }
   }
 
+  //new param to take DMDE drag term into account
+  class_read_double("DMDE_interaction",ppt->DMDE_interaction);
+
+
+
   /** (b) assign values to thermodynamics cosmological parameters */
 
   /** - primordial helium fraction */
@@ -4502,6 +4507,7 @@ int input_default_params(
   ppt->three_ceff2_ur=1.;
   ppt->three_cvis2_ur=1.;
 
+  ppt->DMDE_interaction = 0;
   ppt->use_big_theta_fld = _FALSE_;
 
   ppt->z_max_pk=0.;
