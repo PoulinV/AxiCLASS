@@ -1,0 +1,228 @@
+packages_path: /path/to/cobaya/likelihoods/
+likelihood:
+  planck_2018_lowl.TT:
+  planck_2018_lowl.EE:
+  planck_2018_highl_plik.TTTEEE:
+  planck_2018_lensing.clik:
+  bao.sixdf_2011_bao:
+  bao.sdss_dr7_mgs:
+  bao.sdss_dr12_consensus_bao:
+  sn.pantheon:
+  # my_H0:
+  #   external: 'lambda _self: stats.norm.logpdf(_self.provider.get_param("H0"), loc=73.2, scale=1.3)'
+  #   requires: ["H0"]
+params:
+  logA:
+    prior:
+      min: 1.61
+      max: 3.91
+    ref:
+      dist: norm
+      loc: 3.05
+      scale: 0.001
+    proposal: 0.001
+    latex: \log(10^{10} A_\mathrm{s})
+    drop: true
+  A_s:
+    value: 'lambda logA: 1e-10*np.exp(logA)'
+    latex: A_\mathrm{s}
+  n_s:
+    prior:
+      min: 0.8
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.965
+      scale: 0.004
+    proposal: 0.002
+    latex: n_\mathrm{s}
+  # theta_s_1e2:
+    # prior:
+    #   min: 0.5
+    #   max: 10
+    # ref:
+    #   dist: norm
+    #   loc: 1.0416
+    #   scale: 0.0004
+    # proposal: 0.0002
+    # latex: 100\theta_\mathrm{s}
+    # drop: true
+  # 100*theta_s:
+    # value: 'lambda 100*theta_s: 100*theta_s'
+    # derived: true
+    # latex: 100\theta_*
+ #    value: 'lambda theta_s_1e2: theta_s_1e2'
+ #    derived: false
+  H0:
+    prior:
+      min: 20
+      max: 100
+    ref:
+      dist: norm
+      loc: 67.3
+      scale: 2
+    proposal: 2
+    # value: 68.
+    latex: H_0
+  omega_b:
+    prior:
+      min: 0.005
+      max: 0.1
+    ref:
+      dist: norm
+      loc: 0.0224
+      scale: 0.0001
+    proposal: 0.0001
+    latex: \Omega_\mathrm{b} h^2
+  omega_cdm:
+    prior:
+      min: 0.001
+      max: 0.99
+    ref:
+      dist: norm
+      loc: 0.12
+      scale: 0.001
+    proposal: 0.0005
+    latex: \Omega_\mathrm{c} h^2
+  Omega_m:
+    latex: \Omega_\mathrm{m}
+  omegamh2:
+    derived: 'lambda Omega_m, H0: Omega_m*(H0/100)**2'
+    latex: \Omega_\mathrm{m} h^2
+  m_ncdm:
+    value: 0.06
+    renames: mnu
+  Omega_Lambda:
+    latex: \Omega_\Lambda
+  YHe:
+    latex: Y_\mathrm{P}
+  tau_reio:
+    prior:
+      min: 0.004
+      max: 0.8
+    ref:
+      dist: norm
+      loc: 0.055
+      scale: 0.006
+    proposal: 0.003
+    latex: \tau_\mathrm{reio}
+  z_reio:
+    latex: z_\mathrm{re}
+# EDE parameters -------->
+  f_axion_ac:
+    prior:
+      min: 0.0
+      max: 0.5
+    ref:
+      dist: norm
+      loc: 0.02
+      scale: 0.1
+    proposal: 0.01
+    latex: f_{\rm ede}(a_c)
+    drop: true
+  log10_fraction_axion_ac:
+    value: 'lambda f_axion_ac: np.log10(f_axion_ac)'
+  f_ede:
+    latex: f_{\rm ede}(a_{\rm peak})
+  log10_z_c:
+    latex: \log_{10}z_c
+  log10_f_axion:
+    latex: \log_{10}f_{\rm axion}
+  log10_m_axion:
+    latex: \log_{10}m_{\rm axion}
+  scf_param_1:
+    # prior:
+    #   min: 0.01
+    #   max: 3.1
+    # ref:
+    #   dist: norm
+    #   loc: 2.8
+    #   scale: 0.1
+    # proposal: 0.5
+    value: 2.719464130
+    latex: scf_1
+    drop: True
+  scf_parameters:
+    value: 'lambda scf_param_1: str(scf_param_1)+", 0."'
+    derived: false
+  log10_axion_ac:
+  #   prior:
+  #     min: -4.5
+  #     max: -3.0
+  #   ref:
+  #     dist: norm
+  #     loc: -3.5
+  #     scale: 0.5
+  #   proposal: 0.1
+    value: -3.586941554
+    latex: \log_{10}a_c
+# End EDE parameters <----------
+  sigma8:
+    latex: \sigma_8
+  s8h5:
+    derived: 'lambda sigma8, H0: sigma8*(H0*1e-2)**(-0.5)'
+    latex: \sigma_8/h^{0.5}
+  s8omegamp5:
+    derived: 'lambda sigma8, Omega_m: sigma8*Omega_m**0.5'
+    latex: \sigma_8 \Omega_\mathrm{m}^{0.5}
+  S8:
+    derived: 'lambda sigma8, Omega_m: sigma8*(Omega_m/0.3)**0.5'
+    latex: S_8
+  s8omegamp25:
+    derived: 'lambda sigma8, Omega_m: sigma8*Omega_m**0.25'
+    latex: \sigma_8 \Omega_\mathrm{m}^{0.25}
+  A:
+    derived: 'lambda A_s: 1e9*A_s'
+    latex: 10^9 A_\mathrm{s}
+  clamp:
+    derived: 'lambda A_s, tau_reio: 1e9*A_s*np.exp(-2*tau_reio)'
+    latex: 10^9 A_\mathrm{s} e^{-2\tau}
+  age:
+    latex: '{\rm{Age}}/\mathrm{Gyr}'
+  rs_drag:
+    latex: r_\mathrm{drag}
+  chi2__CMB:
+    derived: 'lambda chi2__planck_2018_lowl_TT, chi2__planck_2018_lowl_EE, chi2__planck_2018_highl_plik_TTTEEE,
+      chi2__planck_2018_lensing_clik: sum([chi2__planck_2018_lowl_TT, chi2__planck_2018_lowl_EE,
+      chi2__planck_2018_highl_plik_TTTEEE, chi2__planck_2018_lensing_clik])'
+    latex: \chi^2_\mathrm{CMB}
+  chi2__BAO:
+    derived: 'lambda chi2__bao_sixdf_2011_bao, chi2__bao_sdss_dr7_mgs, chi2__bao_sdss_dr12_consensus_bao:
+      sum([chi2__bao_sixdf_2011_bao, chi2__bao_sdss_dr7_mgs, chi2__bao_sdss_dr12_consensus_bao])'
+    latex: \chi^2_\mathrm{BAO}
+sampler:
+  mcmc:
+    drag: true
+    proposal_scale: 1.9
+    Rminus1_stop: 0.05
+    learn_proposal_Rminus1_max: 1000.
+    learn_proposal_Rminus1_max_early: 10000.
+    covmat: ./scf_f_z_thetai_cmb_bao_sne.covmat
+theory:
+  classy:
+    path: /path/to/your/AxiCLASS/
+    extra_args:
+      non linear: hmcode
+      N_ncdm: 1
+      N_ur: 2.0328
+      do_shooting: ye
+      do_shooting_scf: ye
+      scf_potential: axion
+      n_axion: 3 # Can also be varied as an independent param, see example_axiCLASS.ini
+      security_small_Omega_scf: 0.001
+      n_axion_security: 2.09
+      use_big_theta_scf: ye
+      adptative_stepsize: 1000
+      scf_has_perturbations: ye
+      attractor_ic_scf: n
+      scf_tuning_index: 0
+      compute damping scale: ye
+      precision_newton_method_F: 1e-3
+      precision_newton_method_x: 1e-3
+      # compute damping scale: ye
+      # background_verbose: 3
+      # input_verbose: 3
+      # thermodynamics_verbose: 3
+      # perturbations_verbose: 1
+output: /path/to/output
+debug: False
