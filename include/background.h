@@ -138,6 +138,7 @@ struct background
   double T_idr;      /**< \f$ T_{idr} \f$: current temperature of interacting dark radiation in Kelvins */
 
   double Omega0_idm_dr; /**< \f$ \Omega_{0 idm_dr} \f$: dark matter interacting with dark radiation */
+  double Omega0_idm_ede; /**< \f$ \Omega_{0 idm_ede} \f$: dark matter interacting with ede */
 
   double Omega0_dcdmdr; /**< \f$ \Omega_{0 dcdm}+\Omega_{0 dr} \f$: decaying cold dark matter (dcdm) decaying to dark radiation (dr) */
 
@@ -158,6 +159,7 @@ struct background
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
+  double beta_scf;
   double m_scf;
   double f_axion;
   double alpha_squared;
@@ -278,6 +280,7 @@ struct background
   int index_bg_Omega_fld;     /**< fluid fractional energy density Omega_fld / Omega_tot as a function of a, needed to calculate the "peak" of pheno_axion EDE type fluid */
   int index_bg_rho_ur;        /**< relativistic neutrinos/relics density */
   int index_bg_rho_idm_dr;    /**< density of dark matter interacting with dark radiation */
+  int index_bg_rho_idm_ede;    /**< density of dark matter interacting with ede */
   int index_bg_rho_idr;       /**< density of interacting dark radiation */
   int index_bg_rho_dcdm;      /**< dcdm density */
   int index_bg_rho_dr;        /**< dr density */
@@ -396,6 +399,7 @@ struct background
   short has_ur;        /**< presence of ultra-relativistic neutrinos/relics? */
   short has_idr;       /**< presence of interacting dark radiation? */
   short has_idm_dr;    /**< presence of dark matter interacting with dark radiation? */
+  short has_idm_ede;    /**< presence of dark matter interacting with ede? */
   short has_curvature; /**< presence of global spatial curvature? */
 
   //@}

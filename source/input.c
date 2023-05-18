@@ -213,7 +213,7 @@ int input_init(
   double param1, param2;
   double sigma_B = 2. * pow(_PI_,5) * pow(_k_B_,4) / 15. / pow(_h_P_,3) / pow(_c_,2);
   int counter, index_target, i;
-  double Omega_m, Omega_r, Omega0_g, Omega0_cdm,Omega0_b, T_cmb, H0, h;
+  double Omega_m, Omega_r, Omega0_g, Omega0_cdm,Omega0_idm_ede,Omega0_b, T_cmb, H0, h;
   short zc_is_zeq;
   double * unknown_parameter;
   int unknown_parameters_size;
@@ -463,6 +463,22 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
               Omega0_cdm = param2/h/h;
 
 
+
+            class_call(parser_read_double(pfc,"Omega_idm_ede",&param1,&flag1,errmsg),
+                       errmsg,
+                       errmsg);
+            class_call(parser_read_double(pfc,"omega_idm_ede",&param2,&flag2,errmsg),
+                       errmsg,
+                       errmsg);
+            class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+                       errmsg,
+                       "In input file, you can only enter one of Omega_cdm or omega_cdm, choose one");
+            if (flag1 == _TRUE_)
+              Omega0_idm_ede = param1;
+            if (flag2 == _TRUE_)
+              Omega0_idm_ede = param2/h/h;
+
+
               class_call(parser_read_double(pfc,"Omega_b",&param1,&flag1,errmsg),
                          errmsg,
                          errmsg);
@@ -485,6 +501,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
             Omega_r = Omega0_g * (1. + 3.046 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
             Omega_m = Omega0_b;
             if (Omega0_cdm > 0) Omega_m += Omega0_cdm;
+            if (Omega0_idm_ede > 0) Omega_m += Omega0_idm_ede;
           }
         }
         else if(fzw.scf_potential == phi_2n){
@@ -1233,6 +1250,24 @@ int input_read_parameters(
   }
 
   Omega_tot += pba->Omega0_idm_dr;
+
+  /** - Omega_0_icdm_dr (DM interacting with DR) */
+  class_call(parser_read_double(pfc,"Omega_idm_ede",&param1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+  class_call(parser_read_double(pfc,"omega_idm_ede",&param2,&flag2,errmsg),
+             errmsg,
+             errmsg);
+  class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+            errmsg,
+            "In input file, you can only enter one of Omega_cdm or omega_cdm, choose one");
+  /* ---> if user passes directly the density of idm_dr */
+  if (flag1 == _TRUE_)
+    pba->Omega0_idm_ede = param1;
+  if (flag2 == _TRUE_)
+    pba->Omega0_idm_ede = param2/pba->h/pba->h;
+
+    Omega_tot += pba->Omega0_idm_ede;
 
   if (pba->Omega0_idm_dr > 0.) {
 
@@ -2047,6 +2082,7 @@ int input_read_parameters(
 
   }
 
+    class_read_double("beta_scf",pba->beta_scf);
     class_read_double("security_small_Omega_scf",pba->security_small_Omega_scf);
     class_read_double("n_axion_security",pba->n_axion_security);
     class_call(parser_read_string(pfc,
@@ -4322,6 +4358,7 @@ int input_default_params(
 
   pba->Omega0_idr = 0.0;
   pba->Omega0_idm_dr = 0.0;
+  pba->Omega0_idm_ede = 0.0;
   pba->T_idr = 0.0;
   pba->Omega0_b = 0.022032/pow(pba->h,2);
   pba->Omega0_cdm = 0.12038/pow(pba->h,2);
@@ -4364,6 +4401,7 @@ int input_default_params(
   pba->Omega0_axion = 0.0;
   pba->scf_has_perturbations = _TRUE_;
   pba->threshold_scf_fluid_m_over_H = 3;
+  pba->beta_scf = 0;//set to a negative number so it is never used by default.
   pba->security_small_Omega_scf = -10;//set to a negative number so it is never used by default.
   pba->n_axion_security = -2.5;//set to a negative number so it is never used by default.
   //MZ: initial conditions are as multiplicative factors of the radiation attractor values

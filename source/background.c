@@ -361,8 +361,8 @@ int background_functions(
     pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
-    pvecback[pba->index_bg_rho_scf] = (phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
-    pvecback[pba->index_bg_p_scf] = (phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
+    pvecback[pba->index_bg_rho_scf] = (1./2-pba->beta_scf)*(phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
+    pvecback[pba->index_bg_p_scf] = (1./2-pba->beta_scf)*(phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     // pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
     // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
@@ -512,6 +512,13 @@ int background_functions(
     p_tot += 0.;
     rho_m += pvecback[pba->index_bg_rho_idm_dr];
   }
+  /* interacting dark matter ede */
+  if (pba->has_idm_ede == _TRUE_) {
+    pvecback[pba->index_bg_rho_idm_ede] = pba->Omega0_idm_ede * pow(pba->H0,2) / pow(a_rel,3);
+    rho_tot += pvecback[pba->index_bg_rho_idm_ede];
+    p_tot += 0.;
+    rho_m += pvecback[pba->index_bg_rho_idm_ede];
+  }
 
   /* interacting dark radiation */
   if (pba->has_idr == _TRUE_) {
@@ -641,6 +648,7 @@ int background_w_fld(
       Omega_m = pba->Omega0_b;
       if (pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
       if (pba->has_idm_dr == _TRUE_) Omega_m += pba->Omega0_idm_dr;
+      if (pba->has_idm_ede == _TRUE_) Omega_m += pba->Omega0_idm_ede;
       if (pba->has_dcdm == _TRUE_)
         class_stop(pba->error_message,"Early Dark Energy not compatible with decaying Dark Matter because we omitted to code the calculation of a_eq in that case, but it would not be difficult to add it if necessary, should be a matter of 5 minutes");
       a_eq = Omega_r/Omega_m; // assumes a flat universe with a=1 today
@@ -1120,6 +1128,7 @@ int background_indices(
   /*COComment this probably isn't the best place to initialise this */
   pba->has_idr = _FALSE_;
   pba->has_idm_dr = _FALSE_;
+  pba->has_idm_ede = _FALSE_;
 
   if (pba->Omega0_cdm != 0.)
     pba->has_cdm = _TRUE_;
@@ -1156,6 +1165,9 @@ int background_indices(
 
   if (pba->Omega0_idm_dr != 0.)
     pba->has_idm_dr = _TRUE_;
+
+  if (pba->Omega0_idm_ede != 0.)
+    pba->has_idm_ede = _TRUE_;
 
   if (pba->sgnK != 0)
     pba->has_curvature = _TRUE_;
@@ -1237,6 +1249,9 @@ int background_indices(
 
   /* - index for interacting dark matter */
   class_define_index(pba->index_bg_rho_idm_dr,pba->has_idm_dr,index_bg,1);
+
+  /* - index for interacting dark matter ede */
+  class_define_index(pba->index_bg_rho_idm_ede,pba->has_idm_ede,index_bg,1);
 
   /* - put here additional ingredients that you want to appear in the
      normal vector */
@@ -2738,6 +2753,7 @@ int background_output_titles(struct background * pba,
 
   class_store_columntitle(titles,"(.)rho_idr",pba->has_idr);
   class_store_columntitle(titles,"(.)rho_idm_dr",pba->has_idm_dr);
+  class_store_columntitle(titles,"(.)rho_idm_ede",pba->has_idm_ede);
   class_store_columntitle(titles,"(.)rho_crit",_TRUE_);
   class_store_columntitle(titles,"(.)rho_dcdm",pba->has_dcdm);
   class_store_columntitle(titles,"(.)rho_dr",pba->has_dr);
@@ -2802,6 +2818,7 @@ int background_output_data(
 
     class_store_double(dataptr,pvecback[pba->index_bg_rho_idr],pba->has_idr,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_idm_dr],pba->has_idm_dr,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_idm_ede],pba->has_idm_ede,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_crit],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dcdm],pba->has_dcdm,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dr],pba->has_dr,storeidx);
@@ -2908,6 +2925,9 @@ int background_derivs(
   if (pba->has_idm_dr)
     rho_M += pvecback[pba->index_bg_rho_idm_dr];
 
+  if (pba->has_idm_ede)
+    rho_M += pvecback[pba->index_bg_rho_idm_ede];
+
   dy[pba->index_bi_D] = y[pba->index_bi_D_prime];
   dy[pba->index_bi_D_prime] = -a*H*y[pba->index_bi_D_prime] + 1.5*a*a*rho_M*y[pba->index_bi_D];
 
@@ -2937,7 +2957,8 @@ int background_derivs(
     dy[pba->index_bi_phi_scf] = y[pba->index_bi_phi_prime_scf];
     dy[pba->index_bi_phi_prime_scf] = - y[pba->index_bi_a]*
       (2*pvecback[pba->index_bg_H]*y[pba->index_bi_phi_prime_scf]
-       + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])) ;
+       + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])*(1/(1-2*pba->beta_scf))) ;
+       // printf("pba->beta_scf %e\n", pba->beta_scf);
        // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])/(pow(pba->scf_parameters[1],2))) ;
     dy[pba->index_bi_rho_scf] = 0; //Update the scf density until the fluid equation starts.
     //y[pba->index_bi_rho_scf] = y[pba->index_bg_rho_scf];
@@ -3257,7 +3278,7 @@ double V_scf(
     result = V_double_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axion){
-    result = V_axion_scf(pba,phi);
+    result = V_axion_scf(pba,phi)*(1-2*pba->beta_scf);
   }
   else if(pba->scf_potential == phi_2n){
     result = V_phi_2n_scf(pba,phi);
@@ -3285,7 +3306,7 @@ double dV_scf(
     result =  dV_double_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axion){
-    result = dV_axion_scf(pba,phi);
+    result = dV_axion_scf(pba,phi)*(1-2*pba->beta_scf);
   }
   else if(pba->scf_potential == phi_2n){
     result = dV_phi_2n_scf(pba,phi);
@@ -3316,7 +3337,7 @@ double ddV_scf(
     result =  ddV_double_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axion){
-    result = ddV_axion_scf(pba,phi);
+    result = ddV_axion_scf(pba,phi)*(1-2*pba->beta_scf);
   }
   else if(pba->scf_potential == phi_2n){
     result = ddV_phi_2n_scf(pba,phi);
@@ -3366,6 +3387,10 @@ int background_output_budget(
     if(pba->has_cdm){
       _class_print_species_("Cold Dark Matter",cdm);
       budget_matter+=pba->Omega0_cdm;
+    }
+    if(pba->has_idm_ede){
+      _class_print_species_("Interacting Dark Matter - EDE",idm_ede);
+      budget_matter+=pba->Omega0_idm_ede;
     }
     if(pba->has_idm_dr){
       _class_print_species_("Interacting Dark Matter - DR ",idm_dr);

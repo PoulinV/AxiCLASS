@@ -323,6 +323,7 @@ int perturb_output_titles(
       class_store_columntitle(titles,"d_g",_TRUE_);
       class_store_columntitle(titles,"d_b",_TRUE_);
       class_store_columntitle(titles,"d_cdm",pba->has_cdm);
+      class_store_columntitle(titles,"d_idm_ede",pba->has_idm_ede);
       class_store_columntitle(titles,"d_idm_dr",pba->has_idm_dr);
       class_store_columntitle(titles,"d_fld",pba->has_fld);
       class_store_columntitle(titles,"d_ur",pba->has_ur);
@@ -354,6 +355,7 @@ int perturb_output_titles(
       class_store_columntitle(titles,"t_g",_TRUE_);
       class_store_columntitle(titles,"t_b",_TRUE_);
       class_store_columntitle(titles,"t_cdm",((pba->has_cdm == _TRUE_) && (ppt->gauge != synchronous)));
+      class_store_columntitle(titles,"t_idm_ede",pba->has_idm_ede == _TRUE_);
       class_store_columntitle(titles,"t_idm_dr",pba->has_idm_dr);
       if(ppt->use_big_theta_fld == _TRUE_){
         class_store_columntitle(titles,"big_t_fld",pba->has_fld);
@@ -1182,6 +1184,8 @@ int perturb_indices(
         ppt->has_source_delta_b = _TRUE_;
         if (pba->has_cdm == _TRUE_)
           ppt->has_source_delta_cdm = _TRUE_;
+        if (pba->has_idm_ede == _TRUE_)
+          ppt->has_source_delta_idm_ede = _TRUE_;
         if (pba->has_dcdm == _TRUE_)
           ppt->has_source_delta_dcdm = _TRUE_;
         if (pba->has_fld == _TRUE_)
@@ -1225,6 +1229,8 @@ int perturb_indices(
           ppt->has_source_theta_idr = _TRUE_;
         if (pba->has_idm_dr == _TRUE_)
           ppt->has_source_theta_idm_dr = _TRUE_;
+        if (pba->has_idm_ede == _TRUE_)
+          ppt->has_source_theta_idm_ede = _TRUE_;
         if (pba->has_dr == _TRUE_)
           ppt->has_source_theta_dr = _TRUE_;
         if (pba->has_ncdm == _TRUE_)
@@ -3197,6 +3203,8 @@ int perturb_prepare_k_output(struct background * pba,
       /* Cold dark matter */
       class_store_columntitle(ppt->scalar_titles,"delta_cdm",pba->has_cdm);
       class_store_columntitle(ppt->scalar_titles,"theta_cdm",pba->has_cdm);
+      class_store_columntitle(ppt->scalar_titles,"delta_idm_ede",pba->has_idm_ede);
+      class_store_columntitle(ppt->scalar_titles,"theta_idm_ede",pba->has_idm_ede);
       /* Non-cold dark matter */
       if ((pba->has_ncdm == _TRUE_) && ((ppt->has_density_transfers == _TRUE_) || (ppt->has_velocity_transfers == _TRUE_) || (ppt->has_source_delta_m == _TRUE_))) {
         for(n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
@@ -3808,6 +3816,10 @@ int perturb_vector_init(
     class_define_index(ppv->index_pt_delta_idm_dr,pba->has_idm_dr,index_pt,1); /* idm_dr density */
     class_define_index(ppv->index_pt_theta_idm_dr,pba->has_idm_dr,index_pt,1); /* idm_dr velocity */
 
+    /* idm_ede */
+    class_define_index(ppv->index_pt_delta_idm_ede,pba->has_idm_ede,index_pt,1); /* idm_ede density */
+    class_define_index(ppv->index_pt_theta_idm_ede,pba->has_idm_ede,index_pt,1); /* idm_ede velocity */
+
     /* dcdm */
 
     class_define_index(ppv->index_pt_delta_dcdm,pba->has_dcdm,index_pt,1); /* dcdm density */
@@ -4290,6 +4302,17 @@ int perturb_vector_init(
 
         ppv->y[ppv->index_pt_theta_idm_dr] =
           ppw->pv->y[ppw->pv->index_pt_theta_idm_dr];
+      }
+
+
+
+      if (pba->has_idm_ede == _TRUE_) {
+
+        ppv->y[ppv->index_pt_delta_idm_ede] =
+          ppw->pv->y[ppw->pv->index_pt_delta_idm_ede];
+
+        ppv->y[ppv->index_pt_theta_idm_ede] =
+          ppw->pv->y[ppw->pv->index_pt_theta_idm_ede];
       }
 
 
@@ -5266,6 +5289,10 @@ int perturb_initial_conditions(struct precision * ppr,
       rho_m += ppw->pvecback[pba->index_bg_rho_idm_dr];
     }
 
+    if (pba->has_idm_ede == _TRUE_) {
+      rho_m += ppw->pvecback[pba->index_bg_rho_idm_ede];
+    }
+
     if (pba->has_dcdm == _TRUE_) {
       rho_m += ppw->pvecback[pba->index_bg_rho_dcdm];
     }
@@ -5373,6 +5400,11 @@ int perturb_initial_conditions(struct precision * ppr,
       /* interacting dark matter */
       if (pba->has_idm_dr == _TRUE_) {
         ppw->pv->y[ppw->pv->index_pt_delta_idm_dr] = 3./4.*ppw->pv->y[ppw->pv->index_pt_delta_g]; /* idm_dr density */
+      }
+      /* interacting dark matter with EDE */
+      if (pba->has_idm_ede == _TRUE_) {
+        ppw->pv->y[ppw->pv->index_pt_delta_idm_ede] = 3./4.*ppw->pv->y[ppw->pv->index_pt_delta_g]; /* idm_dr density */
+        ppw->pv->y[ppw->pv->index_pt_theta_idm_ede] = 0; //assume IDM EDE initially co-moving with CDM
       }
 
       if (pba->has_dcdm == _TRUE_) {
@@ -5665,6 +5697,8 @@ int perturb_initial_conditions(struct precision * ppr,
         delta_cdm = ppw->pv->y[ppw->pv->index_pt_delta_scf];
       else if (pba->has_idm_dr == _TRUE_)
         delta_cdm = ppw->pv->y[ppw->pv->index_pt_delta_idm_dr];
+      else if (pba->has_idm_ede == _TRUE_)
+        delta_cdm = ppw->pv->y[ppw->pv->index_pt_delta_idm_ede];
       else
         delta_cdm=0.;
 
@@ -5692,6 +5726,11 @@ int perturb_initial_conditions(struct precision * ppr,
       if (pba->has_idm_dr == _TRUE_){
         ppw->pv->y[ppw->pv->index_pt_delta_idm_dr] -= 3.*a_prime_over_a*alpha;
         ppw->pv->y[ppw->pv->index_pt_theta_idm_dr] = k*k*alpha;
+        /* comment on idm_dr initial conditions: theta_idm_dr is set later, together with theta_idr, if the tight coupling is on */
+      }
+      if (pba->has_idm_ede == _TRUE_){
+        ppw->pv->y[ppw->pv->index_pt_delta_idm_ede] -= 3.*a_prime_over_a*alpha;
+        ppw->pv->y[ppw->pv->index_pt_theta_idm_ede] = k*k*alpha;
         /* comment on idm_dr initial conditions: theta_idm_dr is set later, together with theta_idr, if the tight coupling is on */
       }
 
@@ -5771,6 +5810,7 @@ int perturb_initial_conditions(struct precision * ppr,
     if (pba->has_idm_dr == _TRUE_){
       ppw->pv->y[ppw->pv->index_pt_theta_idm_dr] = theta_ur;
     }
+
 
     if (pba->has_ncdm == _TRUE_) {
       idx = ppw->pv->index_pt_psi0_ncdm1;
@@ -6871,6 +6911,24 @@ int perturb_total_stress_energy(
       ppw->rho_plus_p_theta += ppw->pvecback[pba->index_bg_rho_idm_dr]*y[ppw->pv->index_pt_theta_idm_dr];
       ppw->rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_idm_dr];
     }
+    /* idm_ede contribution */
+    if (pba->has_idm_ede == _TRUE_) {
+      ppw->delta_rho += ppw->pvecback[pba->index_bg_rho_idm_ede]*y[ppw->pv->index_pt_delta_idm_ede];
+      ppw->rho_plus_p_theta += ppw->pvecback[pba->index_bg_rho_idm_ede]*y[ppw->pv->index_pt_theta_idm_ede];
+      ppw->rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_idm_ede];
+
+
+            if (ppt->has_source_delta_m == _TRUE_) {
+              delta_rho_m += ppw->pvecback[pba->index_bg_rho_idm_ede]*y[ppw->pv->index_pt_delta_idm_ede]; // contribution to delta rho_matter
+              rho_m += ppw->pvecback[pba->index_bg_rho_idm_ede];
+            }
+            if ((ppt->has_source_delta_m == _TRUE_) || (ppt->has_source_theta_m == _TRUE_)) {
+
+              rho_plus_p_theta_m += ppw->pvecback[pba->index_bg_rho_idm_ede]*y[ppw->pv->index_pt_theta_idm_ede]; // contribution to [(rho+p)theta]_matter
+              rho_plus_p_m += ppw->pvecback[pba->index_bg_rho_idm_ede];
+            }
+
+    }
 
     /* dcdm contribution */
     if (pba->has_dcdm == _TRUE_) {
@@ -7859,6 +7917,11 @@ int perturb_sources(
       _set_source_(ppt->index_tp_delta_idm_dr) = y[ppw->pv->index_pt_delta_idm_dr]
         + 3.*a_prime_over_a*theta_over_k2; // N-body gauge correction
     }
+    /* delta_idm_ede */
+    if (ppt->has_source_delta_idm_ede == _TRUE_) {
+      _set_source_(ppt->index_tp_delta_idm_ede) = y[ppw->pv->index_pt_delta_idm_ede]
+        + 3.*a_prime_over_a*theta_over_k2; // N-body gauge correction
+    }
 
     /* delta_ncdm1 */
     if (ppt->has_source_delta_ncdm == _TRUE_) {
@@ -7916,6 +7979,11 @@ int perturb_sources(
     /* theta_idm_dr */
     if (ppt->has_source_theta_idm_dr == _TRUE_) {
       _set_source_(ppt->index_tp_theta_idm_dr) = y[ppw->pv->index_pt_theta_idm_dr]
+        + theta_shift; // N-body gauge correction
+    }
+    /* theta_idm_ede */
+    if (ppt->has_source_theta_idm_ede == _TRUE_) {
+      _set_source_(ppt->index_tp_theta_idm_ede) = y[ppw->pv->index_pt_theta_idm_ede]
         + theta_shift; // N-body gauge correction
     }
 
@@ -8118,6 +8186,7 @@ int perturb_print_variables(double tau,
   double delta_b,theta_b;
   double delta_cdm=0.,theta_cdm=0.;
   double delta_idm_dr=0.,theta_idm_dr=0.;
+  double delta_idm_ede=0.,theta_idm_ede=0.;
   double delta_dcdm=0.,theta_dcdm=0.;
   double delta_dr=0.,theta_dr=0.,shear_dr=0., f_dr=1.0;
   double delta_ur=0.,theta_ur=0.,shear_ur=0.,l4_ur=0.;
@@ -8295,6 +8364,11 @@ int perturb_print_variables(double tau,
     if (pba->has_idm_dr == _TRUE_) {
       delta_idm_dr = y[ppw->pv->index_pt_delta_idm_dr];
       theta_idm_dr = y[ppw->pv->index_pt_theta_idm_dr];
+    }
+    /* interacting dark matter ede */
+    if (pba->has_idm_ede == _TRUE_) {
+      delta_idm_ede = y[ppw->pv->index_pt_delta_idm_ede];
+      theta_idm_ede = y[ppw->pv->index_pt_theta_idm_ede];
     }
 
     if (pba->has_cdm == _TRUE_) {
@@ -8528,6 +8602,11 @@ int perturb_print_variables(double tau,
         theta_idm_dr += k*k*alpha;
       }
 
+      if (pba->has_idm_ede == _TRUE_) {
+        delta_idm_ede -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+        theta_idm_ede += k*k*alpha;
+      }
+
       if (pba->has_ncdm == _TRUE_) {
         for(n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
           /** - --> TODO: gauge transformation of delta, deltaP/rho (?) and theta using -= 3aH(1+w_ncdm) alpha for delta. */
@@ -8599,6 +8678,9 @@ int perturb_print_variables(double tau,
     /* Interacting dark matter */
     class_store_double(dataptr, delta_idm_dr, pba->has_idm_dr, storeidx);
     class_store_double(dataptr, theta_idm_dr, pba->has_idm_dr, storeidx);
+    /* Interacting dark matter ede */
+    class_store_double(dataptr, delta_idm_ede, pba->has_idm_ede, storeidx);
+    class_store_double(dataptr, theta_idm_ede, pba->has_idm_ede, storeidx);
     /* Cold dark matter */
     class_store_double(dataptr, delta_cdm, pba->has_cdm, storeidx);
     class_store_double(dataptr, theta_cdm, pba->has_cdm, storeidx);
@@ -9312,6 +9394,24 @@ int perturb_derivs(double tau,
         dy[pv->index_pt_delta_cdm] = -metric_continuity; /* cdm density */
       }
     }
+    /** - ---> idm ede */
+
+    if (pba->has_idm_ede == _TRUE_) {
+
+
+      // if (ppt->gauge == newtonian) {
+        dy[pv->index_pt_delta_idm_ede] = -(y[pv->index_pt_theta_idm_ede]+metric_continuity); /* cdm density */
+
+        dy[pv->index_pt_theta_idm_ede] = - a_prime_over_a*y[pv->index_pt_theta_idm_ede] + metric_euler; /* cdm velocity */
+      //
+
+      // /** - ----> synchronous gauge: cdm density only (velocity set to zero by definition of the gauge) */
+      //
+      // if (ppt->gauge == synchronous) {
+      //   dy[pv->index_pt_delta_idm_ede] = -(y[pv->index_pt_theta_idm_ede]+metric_continuity); /* cdm density */
+      //   dy[pv->index_pt_theta_idm_ede] = - a_prime_over_a*y[pv->index_pt_theta_idm_ede] + metric_euler; /* idm_ede velocity */
+      // }
+    }
 
     /** - ---> idr */
     if (pba->has_idr == _TRUE_){
@@ -9483,10 +9583,12 @@ int perturb_derivs(double tau,
         }
         /** - ----> Klein Gordon equation */
         dy[pv->index_pt_phi_prime_scf] =  - 2.*a_prime_over_a*y[pv->index_pt_phi_prime_scf]
-        - metric_continuity*pvecback[pba->index_bg_phi_prime_scf] //  metric_continuity = h'/2
+        - metric_continuity*pvecback[pba->index_bg_phi_prime_scf]/(1-2*pba->beta_scf) //  metric_continuity = h'/2
         // - 2*a2/k2*metric_euler*pvecback[pba->index_bg_dV_scf] //VP: This term was missing in newtonian gauge, but we do not follow psi' so we cannot yet solve the perturbed KG equation in newtonian gauge.
-        - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]; //checked
-
+        - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]/(1-2*pba->beta_scf);
+        if(pba->has_idm_ede == _TRUE_)
+        dy[pv->index_pt_phi_prime_scf] += - 2*pba->beta_scf*pvecback[pba->index_bg_phi_prime_scf]*k2*y[pv->index_pt_theta_idm_ede]; //checked
+        // printf("pba->beta_scf %e\n", pba->beta_scf);
 
         // if(index_k==0)printf("phi' %e ddV %e\n",pvecback[pba->index_bg_phi_prime_scf],pvecback[pba->index_bg_ddV_scf]);
 
