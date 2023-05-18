@@ -10,38 +10,6 @@
 #include "dei_rkck.h"
 #include "parser.h"
 
-
-// #include "complex.h" //kept here in case we need complex numbers one day
-//we take this gamma function from gsl.
-// static double complex gsl_sf_gamma(double complex z) {
-static double gsl_sf_gamma(double z) {
-    /* Lanczos coefficients for g = 7 */
-    static double p[] = {
-        0.99999999999980993227684700473478,
-        676.520368121885098567009190444019,
-       -1259.13921672240287047156078755283,
-        771.3234287776530788486528258894,
-       -176.61502916214059906584551354,
-        12.507343278686904814458936853,
-       -0.13857109526572011689554707,
-        9.984369578019570859563e-6,
-        1.50563273514931155834e-7
-    };
-
-    // if(creal(z) < 0.5)
-    //     return M_PI / (sin(M_PI*z)*gsl_sf_gamma(1. - z));
-
-    z -= 1;
-    // double complex x = p[0];
-    double x = p[0];
-    for(int n = 1; n < 9; n++)
-        x += p[n] / (z + 1.*n);
-    // double complex t = z + 7.5;
-    double t = z + 7.5;
-    return sqrt(2*M_PI) * pow(t, z+0.5) * exp(-t) * x;
-}
-
-
 //The name for this macro can be at most 30 characters total
 #define _class_print_species_(name,type) \
 printf("-> %-30s Omega = %-15g , omega = %-15g\n",name,pba->Omega0_##type,pba->Omega0_##type*pba->h*pba->h);
@@ -158,7 +126,6 @@ struct background
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
-  double beta_scf; 
   double m_scf;
   double f_axion;
   double alpha_squared;
@@ -185,9 +152,8 @@ struct background
   short scf_kg_eq;    /**< evolve scalar field with KG equations */
   short scf_fluid_eq;    /**< evolve scalar field with KG equations */
   short scf_evolve_like_axionCAMB; /**< evolve scalar field perturbations like axionCAMB */
-  short scf_has_perturbations; /** do scalar field perts */
-  short loop_over_background_for_closure_relation; /** do we want to loop over background?*/
-  double precision_loop_over_background;
+  short scf_has_perturbations; /** do scalar field perts
+
   //double scf_lambda; /**< \f$ \lambda \f$ : scalar field exponential potential slope */
   //double scf_alpha;  /**< \f$ \alpha \f$ : Albrecht-Skordis polynomial slope */
   //double scf_B; /**< \f$ \alpha \f$ : Albrecht-Skordis field shift */

@@ -8884,9 +8884,8 @@ int perturb_derivs(double tau,
   double s2_squared, ssqrt3;
   double tau_b;
   double Phi_plus,c_gamma_squared,d_gamma, psi, phi;
+
   /** - rename the fields of the input structure (just to avoid heavy notations) */
-
-
 
   /* for use with dcdm and dr */
   double f_dr, fprime_dr;
@@ -8933,6 +8932,19 @@ int perturb_derivs(double tau,
              pth->error_message,
              error_message);
   //printf("Finished calling thermodynamics_at_z. \n");
+
+
+  /* DMEDE interaction */
+  double f_norm=0;
+	//printf("here before %d \n",pba->index_bg_rho_tot);
+	//printf("Om_FLD %e\n",ppw->pvecback[pba->index_bg_Omega_fld]);
+        if(pba->has_fld==_TRUE_ && ppt->DMDE_interaction > 0 ){
+                f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak;
+	// printf("f_norm %e \n");
+        }
+
+
+
 
     if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
 
@@ -9326,9 +9338,11 @@ int perturb_derivs(double tau,
           if(ppt->use_big_theta_fld == _TRUE_){
             class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);
             // printf("w_fld %e\n", w_fld);
-            dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_big_theta_fld]/(1+w_fld)-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
+            //dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_big_theta_fld]/(1+w_fld)-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
+            dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*f_norm/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_big_theta_fld]/(1+w_fld)-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
           }else{
-            dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
+            //dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
+            dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*f_norm/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
           }
           }
       }
@@ -9482,14 +9496,16 @@ int perturb_derivs(double tau,
             +cs2*k2*y[pv->index_pt_delta_fld]
             +(1+w_fld)*metric_euler;
           dy[pv->index_pt_big_theta_fld]+= 3*a_prime_over_a*(w_fld-ca2)*y[pv->index_pt_big_theta_fld];
-          if(pba->has_cdm==_TRUE_ && ppt->DMDE_interaction > 0)dy[pv->index_pt_big_theta_fld] -= ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(ppw->pvecback[pba->index_bg_rho_cdm]/((1+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_big_theta_fld]-y[pv->index_pt_theta_cdm]); /* cdm velocity */
+          //if(pba->has_cdm==_TRUE_ && ppt->DMDE_interaction > 0)dy[pv->index_pt_big_theta_fld] -= ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(ppw->pvecback[pba->index_bg_rho_cdm]/((1+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_big_theta_fld]-y[pv->index_pt_theta_cdm]); /* cdm velocity */
+          if(pba->has_cdm==_TRUE_ && ppt->DMDE_interaction > 0)dy[pv->index_pt_big_theta_fld] -= ppt->DMDE_interaction*f_norm/ppw->pvecback[pba->index_bg_rho_cdm]*(ppw->pvecback[pba->index_bg_rho_cdm]/((1+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_big_theta_fld]-y[pv->index_pt_theta_cdm]); /* cdm velocity */
         }
         else {
           dy[pv->index_pt_theta_fld] = /* fluid velocity */
             -(1.-3.*cs2)*a_prime_over_a*y[pv->index_pt_theta_fld]
             +cs2*k2/(1.+w_fld)*y[pv->index_pt_delta_fld]
             +metric_euler;
-            if(pba->has_cdm==_TRUE_ && ppt->DMDE_interaction > 0)dy[pv->index_pt_theta_fld] -= ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(ppw->pvecback[pba->index_bg_rho_cdm]/((1+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_cdm]); /* cdm velocity */
+//            if(pba->has_cdm==_TRUE_ && ppt->DMDE_interaction > 0)dy[pv->index_pt_theta_fld] -= ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(ppw->pvecback[pba->index_bg_rho_cdm]/((1+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_cdm]); /* cdm velocity */
+            if(pba->has_cdm==_TRUE_ && ppt->DMDE_interaction > 0)dy[pv->index_pt_theta_fld] -= ppt->DMDE_interaction*f_norm/ppw->pvecback[pba->index_bg_rho_cdm]*(ppw->pvecback[pba->index_bg_rho_cdm]/((1+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_cdm]); /* cdm velocity */
 
         }
       }
