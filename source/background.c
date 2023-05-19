@@ -885,7 +885,7 @@ int background_init(
         // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
         Omega_rad_neutrinos = pba->Omega0_ur;
         // printf("pba->Omega_ur %e Omega_rad_neutrinos %e\n",pba->Omega0_ur,Omega_rad_neutrinos);
-          if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm)){
+          if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm+pba->Omega0_idm_ede)){
             p = 1./2;
             pba->m_scf = pow(pow(10,pba->power_of_mu),-2.);
           }
@@ -938,7 +938,7 @@ int background_init(
             // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
             Omega_rad_neutrinos = pba->Omega0_ur;
             // printf("pba->Omega_ur %e Omega_rad_neutrinos %e\n",pba->Omega0_ur,Omega_rad_neutrinos);
-            if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm)){
+            if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm+pba->Omega0_idm_ede)){
               p = 1./2;
               pba->m_scf = pow(pow(10,pba->power_of_mu),-2.);
             }
