@@ -4416,7 +4416,7 @@ int input_default_params(
   pba->Omega0_k = 0.;
   pba->K = 0.;
   pba->sgnK = 0;
-  pba->Omega0_lambda = 1.-pba->Omega0_k-pba->Omega0_g-pba->Omega0_ur-pba->Omega0_b-pba->Omega0_cdm-pba->Omega0_ncdm_tot-pba->Omega0_dcdmdr-pba->Omega0_idm_dr-pba->Omega0_idr;
+  pba->Omega0_lambda = 1.-pba->Omega0_k-pba->Omega0_g-pba->Omega0_ur-pba->Omega0_b-pba->Omega0_cdm-pba->Omega0_ncdm_tot-pba->Omega0_dcdmdr-pba->Omega0_idm_ede-pba->Omega0_idm_dr-pba->Omega0_idr;
   pba->Omega0_fld = 0.;
   pba->a_today = 1.;
   pba->use_ppf = _TRUE_;
@@ -5503,7 +5503,7 @@ int input_get_guess(double *xguess,
       ba.H0 = ba.h *  1.e5 / _c_;
       break;
     case Omega_dcdmdr:
-      Omega_M = ba.Omega0_cdm+ba.Omega0_idm_dr+ba.Omega0_dcdmdr+ba.Omega0_b;
+      Omega_M = ba.Omega0_cdm+ba.Omega0_idm_dr+ba.Omega0_idm_ede+ba.Omega0_dcdmdr+ba.Omega0_b;
       /* This formula is exact in a Matter + Lambda Universe, but only
          for Omega_dcdm, not the combined.
          sqrt_one_minus_M = sqrt(1.0 - Omega_M);
@@ -5522,7 +5522,7 @@ int input_get_guess(double *xguess,
       //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
       break;
     case omega_dcdmdr:
-      Omega_M = ba.Omega0_cdm+ba.Omega0_idm_dr+ba.Omega0_dcdmdr+ba.Omega0_b;
+      Omega_M = ba.Omega0_cdm+ba.Omega0_idm_dr+ba.Omega0_idm_ede+ba.Omega0_dcdmdr+ba.Omega0_b;
       /* This formula is exact in a Matter + Lambda Universe, but only
          for Omega_dcdm, not the combined.
          sqrt_one_minus_M = sqrt(1.0 - Omega_M);
@@ -5548,14 +5548,14 @@ int input_get_guess(double *xguess,
         axc=pow(10.,ba.log10_axion_ac);
         class_test(fxc==1,ba.error_message,"f_axion cannot be strictly 1");
         Omega_rad = 2.47310e-5*1.445;//hardcoded for simplicity; in any case this is an approximate guess for f(zc) and zc
-        Omega_LCDM=(ba.Omega0_b+ba.Omega0_cdm)*pow(axc,-3)+Omega_rad*pow(axc,-4);
+        Omega_LCDM=(ba.Omega0_b+ba.Omega0_cdm+ba.Omega0_idm_ede)*pow(axc,-3)+Omega_rad*pow(axc,-4);
         Omega_tot_ac=Omega_LCDM/(1-fxc);
         H = ba.H0*pow(Omega_tot_ac,0.5);
         Vphi =3*fxc*H*H;//in CLASS, V is in unit of Mpl^2/Mpc^2. no extra factor Mpl^2.
         ratio = 3/fxc;//units of 1/Mpl^2
         phi_i=pow(ratio/(2*ba.n_axion*(2*ba.n_axion-1)),-0.5); //units of Mpl
         xguess[index_guess] = Vphi/pow(phi_i,2*ba.n_axion);
-        dxdy[index_guess] = -3*fxc/pow(phi_i,2*ba.n_axion)*ba.H0*ba.H0*(3*(ba.Omega0_b+ba.Omega0_cdm)*pow(axc,-3)+4*Omega_rad*pow(axc,-4))/(1-fxc);//derivative w/r to log10 ac
+        dxdy[index_guess] = -3*fxc/pow(phi_i,2*ba.n_axion)*ba.H0*ba.H0*(3*(ba.Omega0_b+ba.Omega0_cdm+ba.Omega0_idm_ede)*pow(axc,-3)+4*Omega_rad*pow(axc,-4))/(1-fxc);//derivative w/r to log10 ac
         // dxdy[index_guess] =   xguess[index_guess];
         // printf("V0 %e dxdy[index_guess] %e %d\n", xguess[index_guess],dxdy[index_guess],index_guess);
         break;
@@ -5598,7 +5598,7 @@ int input_get_guess(double *xguess,
         }
         fxc=pow(10.,ba.log10_fraction_axion_ac);
         FF=0.8;
-        if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
+        if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm+ba.Omega0_idm_ede)){
             guess = 0.25*(3.*fxc*pow(1.-cos(phi_initial),ba.n_axion)*ba.n_axion/tan(phi_initial/2.))/((1.-FF)*phi_initial*(5.*pow(1.-cos(FF*phi_initial),ba.n_axion)+2.*(1.-FF)*ba.n_axion*phi_initial*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)));
         } else {
             guess = 2./3.*fxc*ba.n_axion*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)/((1.-FF)*phi_initial*(3.*(pow(1.-cos(FF*phi_initial),ba.n_axion))+(1.-FF)*ba.n_axion*phi_initial*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)));
@@ -5636,21 +5636,21 @@ int input_get_guess(double *xguess,
               fxc = 0;
             }
             FF=0.8;
-         if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
+         if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm+ba.Omega0_idm_ede)){
            p = 1./2;
            guess = 2.*sqrt(5.*(1.-FF)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
            guess = pow(guess,-p)*axc;
          }else{
            p = 2./3;
            guess =
-             3.*sqrt(1.5*(1.-FF)*phi_initial*(ba.Omega0_cdm+ba.Omega0_b)*pow(1.-cos(phi_initial),-ba.n_axion)*tan(phi_initial/2.)/ba.n_axion);
+             3.*sqrt(1.5*(1.-FF)*phi_initial*(ba.Omega0_cdm+ba.Omega0_b+ba.Omega0_idm_ede)*pow(1.-cos(phi_initial),-ba.n_axion)*tan(phi_initial/2.)/ba.n_axion);
            guess = pow(guess,-p)*axc;
          }
          xguess[index_guess] = log10(guess/1.6);
          dxdy[index_guess] = log10(guess/1.6);
          // dxdy[index_guess] = 100;
 
-        if(pfzw->input_verbose>10)printf("get guess: axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],(ba.Omega0_cdm+ba.Omega0_b),(ba.Omega0_g+ba.Omega0_ur));
+        if(pfzw->input_verbose>10)printf("get guess: axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],(ba.Omega0_cdm+ba.Omega0_b+ba.Omega0_idm_ede),(ba.Omega0_g+ba.Omega0_ur));
 
          break;
 
@@ -5733,7 +5733,7 @@ int input_get_guess(double *xguess,
           omega_ini_dcdm -> omega_dcdmdr */
       Omega0_dcdmdr *=pfzw->target_value[index_guess];
 
-      Omega_M = ba.Omega0_cdm+ba.Omega0_idm_dr+Omega0_dcdmdr+ba.Omega0_b;
+      Omega_M = ba.Omega0_cdm+ba.Omega0_idm_dr+Omega0_dcdmdr+ba.Omega0_b+ba.Omega0_idm_ede;
       gamma = ba.Gamma_dcdm/ba.H0;
       if (gamma < 1)
         a_decay = 1.0;
@@ -5748,7 +5748,7 @@ int input_get_guess(double *xguess,
       //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
       break;
     case a_peak_eq:
-      Omega_M = ba.Omega0_cdm+ba.Omega0_b;
+      Omega_M = ba.Omega0_cdm+ba.Omega0_b+ba.Omega0_idm_ede;
       Omega_rad = ba.Omega0_g+ba.Omega0_ur;
       xguess[index_guess] = 0.94*Omega_rad/Omega_M;
       dxdy[index_guess] = 1.;

@@ -365,8 +365,8 @@ int background_functions(
     pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
-    pvecback[pba->index_bg_rho_scf] = (1./2-pba->beta_scf)*((phi_prime*phi_prime/(a*a)) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
-    pvecback[pba->index_bg_p_scf] = (1./2-pba->beta_scf)*((phi_prime*phi_prime/(a*a)) - V_scf(pba,phi))/3.; // pressure of the scalar field
+    pvecback[pba->index_bg_rho_scf] = ((1./2-pba->beta_scf)*(phi_prime*phi_prime/(a*a)) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
+    pvecback[pba->index_bg_p_scf] = ((1./2-pba->beta_scf)*(phi_prime*phi_prime/(a*a)) - V_scf(pba,phi))/3.; // pressure of the scalar field
     // pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
     // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
@@ -559,7 +559,7 @@ int background_functions(
   if (pba->has_scf == _TRUE_){
     /** The contribution of scf was not added to dp_dloga, add p_scf_prime here: */
     pvecback[pba->index_bg_p_prime_scf] = pvecback[pba->index_bg_phi_prime_scf]*
-      (-(1./2-pba->beta_scf)*pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_H]/a-2./3.*pvecback[pba->index_bg_dV_scf]);
+      (-(1.-2*pba->beta_scf)*pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_H]/a-2./3.*pvecback[pba->index_bg_dV_scf]);
     pvecback[pba->index_bg_p_tot_prime] += pvecback[pba->index_bg_p_prime_scf];
   }
 
@@ -2968,6 +2968,7 @@ int background_derivs(
     dy[pba->index_bi_phi_prime_scf] = - y[pba->index_bi_a]*
       (2*pvecback[pba->index_bg_H]*y[pba->index_bi_phi_prime_scf]
        + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])*(1/(1-2*pba->beta_scf))) ;
+       // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])) ;
        // printf("pba->beta_scf %e\n", pba->beta_scf);
        // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])/(pow(pba->scf_parameters[1],2))) ;
     dy[pba->index_bi_rho_scf] = 0; //Update the scf density until the fluid equation starts.
