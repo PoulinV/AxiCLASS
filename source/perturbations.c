@@ -7176,10 +7176,10 @@ int perturb_total_stress_energy(
         else{
 
           ppw->rho_plus_p_theta +=  1./3.*
-            k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf]/(1-2*pba->beta_scf);
+            k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
             if(pba->has_idm_ede == _TRUE_)
           ppw->rho_plus_p_theta +=  1./3.*
-            k*k*(ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf])*(2*pba->beta_scf*(-ppw->pvecback[pba->index_bg_phi_prime_scf]/a)*y[ppw->pv->index_pt_theta_idm_ede])/(1-2*pba->beta_scf);
+            k*k*-(2*pba->beta_scf*(-ppw->pvecback[pba->index_bg_phi_prime_scf]/a)*y[ppw->pv->index_pt_theta_idm_ede]);
           // ppw->rho_plus_p_theta +=  k*k*(ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf])/(2*pba->beta_scf-1)*(-y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_prime_scf]+2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]); //not sure about prefactor...
 
           ppw->rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
