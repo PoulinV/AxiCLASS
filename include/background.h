@@ -160,6 +160,7 @@ struct background
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
   double beta_scf;
+  double adjust_beta_scf;
   double m_scf;
   double f_axion;
   double alpha_squared;
@@ -287,6 +288,7 @@ struct background
 
   int index_bg_phi_scf;       /**< scalar field value */
   int index_bg_phi_prime_scf; /**< scalar field derivative wrt conformal time */
+  int index_bg_phi_prime_prime_scf; /**< scalar field second derivative wrt conformal time */
   int index_bg_V_scf;         /**< scalar field potential V */
   int index_bg_dV_scf;        /**< scalar field potential derivative V' */
   int index_bg_ddV_scf;       /**< scalar field potential second derivative V'' */

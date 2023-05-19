@@ -358,11 +358,15 @@ int background_functions(
     //The next few lines then calculate the new values for the density etc... from the new values of phi and phi prime
     pvecback[pba->index_bg_phi_scf] = phi; // value of the scalar field phi
     pvecback[pba->index_bg_phi_prime_scf] = phi_prime; // value of the scalar field phi derivative wrt conformal time
+    pvecback[pba->index_bg_phi_prime_prime_scf] = - a*
+      (2*pvecback[pba->index_bg_H]*phi_prime
+       + a*dV_scf(pba,phi)*(1/(1-2*pba->beta_scf))) ; // value of the scalar field phi second derivative wrt conformal time
+
     pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
-    pvecback[pba->index_bg_rho_scf] = (1./2-pba->beta_scf)*(phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
-    pvecback[pba->index_bg_p_scf] = (1./2-pba->beta_scf)*(phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
+    pvecback[pba->index_bg_rho_scf] = (1./2-pba->beta_scf)*(phi_prime*phi_prime/(a*a)) + V_scf(pba,phi)/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
+    pvecback[pba->index_bg_p_scf] = (1./2-pba->beta_scf)*(phi_prime*phi_prime/(a*a)) - V_scf(pba,phi)/3.; // pressure of the scalar field
     // pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
     // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
@@ -391,6 +395,9 @@ int background_functions(
     /*** WE STORE THESE DUMMY QUANTITIES ANYWAY ***/
     pvecback[pba->index_bg_phi_scf] = phi; // value of the scalar field phi
     pvecback[pba->index_bg_phi_prime_scf] = phi_prime; // value of the scalar field phi derivative wrt conformal time
+    pvecback[pba->index_bg_phi_prime_prime_scf] = - a*
+      (2*pvecback[pba->index_bg_H]*phi_prime
+       + a*dV_scf(pba,phi)*(1/(1-2*pba->beta_scf))); // value of the scalar field phi second derivative wrt conformal time
     pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
@@ -552,7 +559,7 @@ int background_functions(
   if (pba->has_scf == _TRUE_){
     /** The contribution of scf was not added to dp_dloga, add p_scf_prime here: */
     pvecback[pba->index_bg_p_prime_scf] = pvecback[pba->index_bg_phi_prime_scf]*
-      (-pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_H]/a-2./3.*pvecback[pba->index_bg_dV_scf]);
+      (-(1./2-pba->beta_scf)*pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_H]/a-2./3.*pvecback[pba->index_bg_dV_scf]);
     pvecback[pba->index_bg_p_tot_prime] += pvecback[pba->index_bg_p_prime_scf];
   }
 
@@ -1210,6 +1217,7 @@ int background_indices(
   /* - indices for scalar field */
   class_define_index(pba->index_bg_phi_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_phi_prime_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_phi_prime_prime_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_V_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_dV_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_ddV_scf,pba->has_scf,index_bg,1);
@@ -2767,6 +2775,7 @@ int background_output_titles(struct background * pba,
   class_store_columntitle(titles,"(.)dw_scf",pba->has_scf);
   class_store_columntitle(titles,"phi_scf",pba->has_scf);
   class_store_columntitle(titles,"phi'_scf",pba->has_scf);
+  class_store_columntitle(titles,"phi''_scf",pba->has_scf);
   class_store_columntitle(titles,"V_scf",pba->has_scf);
   class_store_columntitle(titles,"V'_scf",pba->has_scf);
   class_store_columntitle(titles,"V''_scf",pba->has_scf);
@@ -2832,6 +2841,7 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_dw_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_phi_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_phi_prime_scf],pba->has_scf,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_phi_prime_prime_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_V_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dV_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_ddV_scf],pba->has_scf,storeidx);

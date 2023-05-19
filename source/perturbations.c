@@ -7097,10 +7097,10 @@ int perturb_total_stress_energy(
       if (ppt->gauge == synchronous){
         if (ppt->scf_kg_eq[index_md][index_k] == 1){
           delta_rho_scf =  1./3.*
-          (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
+          (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf)
            + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
           delta_p_scf = 1./3.*
-          (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
+          (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf)
            - ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
            // printf("delta_rho_scf %e delta_p_scf %e a %e %e %e\n", delta_rho_scf,delta_p_scf,a,ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf],ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
            if(pba->n_axion < pba->n_axion_security && ppw->pvecback[pba->index_bg_Omega_scf]<pba->security_small_Omega_scf && a>pow(10,pba->log10_axion_ac)){
@@ -7175,7 +7175,12 @@ int perturb_total_stress_energy(
         }
         else{
           ppw->rho_plus_p_theta +=  1./3.*
-            k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
+            k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf]/(2*pba->beta_scf-1);
+            if(pba->has_idm_ede == _TRUE_)
+          ppw->rho_plus_p_theta +=  1./3.*
+            k*k*(ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf])*(2*pba->beta_scf*(-ppw->pvecback[pba->index_bg_phi_prime_scf]/a)*y[ppw->pv->index_pt_theta_idm_ede])/(2*pba->beta_scf-1);
+          // ppw->rho_plus_p_theta +=  k*k*(ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf])/(2*pba->beta_scf-1)*(-y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_prime_scf]+2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]); //not sure about prefactor...
+
           ppw->rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
         }
         if(pba->scf_evolve_as_fluid == _TRUE_){
@@ -7852,7 +7857,7 @@ int perturb_sources(
       else{ //evolve as KG
         if (ppt->gauge == synchronous){
           delta_rho_scf =  1./3.*
-            (1./a2_rel*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
+            (1./a2_rel*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf)
              + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf])
              + 3.*a_prime_over_a*(1.+pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf])*theta_over_k2; // N-body gauge correction
         }
@@ -8480,7 +8485,7 @@ int perturb_print_variables(double tau,
       //If we are following KG:
           if (ppt->gauge == synchronous){
             delta_rho_scf =  1./3.*
-              (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
+              (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf)
                + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
           }
           else{
@@ -8922,7 +8927,7 @@ int perturb_derivs(double tau,
   double delta_idr=0., theta_idr=0.;
   double cb2,cs2,ca2,delta_p_b_over_rho_b;
   double metric_continuity=0.,metric_euler=0.,metric_shear=0.,metric_ufa_class=0.;
-
+  double Z_scf=0,Z_prime_scf = 0;
   /* perturbed recombination (just to simplify the notation) */
 
   double H0=0.,Nnow=0.,n_H=0.,fHe=0.;
@@ -9398,11 +9403,17 @@ int perturb_derivs(double tau,
 
     if (pba->has_idm_ede == _TRUE_) {
 
-
+      //follow 1604.04222 notations
       // if (ppt->gauge == newtonian) {
         dy[pv->index_pt_delta_idm_ede] = -(y[pv->index_pt_theta_idm_ede]+metric_continuity); /* cdm density */
 
         dy[pv->index_pt_theta_idm_ede] = - a_prime_over_a*y[pv->index_pt_theta_idm_ede] + metric_euler; /* cdm velocity */
+        if(pba->beta_scf != 0){
+          Z_scf = - pvecback[pba->index_bg_phi_prime_scf] / a;
+          Z_prime_scf = a_prime_over_a*pvecback[pba->index_bg_phi_prime_scf]/a-pvecback[pba->index_bg_phi_prime_prime_scf]/a;
+          dy[pv->index_pt_theta_idm_ede] += pba->adjust_beta_scf*k2*((6*a_prime_over_a*pba->beta_scf*Z_scf+2*pba->beta_scf*Z_prime_scf)*y[pv->index_pt_phi_scf]+2*pba->beta_scf*Z_scf*y[pv->index_pt_phi_prime_scf])/a/(pvecback[pba->index_bg_rho_cdm]-2*pba->beta_scf*Z_scf*Z_scf);
+        }
+
       //
 
       // /** - ----> synchronous gauge: cdm density only (velocity set to zero by definition of the gauge) */
@@ -9583,11 +9594,11 @@ int perturb_derivs(double tau,
         }
         /** - ----> Klein Gordon equation */
         dy[pv->index_pt_phi_prime_scf] =  - 2.*a_prime_over_a*y[pv->index_pt_phi_prime_scf]
-        - metric_continuity*pvecback[pba->index_bg_phi_prime_scf]/(1-2*pba->beta_scf) //  metric_continuity = h'/2
+        - metric_continuity*pvecback[pba->index_bg_phi_prime_scf] //  metric_continuity = h'/2
         // - 2*a2/k2*metric_euler*pvecback[pba->index_bg_dV_scf] //VP: This term was missing in newtonian gauge, but we do not follow psi' so we cannot yet solve the perturbed KG equation in newtonian gauge.
         - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]/(1-2*pba->beta_scf);
         if(pba->has_idm_ede == _TRUE_)
-        dy[pv->index_pt_phi_prime_scf] += - 2*pba->beta_scf*pvecback[pba->index_bg_phi_prime_scf]*k2*y[pv->index_pt_theta_idm_ede]; //checked
+        dy[pv->index_pt_phi_prime_scf] +=  2*pba->beta_scf*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_theta_idm_ede]/(1-2*pba->beta_scf); //checked
         // printf("pba->beta_scf %e\n", pba->beta_scf);
 
         // if(index_k==0)printf("phi' %e ddV %e\n",pvecback[pba->index_bg_phi_prime_scf],pvecback[pba->index_bg_ddV_scf]);

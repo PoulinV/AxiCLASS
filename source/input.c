@@ -2083,6 +2083,7 @@ int input_read_parameters(
   }
 
     class_read_double("beta_scf",pba->beta_scf);
+    class_read_double("adjust_beta_scf",pba->adjust_beta_scf);
     class_read_double("security_small_Omega_scf",pba->security_small_Omega_scf);
     class_read_double("n_axion_security",pba->n_axion_security);
     class_call(parser_read_string(pfc,
@@ -4401,7 +4402,8 @@ int input_default_params(
   pba->Omega0_axion = 0.0;
   pba->scf_has_perturbations = _TRUE_;
   pba->threshold_scf_fluid_m_over_H = 3;
-  pba->beta_scf = 0;//set to a negative number so it is never used by default.
+  pba->beta_scf = 0;//set to 0 so it is never used by default.
+  pba->adjust_beta_scf = 1;//set to 1 so it is never used by default.
   pba->security_small_Omega_scf = -10;//set to a negative number so it is never used by default.
   pba->n_axion_security = -2.5;//set to a negative number so it is never used by default.
   //MZ: initial conditions are as multiplicative factors of the radiation attractor values
