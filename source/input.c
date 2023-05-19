@@ -462,6 +462,8 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
             if (flag2 == _TRUE_)
               Omega0_cdm = param2/h/h;
 
+            flag1 = _FALSE_;
+            flag2 = _FALSE_;
 
 
             class_call(parser_read_double(pfc,"Omega_idm_ede",&param1,&flag1,errmsg),
