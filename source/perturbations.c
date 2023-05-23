@@ -8022,7 +8022,7 @@ int perturb_sources(
         k*k/a2_rel*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
       if(pba->has_idm_ede)
       rho_plus_p_theta_scf +=  -1./3.*
-          ppw->pvecback[pba->index_bg_phi_prime_scf]/a2_rel*(2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]);
+          ppw->pvecback[pba->index_bg_phi_prime_scf]*ppw->pvecback[pba->index_bg_phi_prime_scf]/a2_rel*(2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]);
       _set_source_(ppt->index_tp_theta_scf) = rho_plus_p_theta_scf/
         (pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]) + theta_shift; // N-body gauge correction;
       // if(pba->scf_potential == axionquad)y[ppw->pv->index_pt_theta_scf] = rho_plus_p_theta_scf/
@@ -8510,7 +8510,7 @@ int perturb_print_variables(double tau,
           k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
           if(pba->has_idm_ede)
           rho_plus_p_theta_scf += -1./3.*
-            ppw->pvecback[pba->index_bg_phi_prime_scf]/a2*(2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]);
+            ppw->pvecback[pba->index_bg_phi_prime_scf]*ppw->pvecback[pba->index_bg_phi_prime_scf]/a2*(2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]);
 
           delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
           theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
