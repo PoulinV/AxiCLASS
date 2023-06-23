@@ -1879,6 +1879,7 @@ int input_read_parameters(
 
 
 
+
   /** - Omega_0_lambda (cosmological constant), Omega0_fld (dark energy fluid), Omega0_scf (scalar field) */
 
   class_call(parser_read_double(pfc,"Omega_Lambda",&param1,&flag1,errmsg),
@@ -2360,7 +2361,36 @@ int input_read_parameters(
 
   //new param to take DMDE drag term into account
   class_read_double("DMDE_interaction",ppt->DMDE_interaction);
-
+  class_call(parser_read_string(pfc,
+                                "scales_like_fEDE",
+                                &string1,
+                                &flag1,
+                                errmsg),
+              errmsg,
+              errmsg);
+  if (flag1 == _TRUE_){
+    if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+      ppt->scales_like_fEDE = _TRUE_;
+    }
+    else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
+      ppt->scales_like_fEDE = _FALSE_;
+    }
+  }
+  class_call(parser_read_string(pfc,
+                                "scales_like_fEDE_over_k2",
+                                &string1,
+                                &flag1,
+                                errmsg),
+              errmsg,
+              errmsg);
+  if (flag1 == _TRUE_){
+    if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+      ppt->scales_like_fEDE_over_k2 = _TRUE_;
+    }
+    else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
+      ppt->scales_like_fEDE_over_k2 = _FALSE_;
+    }
+  }
 
 
   /** (b) assign values to thermodynamics cosmological parameters */
@@ -4508,6 +4538,8 @@ int input_default_params(
   ppt->three_cvis2_ur=1.;
 
   ppt->DMDE_interaction = 0;
+  ppt->scales_like_fEDE = _TRUE_;
+  ppt->scales_like_fEDE_over_k2 = _TRUE_;
   ppt->use_big_theta_fld = _FALSE_;
 
   ppt->z_max_pk=0.;

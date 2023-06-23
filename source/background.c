@@ -492,7 +492,7 @@ int background_functions(
 
     if(w_fld>0){
       rho_m += pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]; //the rest contributes matter
-      printf("w_fld %e pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld] %e\n", w_fld,pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]);
+      // printf("w_fld %e pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld] %e\n", w_fld,pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]);
     }
   }
 
