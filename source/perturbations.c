@@ -9347,7 +9347,6 @@ int perturb_derivs(double tau,
 
           if(pba->scf_evolve_as_fluid == _TRUE_  && ppt->DMDE_interaction > 0 && pba->has_scf == _TRUE_){
           if(ppt->use_big_theta_fld == _TRUE_){
-            class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);
             // printf("w_fld %e\n", w_fld);
             // dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_big_theta_fld]/(1+w_fld)-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
             dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*f_norm/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_big_theta_scf]/(1+pvecback[pba->index_bg_w_scf])-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
