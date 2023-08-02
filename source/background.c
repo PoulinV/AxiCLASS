@@ -2229,6 +2229,7 @@ int background_solve(
        // pba->axion_ac = 1/z_c_new-1;
        pba->f_ede = f_ede_new;
        pba->phi_scf_c = pvecback[pba->index_bg_phi_scf];
+       pba->f_ede_peak = pba->f_ede;
        // printf("z %e pba->f_ede %e\n", pba->z_table[i],pba->f_ede);
      }else{
        if(f_ede_new > pba->f_ede && pba->m_scf*pba->H0/pvecback[pba->index_bg_H] <= pba->threshold_scf_fluid_m_over_H){
