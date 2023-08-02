@@ -8945,6 +8945,7 @@ int perturb_derivs(double tau,
                 }
 	              else f_norm = pvecback[pba->index_bg_a];
     }
+
     if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
 
       //defaulting to KG only for debugging
@@ -8980,6 +8981,18 @@ int perturb_derivs(double tau,
           // printf("here pvecback[pba->index_bg_Omega_scf] %e threshold_scf_fluid_m_over_H %e a %e ppt->scf_kg_eq %d \n",pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H,pvecback[pba->index_bg_a],ppt->scf_kg_eq[index_md][index_k]);
         }
       }
+
+      if(ppt->DMDE_interaction > 0 ){
+        // printf("f_ede_peak %e \n", pba->f_ede_peak);
+                    if(ppt->scales_like_fEDE == _TRUE_ || ppt->scales_like_fEDE_over_k2 == _TRUE_){
+                      f_norm = ppw->pvecback[pba->index_bg_Omega_scf]/pba->f_ede_peak;
+                      if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
+                    }
+                    else f_norm = pvecback[pba->index_bg_a];
+                    // printf("here f_norm %e\n", f_norm);
+
+        }
+
       // if(index_k==0)printf("ppt->scf_kg_eq[%d][%d] %d tau %e\n",index_md,index_k,ppt->scf_kg_eq[index_md][index_k],tau);
       // pba->scf_fluid_eq = _FALSE_; //that is the standard case, we never follow the fluid equations
       // ppt->scf_kg_eq = _TRUE_;
@@ -9330,6 +9343,7 @@ int perturb_derivs(double tau,
 
       if (ppt->gauge == newtonian) {
         dy[pv->index_pt_delta_cdm] = -(y[pv->index_pt_theta_cdm]+metric_continuity); /* cdm density */
+        // printf("here in cdm f_norm %e \n", f_norm);
 
         dy[pv->index_pt_theta_cdm] = - a_prime_over_a*y[pv->index_pt_theta_cdm] + metric_euler; /* cdm velocity */
         // printf("ppt->DMDE_interaction %e y[pv->index_pt_theta_fld] %e\n", ppt->DMDE_interaction, y[pv->index_pt_theta_fld]);
@@ -9351,6 +9365,7 @@ int perturb_derivs(double tau,
             // dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_big_theta_fld]/(1+w_fld)-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
             dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*f_norm/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_big_theta_scf]/(1+pvecback[pba->index_bg_w_scf])-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
           }else{
+            // printf("here in cdm f_norm %e \n", f_norm);
 //            dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
             dy[pv->index_pt_theta_cdm] += ppt->DMDE_interaction*f_norm/ppw->pvecback[pba->index_bg_rho_cdm]*(y[pv->index_pt_theta_scf]-y[pv->index_pt_theta_cdm]); /* new interaction between DE and cdm */
           }
