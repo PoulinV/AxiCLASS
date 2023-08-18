@@ -1890,7 +1890,12 @@ cdef class Class:
                 value = self.nl.sigma12
             elif name == 'k_eq':
                 value = self.ba.a_eq*self.ba.H_eq
-
+            elif name == 'n_L_lya':
+                value = self.nl.n_L_lya
+            elif name == 'Delta_Lsquared_lya':
+                value = self.nl.Delta_Lsquared_lya
+            elif name == 'kp_lya':
+                value = self.nl.kp_lya
             else:
                 raise CosmoSevereError("%s was not recognized as a derived parameter" % name)
             derived[name] = value
