@@ -1434,8 +1434,10 @@ int nonlinear_init(
               pnl->k[pnl->k_size-1]/pba->h);
 
     printf(" -> sigma_12 = %e for total matter \n", pnl->sigma12 );
+      if(pnl->get_lyman_alpha_tilt_and_amplitude == _TRUE_){
     printf(" -> amplitude at lya scale = %e \n", pnl->Delta_Lsquared_lya);
     printf(" -> tilt at lya scale = %e \n", pnl->n_L_lya);
+    }
   }
 
 
