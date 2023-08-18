@@ -1755,7 +1755,8 @@ cdef class Class:
                 value = self.ba.f_ede_peak
             elif name == 'a_peak':
                 value = self.ba.a_peak
-
+            elif name == 'Omega0_axion':
+                value = self.ba.Omega0_axion
             elif name == 'Omega_m':
                 value = self.ba.Omega0_m
             elif name == 'omega_m':
