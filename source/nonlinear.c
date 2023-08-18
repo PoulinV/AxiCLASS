@@ -1210,10 +1210,12 @@ int nonlinear_init(
   double **pk_nl;
   double **lnpk_l;
   double **ddlnpk_l;
-
+  double kp_lya, tau_lya, Hubble;
   short nl_corr_not_computable_at_this_k = _FALSE_;
 
   double * pvecback;
+  double * pvecback_lya;
+
   int last_index;
   double a,z;
 
@@ -1365,6 +1367,52 @@ int nonlinear_init(
              pnl->error_message,
              pnl->error_message);
 
+  /** compute and store the tilt of the power spectrum at lyman_alpha scale */
+  class_call(background_tau_of_z(
+                                 pba,
+                                 pnl->zp_lya,
+                                 &tau_lya
+                                 ),
+             pba->error_message,
+             pnl->error_message);
+
+ class_alloc(pvecback_lya,pba->bg_size*sizeof(double),pnl->error_message);
+
+  class_call(background_at_tau(pba,tau_lya,pba->long_info,pba->inter_normal,&last_index,pvecback_lya),
+             pba->error_message,
+             pnl->error_message);
+
+
+  Hubble = pvecback_lya[pba->index_bg_H];
+  kp_lya = pnl->kp_km_per_s*_c_/1000/(1.+pnl->zp_lya)*Hubble; //in Mpc^-1
+  free(pvecback_lya);
+
+  class_call(nonlinear_pk_tilt_at_k_and_z(pba,
+                                          ppm,
+                                          pnl,
+                                          pk_linear,
+                                          kp_lya,
+                                          pnl->zp_lya,
+                                          pnl->index_pk_m,
+                                          &pnl->n_L_lya),
+             pnl->error_message,
+             pnl->error_message);
+
+  /** get amplitude at lyman alpha pivot scale */
+
+  class_call(nonlinear_pk_at_k_and_z(pba,
+                                     ppm,
+                                     pnl,
+                                     pk_linear,
+                                     kp_lya,
+                                     pnl->zp_lya,
+                                     pnl->index_pk_m,
+                                     &pnl->Delta_Lsquared_lya,
+                                     NULL),
+             pnl->error_message,
+             pnl->error_message);
+ pnl->Delta_Lsquared_lya *= kp_lya*kp_lya*kp_lya/2/_PI_/_PI_;
+
   if (pnl->nonlinear_verbose>0) {
 
     if (pnl->has_pk_m == _TRUE_)
@@ -1380,6 +1428,8 @@ int nonlinear_init(
               pnl->k[pnl->k_size-1]/pba->h);
 
     printf(" -> sigma_12 = %e for total matter \n", pnl->sigma12 );
+    printf(" -> amplitude at lya scale = %e \n", pnl->Delta_Lsquared_lya);
+    printf(" -> tilt at lya scale = %e \n", pnl->n_L_lya);
   }
 
 

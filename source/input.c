@@ -3938,6 +3938,12 @@ if(pth->annihilation>0.){
     }
   }
 
+  class_read_double("kp_km_per_s",pnl->kp_km_per_s);
+  class_read_double("zp_lya",pnl->zp_lya);
+
+
+
+
   /** (g) amount of information sent to standard output (none if all set to zero) */
 
   class_read_int("background_verbose",
@@ -4652,7 +4658,8 @@ int input_default_params(
   /** - nonlinear structure */
 
   pnl->method = nl_none;
-
+  pnl->kp_km_per_s=0.009;
+  pnl->zp_lya = 3;
   /** - all verbose parameters */
 
   pba->background_verbose = 0;

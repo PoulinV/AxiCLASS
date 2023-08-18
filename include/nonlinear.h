@@ -148,6 +148,11 @@ struct nonlinear {
 
   double * sigma8;   /**< sigma8[index_pk] */
   double sigma12;    /**< sigma12 */
+  double kp_km_per_s; /**<Lya pivot scale in km/s, default is 0.009 km/s*/
+  double kp_lya; /**<Lya pivot scale in Mpc h^1, computed in nonlinear.c for a given kp_km_per_s and a given cosmology*/
+  double zp_lya;/**<Lya pivot redshit, default is 3*/
+  double n_L_lya;/**<tilt at pivot scale and redshift */
+  double Delta_Lsquared_lya;/**<amplitude at pivot scale and redshift  */
 
   //@}
 
