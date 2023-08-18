@@ -3938,9 +3938,22 @@ if(pth->annihilation>0.){
     }
   }
 
-  class_read_double("kp_km_per_s",pnl->kp_km_per_s);
-  class_read_double("zp_lya",pnl->zp_lya);
+    /** Do we have different primordial Pk for Cl and matter Pk? **/
+    class_call(parser_read_string(pfc,"get_lyman_alpha_tilt_and_amplitude",&string1,&flag1,errmsg),
+               errmsg,
+               errmsg);
 
+    if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+
+      pnl->get_lyman_alpha_tilt_and_amplitude = _TRUE_;
+      class_read_double("kp_km_per_s",pnl->kp_km_per_s);
+      class_read_double("zp_lya",pnl->zp_lya);
+      class_test(ppt->z_max_pk<pnl->zp_lya, errmsg, "You requested get_lyman_alpha_tilt_and_amplitude but have ppt->z_max_pk < pnl->zp_lya. Please update.");
+
+    }
+    else{
+      pnl->get_lyman_alpha_tilt_and_amplitude = _FALSE_;
+    }
 
 
 
@@ -4660,6 +4673,7 @@ int input_default_params(
   pnl->method = nl_none;
   pnl->kp_km_per_s=0.009;
   pnl->zp_lya = 3;
+  pnl->get_lyman_alpha_tilt_and_amplitude = _FALSE_;
   /** - all verbose parameters */
 
   pba->background_verbose = 0;

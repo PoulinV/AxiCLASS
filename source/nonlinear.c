@@ -1367,6 +1367,9 @@ int nonlinear_init(
              pnl->error_message,
              pnl->error_message);
 
+
+  if(pnl->get_lyman_alpha_tilt_and_amplitude == _TRUE_){
+
   /** compute and store the tilt of the power spectrum at lyman_alpha scale */
   class_call(background_tau_of_z(
                                  pba,
@@ -1412,7 +1415,9 @@ int nonlinear_init(
                                      NULL),
              pnl->error_message,
              pnl->error_message);
- pnl->Delta_Lsquared_lya *= kp_lya_cubed/2/_PI_/_PI_;
+  pnl->Delta_Lsquared_lya *= kp_lya_cubed/2/_PI_/_PI_;
+  }
+
 
   if (pnl->nonlinear_verbose>0) {
 

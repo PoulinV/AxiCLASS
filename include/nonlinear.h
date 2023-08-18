@@ -153,7 +153,7 @@ struct nonlinear {
   double zp_lya;/**<Lya pivot redshit, default is 3*/
   double n_L_lya;/**<tilt at pivot scale and redshift */
   double Delta_Lsquared_lya;/**<amplitude at pivot scale and redshift  */
-
+  short get_lyman_alpha_tilt_and_amplitude; /**<flag to compute lyman alpha tilt and amplitude; default is false */
   //@}
 
   /** @name - table non-linear corrections for matter density, sqrt(P_NL(k,z)/P_NL(k,z)) */
