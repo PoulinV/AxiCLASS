@@ -2026,9 +2026,17 @@ int input_read_parameters(
     class_read_double("m_axion",pba->m_scf);
     class_read_double("f_axion",pba->f_axion);
   }
+  /** - Read parameters describing scalar field potential */
+  class_call(parser_read_list_of_doubles(pfc,
+                                         "scf_parameters",
+                                         &(pba->scf_parameters_size),
+                                         &(pba->scf_parameters),
+                                         &flag1,
+                                         errmsg),
+             errmsg,errmsg);
 
-
-  if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0){
+  if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0 || pba->Omega0_scf != 0 || pba->scf_parameters_size != 0){
+    // printf("here in scf!\n");
     // if (input_verbose > 0) printf(" adjusted to incorporate the axion contribution Omega_Lambda = %e\n",pba->Omega0_lambda);
 
     /** - Assign a given scalar field potential */
@@ -2269,14 +2277,7 @@ int input_read_parameters(
                   "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','axionquad','ax_cos_cubed'.");
      }
 
-    /** - Read parameters describing scalar field potential */
-    class_call(parser_read_list_of_doubles(pfc,
-                                           "scf_parameters",
-                                           &(pba->scf_parameters_size),
-                                           &(pba->scf_parameters),
-                                           &flag1,
-                                           errmsg),
-               errmsg,errmsg);
+
 
    class_call(parser_read_string(pfc,"running_cobaya",&string1,&flag1,errmsg),
                 errmsg,
@@ -2310,7 +2311,7 @@ int input_read_parameters(
 
     if(input_verbose>10){
       printf("input file read, the h is %e \n", pba->h);
-      printf("input file read, the scf_shooting parameter is %e \n", pba->scf_parameters[pba->scf_tuning_index]);
+      printf("input file read, the scf_shooting parameter is %e  with tuning index %d \n", pba->scf_parameters[pba->scf_tuning_index],pba->scf_tuning_index);
       printf("input file read, the pba->log10_m_axion parameter is %e \n", pba->log10_m_axion);
     }
 
@@ -2345,12 +2346,13 @@ int input_read_parameters(
         class_test(pba->scf_parameters_size<2,
                errmsg,
                "Since you are not using attractor initial conditions, you must specify phi and its derivative phi' as the last two entries in scf_parameters. See explanatory.ini for more details.");
-        if(pba->scf_potential != phi_2n){
-          pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2];
-          pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];
+        if(pba->scf_potential == phi_2n){
+          pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];//dummy: will be set later
         }else{
           // pba->phi_ini_scf = 0;//dummy: will be set later
-          pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];//dummy: will be set later
+          pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2];
+          pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];
+          // printf("%e %e \n",pba->phi_ini_scf,pba->phi_prime_ini_scf );
         }
 
 
@@ -5636,7 +5638,7 @@ int input_get_guess(double *xguess,
          break;
 
     case Omega_scf:
-
+    // printf("in Omega_scf!! %d\n", ba.scf_tuning_index );
  /** - This guess is arbitrary, something nice using WKB should be implemented.
   *
   * - Version 2: use a fit: `xguess[index_guess] = 1.77835*pow(ba.Omega0_scf,-2./7.);
@@ -5652,18 +5654,21 @@ int input_get_guess(double *xguess,
       }
       if (ba.scf_tuning_index == 1 && (ba.scf_potential == axionquad)){
         // if (ba.scf_parameters[0] <= 1e18) {
-        xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*ba.Omega0_g,0.75))*pow((ba.scf_parameters[0]),0.5)));//ba.scf_parameters[0] is the ratio m/H0
-        // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
-        // xguess[index_guess] =1e-8;
-        dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
+        // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*ba.Omega0_g,0.75)/pow(ba.scf_parameters[0],0.5));//ba.scf_parameters[0] is the ratio m/H0
+         xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75)/pow(ba.scf_parameters[0],0.5));//ba.scf_parameters[0] is the ratio m/H0
+        // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/9*(ba.Omega0_b+ba.Omega0_cdm));//ba.scf_parameters[0] is the ratio m/H0
+        // // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
+        // // xguess[index_guess] =1e-8;
+        // dxdy[index_guess] =  2*xguess[index_guess]; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
         // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
         // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
         // }
         // else {
-        // xguess[index_guess] = 0.0001*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
+        dxdy[index_guess] =  10*xguess[index_guess]; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
+
         // //xguess[index_guess] =1e-8;
         // dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
-        // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
+        // printf("index 0, x = %e, dxdy = %e ba.scf_parameters[0] %e\n",xguess[index_guess],dxdy[index_guess],ba.scf_parameters[0]);
         // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
         // }
 
@@ -5822,7 +5827,8 @@ int input_find_root(double *xzero,
       }
       else if(pfzw->scf_potential == axionquad)f_a = pfzw->scf_parameters[1];
       if(pfzw->do_shooting == _TRUE_){
-        dx = f1/sqrt(f1*f1)*dxdy; //f1*dxdy;
+        // dx = f1/sqrt(f1*f1)*dxdy; //f1*dxdy;
+        dx = 1.5*f1*dxdy; //f1*dxdy;
         // dx=0.5;
         if(input_verbose>3){
           printf("axion cubed root finding \n");

@@ -5414,15 +5414,15 @@ int perturb_initial_conditions(struct precision * ppr,
         // CO 23.01.18 Initialised to zero if will be used at a later point in the code, so needs the evolve as fluid flag not the potential.
         if(pba->scf_evolve_as_fluid == _TRUE_){
 
-                if(pba->scf_potential == axionquad){
-                  // pba->m_scf = pba->scf_parameters[0]*pba->H0;
-                  pba->w_scf = ppw->pvecback[pba->index_bg_w_scf];
-                }
-                else if(pba->scf_potential == axion){
+              if(pba->scf_potential == axion){
                   // pba->m_scf = pba->scf_parameters[1]*pba->H0;
                   a_over_ac = a/pow(10,pba->log10_axion_ac);
                   ca2 = (pow(a,3)*pow(a_over_ac,3*pba->n_axion/(1+pba->n_axion))*(-1+pba->n_axion)-pow(a_over_ac,3/(1+pba->n_axion))*pow(pba->a_c,3)*(1+3*pba->n_axion))
                         /(pow(a,3)*pow(a_over_ac,3*pba->n_axion/(1+pba->n_axion))+pow(a_over_ac,3/(1+pba->n_axion))*pow(pba->a_c,3))/(1+pba->n_axion);
+                }
+                else if(pba->scf_potential == axionquad){
+                  pba->m_scf = pba->scf_parameters[0]; //in unit of H0
+                  pba->w_scf = ppw->pvecback[pba->index_bg_w_scf]; //
                 }
                 else{
                   pba->m_scf = 0;
@@ -5431,7 +5431,7 @@ int perturb_initial_conditions(struct precision * ppr,
                 // printf("m_scf is %e pba->w_scf %e\n", pba->m_scf,pba->w_scf);
 
               if(pba->scf_potential == axionquad){
-                cs2_scf = k*k/(4*pba->m_scf*pba->m_scf*a*a)/(1+k*k/(4*pba->m_scf*pba->m_scf*a*a));
+                cs2_scf = k*k/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a*a)/(1+k*k/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a*a));
               }
               else if(pba->scf_potential == axion){
                 cs2_scf = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
@@ -7057,7 +7057,7 @@ int perturb_total_stress_energy(
         }
         else {
           if(pba->scf_potential == axionquad){
-            cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
+            cs2_scf = k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2)/(1+k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2));
           }
           else if(pba->scf_potential == axion){
             // printf("omega_axion %e\n", pba->omega_axion);
@@ -7090,7 +7090,7 @@ int perturb_total_stress_energy(
         }
         else{ //evolving as fluid
                 if(pba->scf_potential == axionquad){
-                  cs2_scf = k2/(4*pba->m_scf*pba->m_scf*a2)/(1+k2/(4*pba->m_scf*pba->m_scf*a2));
+                  cs2_scf = k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2)/(1+k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2));
                 }
                 else if(pba->scf_potential == axion){
                   cs2_scf = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
@@ -9510,16 +9510,26 @@ int perturb_derivs(double tau,
       if(pba->scf_evolve_as_fluid == _TRUE_) {
 
 
-
-        tau_b = (pba->Omega0_cdm + pba->Omega0_b + pba->Omega0_scf)*pba->H0*tau/(4*sqrt(pba->Omega0_g+pba->Omega0_ur));
-        // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){
-        cs2 = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
-        // pba->m_scf = pba->scf_parameters[1]*pba->H0;
-        a_over_ac = a/pow(10,pba->log10_axion_ac);
-        // printf("a_c %e\n",pba->log10_axion_ac);
-        ca2 = (pow(a,3)*pow(a_over_ac,3*pba->n_axion/(1+pba->n_axion))*(-1+pba->n_axion)-pow(a_over_ac,3/(1+pba->n_axion))*pow(pba->a_c,3)*(1+3*pba->n_axion))
-              /(pow(a,3)*pow(a_over_ac,3*pba->n_axion/(1+pba->n_axion))+pow(a_over_ac,3/(1+pba->n_axion))*pow(pba->a_c,3))/(1+pba->n_axion);
-
+        if(pba->scf_potential==axion){
+          tau_b = (pba->Omega0_cdm + pba->Omega0_b + pba->Omega0_scf)*pba->H0*tau/(4*sqrt(pba->Omega0_g+pba->Omega0_ur));
+          // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){
+          cs2 = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
+          // pba->m_scf = pba->scf_parameters[1]*pba->H0;
+          a_over_ac = a/pow(10,pba->log10_axion_ac);
+          // printf("a_c %e\n",pba->log10_axion_ac);
+          ca2 = (pow(a,3)*pow(a_over_ac,3*pba->n_axion/(1+pba->n_axion))*(-1+pba->n_axion)-pow(a_over_ac,3/(1+pba->n_axion))*pow(pba->a_c,3)*(1+3*pba->n_axion))
+                /(pow(a,3)*pow(a_over_ac,3*pba->n_axion/(1+pba->n_axion))+pow(a_over_ac,3/(1+pba->n_axion))*pow(pba->a_c,3))/(1+pba->n_axion);
+        }
+        else if(pba->scf_potential == axionquad){
+          // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){
+            cs2 = k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a*a)/(1+k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a*a));
+            // ca2=0;
+            ca2=0;
+          // }
+          // else{
+          //
+          // }
+        }
         /** - ----> fluid density */
         // printf("tau %e pba->m_scf %e cs2 %e pba->w_scf %e ca2 %e ca2+7/3 %e \n",tau,pba->m_scf, cs2,pba->w_scf,ca2,ca2+7./3);
         if(ppt->use_big_theta_scf == _TRUE_){

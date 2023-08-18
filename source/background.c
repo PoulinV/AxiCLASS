@@ -1134,7 +1134,7 @@ int background_indices(
       pba->has_dr = _TRUE_;
   }
 
-  if (pba->Omega0_scf != 0. || pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0.0 || pba->f_axion != 0.0){
+  if (pba->Omega0_scf != 0. || pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0.0 || pba->f_axion != 0.0 || pba->scf_parameters_size != 0){
     /* -30 default value for log_axion */
     pba->has_scf = _TRUE_;
     pba->scf_kg_eq = _TRUE_; //Initially, we solve the KG equation.
@@ -2334,7 +2334,7 @@ int background_solve(
       printf("     -> for reference, rho_crit = %g \n",pvecback[pba->index_bg_rho_crit]);
       if(pba->scf_potential == axionquad){
       printf("Additional scf parameters used: \n");
-      printf("m_a = %g eV\n",(pba->scf_parameters[0]/1.5638e29));
+      printf("m_a = %g eV\n",(pba->scf_parameters[0]*pba->H0/1.5638e29));
       }
       if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
