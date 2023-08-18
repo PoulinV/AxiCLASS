@@ -343,6 +343,8 @@ int perturb_output_titles(
       class_store_columntitle(titles,"delta_phi_scf",ppt->has_scf);
       class_store_columntitle(titles,"delta_phi_over_phi_scf",ppt->has_scf);
       class_store_columntitle(titles,"delta_phi_prime_scf",ppt->has_scf);
+      class_store_columntitle(titles,"interaction_idm_ede",ppt->has_scf && pba->has_idm_ede);
+      class_store_columntitle(titles,"interaction_idm_ede_vEuler",ppt->has_scf && pba->has_idm_ede);
       class_store_columntitle(titles,"d_tot",_TRUE_);
       class_store_columntitle(titles,"phi",ppt->has_source_phi);
       class_store_columntitle(titles,"psi",ppt->has_source_psi);
@@ -3242,6 +3244,12 @@ int perturb_prepare_k_output(struct background * pba,
       else {
         class_store_columntitle(ppt->scalar_titles, "theta_scf", pba->has_scf);
       }
+      class_store_columntitle(ppt->scalar_titles, "interaction_idm_ede", pba->has_scf && pba->has_idm_ede);
+      class_store_columntitle(ppt->scalar_titles, "interaction_idm_ede_vEuler", pba->has_scf && pba->has_idm_ede);
+      class_store_columntitle(ppt->scalar_titles, "term_delta_rho", pba->has_scf && pba->has_idm_ede);
+      class_store_columntitle(ppt->scalar_titles, "term_theta", pba->has_scf && pba->has_idm_ede);
+
+
       }
 
       class_store_columntitle(ppt->scalar_titles,"phase_shift_A",ppt->compute_phase_shift);
@@ -7119,6 +7127,10 @@ int perturb_total_stress_energy(
 
              y[ppw->pv->index_pt_delta_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf];
            }
+
+
+
+
         }
         else {
           if(pba->scf_potential == axionquad){
@@ -8186,7 +8198,7 @@ int perturb_print_variables(double tau,
   /** Summary: */
 
   /** - define local variables */
-  double k;
+  double k,k2;
   int index_md;
   int index_k;
   struct precision * ppr;
@@ -8208,6 +8220,7 @@ int perturb_print_variables(double tau,
   double delta_ur=0.,theta_ur=0.,shear_ur=0.,l4_ur=0.;
   double delta_idr=0., theta_idr=0., shear_idr=0.;
   double delta_rho_scf=0., rho_plus_p_theta_scf=0.;
+  double delta_p_scf=0.,interaction_idm_ede=0.,interaction_idm_ede_vEuler=0.,Z_scf=0.,Z_prime_scf=0.;
   double delta_scf=0., theta_scf=0., delta_phi_scf,delta_phi_over_phi_scf, delta_phi_prime_scf;
   double big_theta_scf;
   double delta_fld=0., theta_fld=0., big_theta_fld=0., delta_p_over_rho_fld=0.;
@@ -8226,8 +8239,8 @@ int perturb_print_variables(double tau,
   /** - ncdm sector ends */
   double phi=0.,psi=0.,alpha=0.;
   double delta_temp=0., delta_chi=0.;
-
-  double a,a2,H;
+  double term_delta_rho = 0.,term_theta=0.;
+  double a,a2,H,a_prime_over_a;
   int idx,index_q, storeidx;
   double *dataptr;
 
@@ -8236,6 +8249,7 @@ int perturb_print_variables(double tau,
 
   pppaw = parameters_and_workspace;
   k = pppaw->k;
+  k2=k*k;
   index_md = pppaw->index_md;
 
   ppr = pppaw->ppr;
@@ -8285,6 +8299,7 @@ int perturb_print_variables(double tau,
   a = pvecback[pba->index_bg_a];
   a2 = a*a;
   H = pvecback[pba->index_bg_H];
+  a_prime_over_a = pvecback[pba->index_bg_H] * a;
 
   if (pba->has_ncdm == _TRUE_){
     class_alloc(delta_ncdm, sizeof(double)*pba->N_ncdm,error_message);
@@ -8496,28 +8511,49 @@ int perturb_print_variables(double tau,
       //If we are following KG:
           if (ppt->gauge == synchronous){
             delta_rho_scf =  1./3.*
-              (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf)
-               + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
+              (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf)
+               + pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
+             delta_p_scf = 1./3.*
+             (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf)
+              - pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
+
           }
           else{
             delta_rho_scf =  1./3.*
-              (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
-                + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]
-                - 1./a2*pow(ppw->pvecback[pba->index_bg_phi_prime_scf],2)*ppw->pvecmetric[ppw->index_mt_psi]);
+              (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
+                + pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]
+                - 1./a2*pow(pvecback[pba->index_bg_phi_prime_scf],2)*ppw->pvecmetric[ppw->index_mt_psi]);
           }
-
           rho_plus_p_theta_scf =  1./3.*
-          k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
+          k2/a2*pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
           if(pba->has_idm_ede)
           rho_plus_p_theta_scf += -1./3.*
-            ppw->pvecback[pba->index_bg_phi_prime_scf]*ppw->pvecback[pba->index_bg_phi_prime_scf]/a2*(2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]);
+            pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_phi_prime_scf]/a2*(2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]);
 
           delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
           theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
 
+          if(pba->beta_scf!=0&&pba->has_idm_ede==_TRUE_){
+            term_delta_rho = 2*k2*pba->beta_scf*delta_rho_scf/(-1+2*pba->beta_scf);
+            term_theta = theta_scf*4*pba->beta_scf*ppw->pvecback[pba->index_bg_dV_scf]*ppw->pvecback[pba->index_bg_phi_prime_scf];
+            // printf("term_delta_rho %e term_theta %e\n",term_delta_rho,term_theta);
+          }
           delta_phi_scf = y[ppw->pv->index_pt_phi_scf];
-          delta_phi_over_phi_scf = y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_scf];
+          delta_phi_over_phi_scf = y[ppw->pv->index_pt_phi_scf]/pvecback[pba->index_bg_phi_scf];
           delta_phi_prime_scf = y[ppw->pv->index_pt_phi_prime_scf];
+
+          Z_scf = - pvecback[pba->index_bg_phi_prime_scf] / a;
+          Z_prime_scf = a_prime_over_a*pvecback[pba->index_bg_phi_prime_scf]/a-pvecback[pba->index_bg_phi_prime_prime_scf]/a;
+
+          // theta_scf = 1/(-1+2*pba->beta_scf)/Z_scf*(k2*pvecback[pba->index_bg_phi_scf]/a+2*pba->beta_scf*Z_scf*y[ppw->pv->index_pt_theta_idm_ede]);
+
+          interaction_idm_ede  =   pba->beta_scf*a2*(-k2*(delta_rho_scf+delta_p_scf)+2*pvecback[pba->index_bg_dV_scf]*pvecback[pba->index_bg_phi_prime_scf]*(2*pba->beta_scf*(y[ppw->pv->index_pt_theta_idm_ede]-theta_scf)+theta_scf));
+          interaction_idm_ede /=  (-1+2*pba->beta_scf)*(-3*pvecback[pba->index_bg_rho_idm_ede]*a2+2*pba->beta_scf*pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_phi_prime_scf]);
+
+          interaction_idm_ede_vEuler= k2*
+          ((6*a_prime_over_a*pba->beta_scf*Z_scf+2*pba->beta_scf*Z_prime_scf)*y[ppw->pv->index_pt_phi_scf]
+          +2*pba->beta_scf*Z_scf*y[ppw->pv->index_pt_phi_prime_scf])
+          /a/(3*pvecback[pba->index_bg_rho_idm_ede]-2*pba->beta_scf*Z_scf*Z_scf);
 
       }
 
@@ -8670,7 +8706,7 @@ int perturb_print_variables(double tau,
       ppt->size_scalar_perturbation_data[ppw->index_ikout];
     ppt->size_scalar_perturbation_data[ppw->index_ikout] += ppt->number_of_scalar_titles;
 
-    class_store_double(dataptr, pvecback[pba->index_bg_a], _TRUE_, storeidx);
+    class_store_double(dataptr, 1/pvecback[pba->index_bg_a], _TRUE_, storeidx);
     class_store_double(dataptr, tau, _TRUE_, storeidx);
     class_store_double(dataptr, delta_g, _TRUE_, storeidx);
     class_store_double(dataptr, theta_g, _TRUE_, storeidx);
@@ -8730,8 +8766,12 @@ int perturb_print_variables(double tau,
       class_store_double(dataptr, big_theta_scf, pba->has_scf, storeidx);
     }
     else {
-      class_store_double(dataptr, rho_plus_p_theta_scf, pba->has_scf, storeidx);
+      class_store_double(dataptr, theta_scf, pba->has_scf, storeidx);
     }
+    class_store_double(dataptr, interaction_idm_ede, ppt->has_scf && pba->has_idm_ede, storeidx);
+    class_store_double(dataptr, interaction_idm_ede_vEuler, ppt->has_scf && pba->has_idm_ede, storeidx);
+    class_store_double(dataptr, term_delta_rho, ppt->has_scf && pba->has_idm_ede, storeidx);
+    class_store_double(dataptr, pow(term_theta*term_theta,0.5), ppt->has_scf && pba->has_idm_ede, storeidx);
     }
 
     class_store_double(dataptr, phase_shift_A, ppt->compute_phase_shift, storeidx);
@@ -9432,6 +9472,8 @@ int perturb_derivs(double tau,
           ((6*a_prime_over_a*pba->beta_scf*Z_scf+2*pba->beta_scf*Z_prime_scf)*y[pv->index_pt_phi_scf]
           +2*pba->beta_scf*Z_scf*y[pv->index_pt_phi_prime_scf])
           /a/(3*pvecback[pba->index_bg_rho_idm_ede]-2*pba->beta_scf*Z_scf*Z_scf);//factor of 3 because rho is in 1/3*planck mass unit while phi_scf is in planck mass units.
+
+
           // printf("a %e theta_idm %e \n",y[pv->index_pt_theta_idm_ede]);
 
           // dy[pv->index_pt_theta_idm_ede] += k2/pba->H0/pba->H0
