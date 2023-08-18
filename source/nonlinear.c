@@ -1210,7 +1210,7 @@ int nonlinear_init(
   double **pk_nl;
   double **lnpk_l;
   double **ddlnpk_l;
-  double kp_lya, tau_lya, Hubble;
+  double kp_lya_cubed, tau_lya, Hubble;
   short nl_corr_not_computable_at_this_k = _FALSE_;
 
   double * pvecback;
@@ -1384,14 +1384,15 @@ int nonlinear_init(
 
 
   Hubble = pvecback_lya[pba->index_bg_H];
-  kp_lya = pnl->kp_km_per_s*_c_/1000/(1.+pnl->zp_lya)*Hubble; //in Mpc^-1
+  pnl->kp_lya = pnl->kp_km_per_s*_c_/1000/(1.+pnl->zp_lya)*Hubble; //in Mpc^-1
+  kp_lya_cubed=pnl->kp_lya*pnl->kp_lya*pnl->kp_lya;
   free(pvecback_lya);
 
   class_call(nonlinear_pk_tilt_at_k_and_z(pba,
                                           ppm,
                                           pnl,
                                           pk_linear,
-                                          kp_lya,
+                                          pnl->kp_lya,
                                           pnl->zp_lya,
                                           pnl->index_pk_m,
                                           &pnl->n_L_lya),
@@ -1404,14 +1405,14 @@ int nonlinear_init(
                                      ppm,
                                      pnl,
                                      pk_linear,
-                                     kp_lya,
+                                     pnl->kp_lya,
                                      pnl->zp_lya,
                                      pnl->index_pk_m,
                                      &pnl->Delta_Lsquared_lya,
                                      NULL),
              pnl->error_message,
              pnl->error_message);
- pnl->Delta_Lsquared_lya *= kp_lya*kp_lya*kp_lya/2/_PI_/_PI_;
+ pnl->Delta_Lsquared_lya *= kp_lya_cubed/2/_PI_/_PI_;
 
   if (pnl->nonlinear_verbose>0) {
 
