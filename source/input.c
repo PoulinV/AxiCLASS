@@ -323,6 +323,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
   if(fzw.do_shooting_scf == _TRUE_){
 
+
     class_call(parser_read_list_of_doubles(pfc,
                                          "scf_parameters",
                                          &(fzw.scf_parameters_size),
@@ -330,8 +331,6 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                                          &flag1,
                                          errmsg),
              errmsg,errmsg);
-
-
 
     //VP: add something special for cobaya not being able to read list of parameters (or I could not understand how to)
     class_call(parser_read_string(pfc,"running_cobaya",&string1,&flag1,errmsg),
@@ -373,14 +372,22 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
            }
            if (strcmp(string1,"axionquad") == 0) {
               fzw.scf_potential = axionquad;
+              class_call(parser_read_string(pfc,"axionquad_mass_is_log10",&string1,&flag1,errmsg),
+                           errmsg,
+                           errmsg);
+
+              if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+                //if axionquad_mass_is_log10 is true it means we are running on log10_m_axion so we update it.
+                fzw.scf_parameters[0]=pow(10,fzw.scf_parameters[0]);
+              }
               flag2 =_TRUE_;
+
            }
 
        class_test(flag2==_FALSE_,
                       errmsg,
                       "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','axionquad','ax_cos_cubed'.");
          }
-
 
 
        class_call(parser_read_string(pfc,"scf_evolve_as_fluid",&string1,&flag1,errmsg),
@@ -2270,7 +2277,18 @@ int input_read_parameters(
        }
        if (strcmp(string1,"axionquad") == 0) {
          pba->scf_potential = axionquad;
-         flag2 =_TRUE_;
+
+            class_call(parser_read_string(pfc,"axionquad_mass_is_log10",&string1,&flag1,errmsg),
+                         errmsg,
+                         errmsg);
+
+            if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+              //if axionquad_mass_is_log10 is true it means we are running on log10_m_axion so we update it.
+
+                pba->scf_parameters[0]=pow(10,pba->scf_parameters[0]);
+            }
+
+             flag2 =_TRUE_;
        }
    class_test(flag2==_FALSE_,
                   errmsg,
