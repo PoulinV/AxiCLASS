@@ -671,7 +671,7 @@ extern "C" {
 #define _eV_over_ergs_ 6.24150647996e11 /**< eV/J */
 #define _joules_over_ergs_ 1e-7 /**< eV/J */
 #define _Sun_mass_over_kg_ 1.98855e30 /**< M_sun in kg */
-
+#define _eV_over_Mpc_   1.56e29 /**< eV to Mpc^-1 conversion  */
 /* parameters entering in Stefan-Boltzmann constant sigma_B */
 #define _k_B_ 1.3806504e-23
 #define _h_P_ 6.62606896e-34

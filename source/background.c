@@ -842,7 +842,7 @@ int background_init(
 
   if(pba->has_scf == _TRUE_){
         if(pba->scf_potential == axionquad){
-          pba->m_scf = pba->scf_parameters[0];
+          pba->m_scf = pba->scf_parameters[0]*_eV_over_Mpc_/pba->H0; //from eV to Mpc^-1 to unit of H0
           pba->w_scf = 0;
         }
         else if(pba->scf_potential == axion){
@@ -2334,7 +2334,10 @@ int background_solve(
       printf("     -> for reference, rho_crit = %g \n",pvecback[pba->index_bg_rho_crit]);
       if(pba->scf_potential == axionquad){
       printf("Additional scf parameters used: \n");
-      printf("m_a = %g eV\n",(pba->scf_parameters[0]*pba->H0/1.5638e29));
+      // printf("m_a = %g eV\n",(pba->scf_parameters[0]*pba->H0/1.5638e29));
+      printf("m_a = %g eV\n",(pba->scf_parameters[0]));
+      printf("H_0 = %g eV\n",pba->H0/_eV_over_Mpc_);
+
       }
       if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
@@ -3222,7 +3225,7 @@ double V_axionquad_scf(
                   double phi){
 
     // printf("Pot = %e %e %e\n", phi,pba->scf_parameters[1]*pba->H0,pow(pba->scf_parameters[1]*pba->H0,2)*pow(phi,2)/2);
-    return pow(pba->scf_parameters[0]*pba->H0,2)*pow(phi,2)/2; //pba->scf_parameters[0] is given in units of H0 and then converted in input.c
+    return pow(pba->m_scf*pba->H0,2)*pow(phi,2)/2; //pba->scf_parameters[0] is given in units of H0 and then converted in input.c
 
 }
 
@@ -3230,7 +3233,8 @@ double dV_axionquad_scf(
                   struct background *pba,
                   double phi){
 
-    return pow(pba->scf_parameters[0]*pba->H0,2)*phi;
+    // return pow(pba->scf_parameters[0]*pba->H0,2)*phi;
+    return pow(pba->m_scf*pba->H0,2)*phi;
 
 }
 
@@ -3239,7 +3243,8 @@ double ddV_axionquad_scf(
                   double phi){
 
     // printf("1 %e 2 %e \n", exp(-pba->scf_parameters[0]*pba->H0*phi),pow(pba->scf_parameters[0]*pba->H0,4));
-    return pow(pba->scf_parameters[0]*pba->H0,2);
+    // return pow(pba->scf_parameters[0]*pba->H0,2);
+    return pow(pba->m_scf*pba->H0,2);
 
 }
 /** Finally we can obtain the overall potential \f$ V = V_p*V_e \f$

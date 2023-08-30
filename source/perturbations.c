@@ -5421,7 +5421,7 @@ int perturb_initial_conditions(struct precision * ppr,
                         /(pow(a,3)*pow(a_over_ac,3*pba->n_axion/(1+pba->n_axion))+pow(a_over_ac,3/(1+pba->n_axion))*pow(pba->a_c,3))/(1+pba->n_axion);
                 }
                 else if(pba->scf_potential == axionquad){
-                  pba->m_scf = pba->scf_parameters[0]; //in unit of H0
+                  pba->m_scf = pba->scf_parameters[0]*_eV_over_Mpc_/pba->H0; //from eV to Mpc^-1 to unit of H0
                   pba->w_scf = ppw->pvecback[pba->index_bg_w_scf]; //
                 }
                 else{

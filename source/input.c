@@ -5673,7 +5673,7 @@ int input_get_guess(double *xguess,
       if (ba.scf_tuning_index == 1 && (ba.scf_potential == axionquad)){
         // if (ba.scf_parameters[0] <= 1e18) {
         // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*ba.Omega0_g,0.75)/pow(ba.scf_parameters[0],0.5));//ba.scf_parameters[0] is the ratio m/H0
-         xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75)/pow(ba.scf_parameters[0],0.5));//ba.scf_parameters[0] is the ratio m/H0
+         xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75)/pow(ba.scf_parameters[0]*_eV_over_Mpc_/ba.H0,0.5));//ba.scf_parameters[0] is the ratio m/H0
         // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/9*(ba.Omega0_b+ba.Omega0_cdm));//ba.scf_parameters[0] is the ratio m/H0
         // // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
         // // xguess[index_guess] =1e-8;
