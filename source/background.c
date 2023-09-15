@@ -507,7 +507,7 @@ int background_functions(
       rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
       rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
     // }
-    // printf("here KG equation, phi: %e, phi': %e rho_scf: %e \n", pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
+    // printf("here KG equation, a %e phi: %e, phi': %e rho_scf: %e \n", a, pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
     // printf("%e %e %e %e\n",a,phi,phi_prime,V_scf(pba,phi));
     //printf("3H = %e \n", 3*pvecback[pba->index_bg_H]);
     // printf("KE = %e, V = %e \n", (phi_prime*phi_prime/(2*a*a) , V_scf(pba,phi)));
@@ -928,8 +928,6 @@ int background_init(
     printf("Running CLASS version %s\n",_VERSION_);
     printf("Computing background\n");
   }
-
-
   /** - if shooting failed during input, catch the error here */
   class_test(pba->shooting_failed == _TRUE_,
              pba->error_message,
@@ -2231,60 +2229,6 @@ int background_solve(
     used_in_output[index_loga] = 1;
   }
 
-    /*VP: old adaptative integration stepsize, not necessary with ndf15 */
-    // if(pba->scf_potential == axion && pba->adptative_stepsize > 0){
-    //   if(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac > -30){
-    //     ac = pow(10,pba->log10_axion_ac);
-    //     if(pvecback_integration[pba->index_bi_a]>ac/pba->adptative_stepsize){
-    //       n = pba->n_axion;
-    //       anow = pvecback_integration[pba->index_bi_a];
-    //       if(pba->m_scf!=0 && pba->f_axion != 0)Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*pow((pba->phi_ini_scf/pba->f_axion)*pow(1.65*anow/ac,-3./(n+1.)),1.-n)*gsl_sf_gamma(1.+1./(2.*n))/((pba->m_scf)*gsl_sf_gamma((1.+n)/(2.*n))*(pba->H0));
-    //       //printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
-    //       // printf("pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize %e %e \n", pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize,integration_stepsize);
-    //       if(pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize<integration_stepsize && pba->scf_evolve_as_fluid == _FALSE_) {
-    //         // printf("old integration_stepsize %e\n", integration_stepsize);
-    //         integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize;
-    //         //printf("updated integration_stepsize %e\n", integration_stepsize);
-    //       }
-    //     }
-    //   }
-    // }
-    // if(pba->scf_potential == phi_2n && pba->adptative_stepsize > 0){
-    //     ac = pow(10,pba->log10_fraction_axion_ac);
-    //     if(pvecback_integration[pba->index_bi_a]>ac/pba->adptative_stepsize){
-    //       n = pba->n_axion;
-    //       anow = pvecback_integration[pba->index_bi_a];
-    //       Tosc = pow(2.,2.+0.5*(n-1.))*sqrt(_PI_)*gsl_sf_gamma(1.+1./(2.*n))/(pow(pba->V0_phi2n,0.5)*gsl_sf_gamma((1.+n)/(2.*n))*(pba->H0));
-    //       // printf("Tosc %e phi %e f %e ma %e\n", Tosc,pba->phi_ini_scf,pba->f_axion,pba->m_scf);
-    //       // printf("pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize %e %e \n", pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize,integration_stepsize);
-    //       if(pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize<integration_stepsize) {
-    //         // printf("old integration_stepsize %e\n", integration_stepsize);
-    //         integration_stepsize  = pvecback[pba->index_bg_H]*Tosc/pba->adptative_stepsize;
-    //         // printf("updated integration_stepsize %e\n", integration_stepsize);
-    //       }
-    //     }
-    // }
-
-    /* VP; in AxiCLASS we can swtich from KG equation to fluid variables for the scalar field*/
-    if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ ){
-      // printf("a %e pvecback[pba->index_bg_Omega_scf] %e pba->threshold_scf_fluid_m_over_H %e\n", pvecback_integration[pba->index_bi_a],pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H);
-      // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H || a>pba->threshold_for_fluid*pba->a_c){ //We switch for fluid equations
-      // if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
-      if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
-      // ac = pow(10,pba->log10_axion_ac);
-      // printf("ac %e\n", ac);
-      // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback_integration[pba->index_bi_a] > ac){ //We switch for fluid equations
-      // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations
-        pba->scf_kg_eq = _FALSE_;
-      }
-      else{
-        pba->scf_kg_eq = _TRUE_;
-      }
-      // printf("pba->scf_kg_eq  %d\n", pba->scf_kg_eq);
-
-    }
-
-
   /** - choose the right evolver */
   switch (ppr->background_evolver) {
 
@@ -2397,17 +2341,18 @@ int background_solve(
     if(pba->scf_potential == axion || pba->scf_potential == phi_2n){
      /* Scalar field critical redshift and fractional energy density at z_c calculations */
      z_c_new = pba->z_table[index_loga];
-     f_ede_new = pvecback[pba->index_bg_Omega_scf];
+     f_ede_new = pba->background_table[index_loga*pba->bg_size+pba->index_bg_Omega_scf];
+     // printf("f_ede_new %e old fede %e\n", f_ede_new,pba->f_ede);
      if(f_ede_new > pba->f_ede && pba->n_axion >1.1){//there's a small problem when axion behaves like DM
        pba->log10_z_c = log10(z_c_new);
        // pba->axion_ac = 1/z_c_new-1;
        pba->f_ede = f_ede_new;
-       pba->phi_scf_c = pvecback[pba->index_bg_phi_scf];
+       pba->phi_scf_c = pba->background_table[index_loga*pba->bg_size+pba->index_bg_phi_scf];
        // printf("z %e pba->f_ede %e\n", pba->z_table[i],pba->f_ede);
      }else{
-       if(f_ede_new > pba->f_ede && pba->m_scf*pba->H0/pvecback[pba->index_bg_H] <= pba->threshold_scf_fluid_m_over_H){
+       if(f_ede_new > pba->f_ede && pba->m_scf*pba->H0/pba->background_table[index_loga*pba->bg_size+pba->index_bg_H] <= pba->threshold_scf_fluid_m_over_H){
          pba->f_ede = f_ede_new;
-         pba->phi_scf_c = pvecback[pba->index_bg_phi_scf];
+         pba->phi_scf_c = pba->background_table[index_loga*pba->bg_size+pba->index_bg_phi_scf];
          pba->log10_z_c = log10(z_c_new);
 
        }
@@ -2419,7 +2364,7 @@ int background_solve(
     /* EDE pheno_axion fluid calculations to determine f_ede_peak */
     if( (pba->has_fld) && (pba->ede_parametrization == pheno_axion) ){
       z_peak_new = pba->z_table[index_loga];
-      f_ede_new = pvecback[pba->index_bg_Omega_fld];
+      f_ede_new = pba->background_table[index_loga*pba->bg_size+pba->index_bg_Omega_fld];
       if(f_ede_new > pba->f_ede_peak){
         pba->a_peak = 1./(1+z_peak_new);
         pba->f_ede_peak = f_ede_new;
@@ -2427,7 +2372,7 @@ int background_solve(
       if(pba->background_verbose>8) printf("f_ede_peak = %.2e \t>= %.2e = f_ede_now\n", pba->f_ede_peak, f_ede_new);
     }
 
-    if(pba->background_verbose>2 && pba->ede_parametrization == pheno_axion) printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
+    if(pba->background_verbose>2 && pba->ede_parametrization == pheno_axion && pba->has_fld==_TRUE_) printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
 
   if(pba->log10_axion_ac == -30 && pba->has_scf == _TRUE_ && pba->scf_potential == axion){
     pba->log10_axion_ac = -1*pba->log10_z_c;
@@ -3125,6 +3070,20 @@ int background_derivs(
              error_message,
              "rho_g = %e instead of strictly positive",pvecback[pba->index_bg_rho_g]);
 
+
+
+   /* VP; in AxiCLASS we can switch from KG equation to fluid variables for the scalar field*/
+   if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ ){
+     if(pba->m_scf*pba->H0/H >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations at m > 3H by default.
+       pba->scf_kg_eq = _FALSE_;
+     }
+     else{
+       pba->scf_kg_eq = _TRUE_;
+     }
+   }
+
+
+
   /** - calculate detivative of sound horizon \f$ drs/dloga = drs/dtau * dtau/dloga = c_s/aH \f$*/
   dy[pba->index_bi_rs] = 1./a/H/sqrt(3.*(1.+3.*pvecback[pba->index_bg_rho_b]/4./pvecback[pba->index_bg_rho_g]))*sqrt(1.-pba->K*y[pba->index_bi_rs]*y[pba->index_bi_rs]); // TBC: curvature correction
 
@@ -3175,11 +3134,13 @@ int background_derivs(
     dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H ;
 
     dy[pba->index_bi_rho_scf] = 0; //Update the scf density until the fluid equation starts.
-    if(pba->background_verbose > 11) printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
+    // printf("aEvolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],y[pba->index_bi_phi_prime_scf]);
+    // printf("dV %e \n", dV_scf(pba,y[pba->index_bi_phi_scf])  );
+    // if(pba->background_verbose > 11) printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
     }
     else if(pba->scf_kg_eq == _FALSE_) {
 
-    dy[pba->index_bi_rho_scf] = -3.*y[pba->index_bg_a]*pvecback[pba->index_bg_H]*y[pba->index_bi_rho_scf]*(1+pba->w_scf);
+    dy[pba->index_bi_rho_scf] = -3.*y[pba->index_bi_rho_scf]*(1+pba->w_scf);
     dy[pba->index_bi_phi_scf] = 0;
     dy[pba->index_bi_phi_prime_scf] = 0;
     if(pba->background_verbose > 11) printf("Evolving scalar field using fluid equation, rho %e rho prime %e.\n",y[pba->index_bi_rho_scf],dy[pba->index_bi_rho_scf]);

@@ -948,6 +948,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                  errmsg,
                  errmsg);
 
+
       /* Use multi-dimensional Newton method */
       class_call_try(fzero_Newton(input_try_unknown_parameters,
                                   x_inout,
@@ -1915,7 +1916,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
       case fraction_axion_ac: // TLS where to print out log10_fraction_axion_ac and axion_ac
         // output[i] = log10(ba.f_ede)-pfzw->target_value[i];
         output[i] = ba.f_ede-pfzw->target_value[i];
-        if(input_verbose>10)printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
+        if(input_verbose>10)printf("lgo10ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
         break;
       case log10_axion_ac:
         ac = 1./(pow(10,ba.log10_z_c)+1);
@@ -4113,6 +4114,7 @@ int input_read_parameters_species(struct file_content * pfc,
          flag2 =_TRUE_;
        }
        if (strcmp(string1,"axion") == 0) {
+         ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
          flag1=_FALSE_;
          pba->scf_potential = axion;
          class_call(parser_read_double(pfc,"n_axion",&param1,&flag1,errmsg),
@@ -4251,6 +4253,7 @@ int input_read_parameters_species(struct file_content * pfc,
        }
        if (strcmp(string1,"axionquad") == 0) {
          pba->scf_potential = axionquad;
+         ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
 
             class_call(parser_read_string(pfc,"axionquad_mass_is_log10",&string1,&flag1,errmsg),
                          errmsg,
@@ -4303,7 +4306,7 @@ int input_read_parameters_species(struct file_content * pfc,
 
     if(input_verbose>10){
       printf("input file read, the h is %e \n", pba->h);
-      printf("input file read, the scf_shooting parameter is %e  with tuning index %d \n", pba->scf_parameters[pba->scf_tuning_index],pba->scf_tuning_index);
+      printf("input file read, the scf_shooting parameter is %e  with tuning index %d (ignore if EDE)\n", pba->scf_parameters[pba->scf_tuning_index],pba->scf_tuning_index);
       printf("input file read, the pba->log10_m_axion parameter is %e \n", pba->log10_m_axion);
     }
 
@@ -5001,7 +5004,6 @@ int input_read_parameters_nonlinear(struct file_content * pfc,
     pfo->get_lyman_alpha_tilt_and_amplitude = _TRUE_;
     class_read_double("kp_km_per_s",pfo->kp_km_per_s);
     class_read_double("zp_lya",pfo->zp_lya);
-    class_test(ppt->z_max_pk<pfo->zp_lya, errmsg, "You requested get_lyman_alpha_tilt_and_amplitude but have ppt->z_max_pk < pnl->zp_lya. Please update.");
 
   }
   else{
@@ -6208,6 +6210,15 @@ int input_read_parameters_spectra(struct file_content * pfc,
       /* Now we have checked all contributions that could change z_max_pk */
     }
   }
+
+
+  class_call(parser_read_string(pfc,"get_lyman_alpha_tilt_and_amplitude",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+             if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+               class_read_double("zp_lya",param1);
+               class_test(ppt->z_max_pk<param1, errmsg, "You requested get_lyman_alpha_tilt_and_amplitude but have ppt->z_max_pk < pnl->zp_lya. Please update.");
+              }
 
   return _SUCCESS_;
 
