@@ -18,7 +18,7 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc
+CC       = gcc-12
 #CC       = icc
 #CC       = pgcc
 
@@ -43,7 +43,7 @@ OMPFLAG   = -fopenmp
 #OMPFLAG   = -openmp
 
 # all other compilation flags
-CCFLAG = -g -fPIC 
+CCFLAG = -g -fPIC
 LDFLAG = -g -fPIC
 
 #GSL FLAGS
@@ -52,16 +52,10 @@ GSL_LIB = /usr/local/lib/
 #GSLFLAG += -lgsl -lgslcblas -lm
 GSLFLAG += -lgsl -lgslcblas -lm
 # leave blank to compile without HyRec, or put path to HyRec directory
-<<<<<<< HEAD
-# (with no slash at the end: e.g. hyrec or ../hyrec)
-
-HYREC = hyrec
-=======
 # (with no slash at the end: e.g. "external/RecfastCLASS")
 HYREC = external/HyRec2020
 RECFAST = external/RecfastCLASS
 HEATING = external/heating
->>>>>>> aa92943e4ab86b56970953589b4897adf2bd0f99
 
 ########################################################
 ###### IN PRINCIPLE THE REST SHOULD BE LEFT UNCHANGED ##
@@ -92,17 +86,7 @@ HEADERFILES += $(wildcard ./$(HEATING)/*.h)
 # update flags for including HyRec
 ifneq ($(HYREC),)
 vpath %.c $(HYREC)
-<<<<<<< HEAD
-#CCFLAG += -DHYREC
-#LDFLAG += -DHYREC -lstdc++ -L$(GSL_LIB) -lgsl -lgslcblas
-INCLUDES += -I../hyrec
-EXTERNAL += hyrectools.o helium.o hydrogen.o history.o
-endif
 
-INCLUDES += -I/usr/local/include
-
-%.o:  %.c .base
-=======
 CCFLAG += -DHYREC
 #LDFLAGS += -DHYREC
 INCLUDES += -I../$(HYREC)
@@ -111,7 +95,6 @@ HEADERFILES += $(wildcard ./$(HYREC)/*.h)
 endif
 
 %.o:  %.c .base $(HEADERFILES)
->>>>>>> aa92943e4ab86b56970953589b4897adf2bd0f99
 	cd $(WRKDIR);$(CC) $(OPTFLAG) $(OMPFLAG) $(CCFLAG) $(INCLUDES) -c ../$< -o $*.o
 
 TOOLS = growTable.o dei_rkck.o sparse.o evolver_rkck.o  evolver_ndf15.o arrays.o parser.o quadrature.o hyperspherical.o common.o trigonometric_integrals.o
