@@ -34,7 +34,8 @@ static double gsl_sf_gamma(double z) {
     z -= 1;
     // double complex x = p[0];
     double x = p[0];
-    for(int n = 1; n < 9; n++)
+    int n;
+    for(n = 1; n < 9; n++)
         x += p[n] / (z + 1.*n);
     // double complex t = z + 7.5;
     double t = z + 7.5;
