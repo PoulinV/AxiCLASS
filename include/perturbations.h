@@ -344,10 +344,12 @@ struct perturbations
   int * tp_size; /**< number of types tp_size[index_md] included in computation for each mode */
 
   //@}
-
   short use_big_theta_scf;
   short use_big_theta_fld; /**< The way EDE is set up, 1+w, which appears in the denominator in eqs for theta_fld, can become 0.
                                 So we redefine Theta = (1+w) theta and use the evolution equation for that instead */
+  short use_delta_fld_over_1plusw;
+  short use_delta_scf_over_1plusw; /**< The way EDE is set up, 1+w, which appears in the denominator in eqs for theta_fld, can become 0.
+                                So we redefine delta_fld == delta_fld / (1+w) */
 
 
   /** @name - list of k values for each mode */

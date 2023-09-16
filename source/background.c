@@ -491,26 +491,19 @@ int background_functions(
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
     pvecback[pba->index_bg_rho_scf] = (phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
     pvecback[pba->index_bg_p_scf] = (phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
-    // pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
-    // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
-    pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
-    // printf("here %e\n", pvecback[pba->index_bg_w_scf]);
-    pvecback_B[pba->index_bi_rho_scf] = pvecback[pba->index_bg_rho_scf];
-    // if(pba->n_axion < pba->n_axion_security && pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
-    // }
-    // else{
-      rho_tot += pvecback[pba->index_bg_rho_scf];
-      p_tot += pvecback[pba->index_bg_p_scf];
-      dp_dloga += 0.0; /** <-- This depends on a_prime_over_a, so we cannot add it now! */
 
-      //divide relativistic & nonrelativistic (not very meaningful for oscillatory models)
-      rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
-      rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
-    // }
-    // printf("here KG equation, a %e phi: %e, phi': %e rho_scf: %e \n", a, pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
-    // printf("%e %e %e %e\n",a,phi,phi_prime,V_scf(pba,phi));
-    //printf("3H = %e \n", 3*pvecback[pba->index_bg_H]);
-    // printf("KE = %e, V = %e \n", (phi_prime*phi_prime/(2*a*a) , V_scf(pba,phi)));
+    pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
+    pvecback_B[pba->index_bi_rho_scf] = pvecback[pba->index_bg_rho_scf];
+
+    rho_tot += pvecback[pba->index_bg_rho_scf];
+    p_tot += pvecback[pba->index_bg_p_scf];
+    dp_dloga += 0.0; /** <-- This depends on a_prime_over_a, so we cannot add it now! */
+
+    rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
+    rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+
+    if(pba->background_verbose>11) printf("here KG equation, a %e phi: %e, phi': %e rho_scf: %e \n", a, pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
+
   }
   else if(pba->has_scf == _TRUE_ &&  pba->scf_kg_eq == _FALSE_){
     // phi = pvecback[pba->index_bg_phi_scf]; //phi is frozen to its last value.
@@ -530,23 +523,20 @@ int background_functions(
     pvecback[pba->index_bg_rho_scf] = pvecback_B[pba->index_bi_rho_scf];
     pvecback[pba->index_bg_p_scf] = pba->w_scf*pvecback_B[pba->index_bi_rho_scf];
     if(pba->log10_axion_ac > -30){
+      /* approximate fluid equation of state for the axion */
       pvecback[pba->index_bg_w_scf] = (1+pba->w_scf)/(1+pow(pba->a_c/a,3*(1+pba->w_scf)))-1;
     }
     else{
       pvecback[pba->index_bg_w_scf] = pba->w_scf;
     }
-    // printf("hereafter %e\n",   pvecback[pba->index_bg_w_scf]);
-    // if(pba->n_axion < pba->n_axion_security && pvecback[pba->index_bg_rho_scf]/(rho_tot+pvecback[pba->index_bg_rho_scf]) < pba->security_small_Omega_scf && a > pow(10,pba->log10_axion_ac)){
-    // }
-    // else{
+
 
       rho_tot += pvecback[pba->index_bg_rho_scf];
       p_tot += pvecback[pba->index_bg_p_scf];
       rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
       rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
-    // }
-    // printf("now fluid equation %e rho %e \n",3*pvecback[pba->index_bg_H],pvecback[pba->index_bg_rho_scf]);
-    // printf("phi is %e\n rho_scf is %e \n", phi, pvecback[pba->index_bg_rho_scf]);
+
+    if(pba->background_verbose>11) printf("now fluid equation H %e p %e rho %e \n",3*pvecback[pba->index_bg_H],pvecback[pba->index_bg_p_scf],pvecback[pba->index_bg_rho_scf]);
 
   }
   //printf("Scalar field? %f \n", pba->has_scf); //print_trigger
@@ -620,7 +610,7 @@ int background_functions(
 
     if(w_fld>0){
       rho_m += pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]; //the rest contributes matter
-      printf("w_fld %e pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld] %e\n", w_fld,pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]);
+      // printf("w_fld %e pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld] %e\n", w_fld,pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]);
     }
   }
 
@@ -768,7 +758,7 @@ int background_w_fld(
     if (pba->ede_parametrization == pheno_axion){
       // w_ede(a) defined from a mash-up of 1811.04083 and 1905.12618
       w = pba->w_fld_f; //e.o.s. once the field starts oscillating
-      *w_fld = (1+w)/(1+pow(pba->a_c/a,3*(1+w)/pba->nu_fld))-1+1e-10; //we add 1e-10 to avoid a crashing of the solver. Checked to be totally invisible.
+      *w_fld = (1+w)/(1+pow(pba->a_c/a,3*(1+w)/pba->nu_fld))-1;
     }
     else {
       // Omega_ede(a) taken from eq. (10) in 1706.00730
@@ -2368,8 +2358,8 @@ int background_solve(
       if(f_ede_new > pba->f_ede_peak){
         pba->a_peak = 1./(1+z_peak_new);
         pba->f_ede_peak = f_ede_new;
+        if(pba->background_verbose>8) printf("f_ede_peak = %.2e \t>= %.2e = f_ede_now\n", pba->f_ede_peak, f_ede_new);
       }
-      if(pba->background_verbose>8) printf("f_ede_peak = %.2e \t>= %.2e = f_ede_now\n", pba->f_ede_peak, f_ede_new);
     }
 
     if(pba->background_verbose>2 && pba->ede_parametrization == pheno_axion && pba->has_fld==_TRUE_) printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
