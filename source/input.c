@@ -662,7 +662,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
        class_test(flag2==_FALSE_,
                       errmsg,
                       "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','axionquad','ax_cos_cubed'.");
-         }
+
 
 
        class_call(parser_read_string(pfc,"scf_evolve_as_fluid",&string1,&flag1,errmsg),
@@ -769,11 +769,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
             if (Omega0_cdm > 0) Omega_m += Omega0_cdm;
           }
         }
-        else if(fzw.scf_potential == phi_2n){
-          // fzw.Omega0_axion = 0.0;
-          fzw.log10_axion_ac = 0.0;
-          class_read_double("n_axion",fzw.n_axion);
-        }
+      }
         // else{
         //   class_stop("fluid approximation is not working for potential different than 'axion' and 'axionquad'!. Please switch scf_evolve_as_fluid to no.",errmsg);
         // }

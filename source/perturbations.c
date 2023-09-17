@@ -5685,10 +5685,12 @@ int perturbations_initial_conditions(struct precision * ppr,
 
           /*VP: NEW AXICLASS INITIAL CONDITIONS */
         if(pba->ede_parametrization == pheno_axion){
-            ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
             /* the equations are more stable if we solve for delta/(1+w) and (1+w)*theta */
             if(ppt->use_delta_fld_over_1plusw == _TRUE_){
-              ppw->pv->y[ppw->pv->index_pt_delta_fld] /= (1.+w_fld);
+              ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
+            }
+            else{
+              ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
             }
             if (ppt->use_big_theta_fld == _TRUE_){
                 ppw->pv->y[ppw->pv->index_pt_big_theta_fld] *= -0.5*(1+w_fld)*k*ktau_three*pba->cs2_fld/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
@@ -5751,15 +5753,20 @@ int perturbations_initial_conditions(struct precision * ppr,
 
           /*VP: NEW AXICLASS INITIAL CONDITIONS */
           if (pba->use_ppf == _FALSE_) {
-            ppw->pv->y[ppw->pv->index_pt_delta_scf] = 0.5*ktau_two*(1.+ppw->pvecback[pba->index_bg_w_scf])*(-4.+3.*cs2_scf)/(32.+6.*cs2_scf+12.*w_scf_f)* ppr->curvature_ini * s2_squared;
-            ppw->pv->y[ppw->pv->index_pt_theta_scf] = -0.5*k*ktau_three*cs2_scf/(32.+6.*cs2_scf+12.*w_scf_f)* ppr->curvature_ini * s2_squared;
 
             /* the equations are more stable if we solve for delta/(1+w) and (1+w)*theta */
             if(ppt->use_delta_scf_over_1plusw == _TRUE_){
               ppw->pv->y[ppw->pv->index_pt_delta_scf] /= (1.+ppw->pvecback[pba->index_bg_w_scf]);
             }
+            else{
+              ppw->pv->y[ppw->pv->index_pt_delta_scf] = 0.5*ktau_two*(1.+ppw->pvecback[pba->index_bg_w_scf])*(-4.+3.*cs2_scf)/(32.+6.*cs2_scf+12.*w_scf_f)* ppr->curvature_ini * s2_squared;
+            }
             if (ppt->use_big_theta_scf == _TRUE_){
-                ppw->pv->y[ppw->pv->index_pt_theta_scf] *= (1+ppw->pvecback[pba->index_bg_w_scf]);
+                ppw->pv->y[ppw->pv->index_pt_theta_scf] = -0.5*k*ktau_three*cs2_scf/(32.+6.*cs2_scf+12.*w_scf_f)* ppr->curvature_ini * s2_squared*(1+ppw->pvecback[pba->index_bg_w_scf]);
+            }
+            else{
+              ppw->pv->y[ppw->pv->index_pt_theta_scf] = -0.5*k*ktau_three*cs2_scf/(32.+6.*cs2_scf+12.*w_scf_f)* ppr->curvature_ini * s2_squared;
+
             }
           }
 
@@ -8898,6 +8905,8 @@ int perturbations_print_variables(double tau,
       if(ppt->use_big_theta_fld == _TRUE_) {
         if(1+w_fld !=0.0)theta_fld = y[ppw->pv->index_pt_big_theta_fld]/(1+w_fld);
         else theta_fld =0.;
+        //VP" security when (1+w_fld != 0.0) the field is frozen, theta is 0.
+
       }
       else theta_fld = y[ppw->pv->index_pt_theta_fld];
 
@@ -9988,8 +9997,10 @@ int perturbations_derivs(double tau,
 
         /** - ----> fluid density */
         if(ppt->use_delta_fld_over_1plusw == _TRUE_){
-          if(ppt->use_big_theta_fld){
-            theta_fld=y[pv->index_pt_big_theta_fld]/(1+w_fld);
+          if(ppt->use_big_theta_fld == _TRUE_){
+            if(1+w_fld != 0.0)theta_fld=y[pv->index_pt_big_theta_fld]/(1+w_fld);
+            else theta_fld = 0;
+            //VP" security when (1+w_fld != 0.0) the field is frozen, theta is 0.
           }
           else{
             theta_fld=y[pv->index_pt_theta_fld];
@@ -10035,14 +10046,15 @@ int perturbations_derivs(double tau,
             dy[pv->index_pt_theta_fld] += cs2*k2*y[pv->index_pt_delta_fld];
           }
           else{
-            dy[pv->index_pt_theta_fld] += cs2*k2/(1.+w_fld)*y[pv->index_pt_delta_fld];
+            if((1+w_fld)!=0.0) dy[pv->index_pt_theta_fld] += cs2*k2/(1.+w_fld)*y[pv->index_pt_delta_fld];
+            //VP security when (1+w_fld != 0.0) the field is frozen, delta is 0.
+
           }
         }
       }
       else {
         dy[pv->index_pt_Gamma_fld] = ppw->Gamma_prime_fld; /* Gamma variable of PPF formalism */
       }
-
     }
 
 
@@ -10100,8 +10112,12 @@ int perturbations_derivs(double tau,
         /*identical to fld above */
         /** - ----> fluid density */
         if(ppt->use_delta_scf_over_1plusw == _TRUE_){
-          if(ppt->use_big_theta_scf){
-            theta_scf=y[pv->index_pt_big_theta_scf]/(1+pvecback[pba->index_bg_w_scf]);
+          if(ppt->use_big_theta_scf == _TRUE_){
+            if(1+pvecback[pba->index_bg_w_scf]!= 0.0){
+              theta_scf=y[pv->index_pt_big_theta_scf]/(1+pvecback[pba->index_bg_w_scf]);
+            }
+            else theta_scf = 0;
+            //VP" security when (1+index_bg_w_scf != 0.0) the field is frozen, theta is 0.
           }
           else{
             theta_scf=y[pv->index_pt_theta_scf];
@@ -10148,7 +10164,8 @@ int perturbations_derivs(double tau,
           dy[pv->index_pt_theta_scf] += cs2*k2*y[pv->index_pt_delta_scf];
         }
         else{
-          dy[pv->index_pt_theta_scf] += cs2*k2/(1.+pvecback[pba->index_bg_w_scf])*y[pv->index_pt_delta_scf];
+          //VP security when (1+w_fld != 0.0) the field is frozen, delta is 0.
+          if((1+pvecback[pba->index_bg_w_scf])!=0.0)dy[pv->index_pt_theta_scf] += cs2*k2/(1.+pvecback[pba->index_bg_w_scf])*y[pv->index_pt_delta_scf];
         }
       }
       }
