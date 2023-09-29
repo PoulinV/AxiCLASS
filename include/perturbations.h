@@ -350,6 +350,8 @@ struct perturbations
   short use_delta_fld_over_1plusw;
   short use_delta_scf_over_1plusw; /**< The way EDE is set up, 1+w, which appears in the denominator in eqs for theta_fld, can become 0.
                                 So we redefine delta_fld == delta_fld / (1+w) */
+  short include_scf_in_delta_m; /* do we include scf contribution to delta_m ? default is false, unless the potential is axionquad or axion with n=1 */
+  short include_scf_in_delta_cb; /* do we include scf contribution to delta_cb ? default is false*/
 
 
   /** @name - list of k values for each mode */

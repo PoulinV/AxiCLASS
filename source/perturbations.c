@@ -7302,103 +7302,6 @@ int perturbations_total_stress_energy(
       ppw->rho_plus_p_tot += 4./3. * ppw->pvecback[pba->index_bg_rho_idr];
     }
 
-    /* infer delta_cb abd theta_cb (perturbations from CDM and baryons) before adding ncdm */
-    if ((ppt->has_source_delta_m == _TRUE_) && (ppt->has_source_delta_cb == _TRUE_))
-      ppw->delta_cb = delta_rho_m/rho_m;
-
-    if (((ppt->has_source_delta_m == _TRUE_) || (ppt->has_source_theta_m == _TRUE_)) &&
-        ((ppt->has_source_delta_cb == _TRUE_) || (ppt->has_source_theta_cb == _TRUE_)))
-      ppw->theta_cb = rho_plus_p_theta_m/rho_plus_p_m;
-
-
-    /* non-cold dark matter contribution */
-    if (pba->has_ncdm == _TRUE_) {
-      idx = ppw->pv->index_pt_psi0_ncdm1;
-      if (ppw->approx[ppw->index_ap_ncdmfa] == (int)ncdmfa_on){
-        // The perturbations are evolved integrated:
-        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
-          rho_ncdm_bg = ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm];
-          p_ncdm_bg = ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm];
-          pseudo_p_ncdm = ppw->pvecback[pba->index_bg_pseudo_p_ncdm1+n_ncdm];
-
-          rho_plus_p_ncdm = rho_ncdm_bg + p_ncdm_bg;
-          w_ncdm = p_ncdm_bg/rho_ncdm_bg;
-          cg2_ncdm = w_ncdm*(1.0-1.0/(3.0+3.0*w_ncdm)*(3.0*w_ncdm-2.0+pseudo_p_ncdm/p_ncdm_bg));
-          if ((ppt->has_source_delta_ncdm == _TRUE_) || (ppt->has_source_theta_ncdm == _TRUE_) || (ppt->has_source_delta_m == _TRUE_)) {
-            ppw->delta_ncdm[n_ncdm] = y[idx];
-            ppw->theta_ncdm[n_ncdm] = y[idx+1];
-            ppw->shear_ncdm[n_ncdm] = y[idx+2];
-          }
-
-          ppw->delta_rho += rho_ncdm_bg*y[idx];
-          ppw->rho_plus_p_theta += rho_plus_p_ncdm*y[idx+1];
-          ppw->rho_plus_p_shear += rho_plus_p_ncdm*y[idx+2];
-          ppw->delta_p += cg2_ncdm*rho_ncdm_bg*y[idx];
-
-          ppw->rho_plus_p_tot += rho_plus_p_ncdm;
-
-          idx += ppw->pv->l_max_ncdm[n_ncdm]+1;
-        }
-      }
-      else{
-        // We must integrate to find perturbations:
-        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
-          rho_delta_ncdm = 0.0;
-          rho_plus_p_theta_ncdm = 0.0;
-          rho_plus_p_shear_ncdm = 0.0;
-          delta_p_ncdm = 0.0;
-          factor = pba->factor_ncdm[n_ncdm]/pow(a,4);
-
-          for (index_q=0; index_q < ppw->pv->q_size_ncdm[n_ncdm]; index_q ++) {
-
-            q = pba->q_ncdm[n_ncdm][index_q];
-            q2 = q*q;
-            epsilon = sqrt(q2+pba->M_ncdm[n_ncdm]*pba->M_ncdm[n_ncdm]*a2);
-
-            rho_delta_ncdm += q2*epsilon*pba->w_ncdm[n_ncdm][index_q]*y[idx];
-            rho_plus_p_theta_ncdm += q2*q*pba->w_ncdm[n_ncdm][index_q]*y[idx+1];
-            rho_plus_p_shear_ncdm += q2*q2/epsilon*pba->w_ncdm[n_ncdm][index_q]*y[idx+2];
-            delta_p_ncdm += q2*q2/epsilon*pba->w_ncdm[n_ncdm][index_q]*y[idx];
-
-            //Jump to next momentum bin:
-            idx+=(ppw->pv->l_max_ncdm[n_ncdm]+1);
-          }
-
-          rho_delta_ncdm *= factor;
-          rho_plus_p_theta_ncdm *= k*factor;
-          rho_plus_p_shear_ncdm *= 2.0/3.0*factor;
-          delta_p_ncdm *= factor/3.;
-
-          if ((ppt->has_source_delta_ncdm == _TRUE_) || (ppt->has_source_theta_ncdm == _TRUE_) || (ppt->has_source_delta_m == _TRUE_)) {
-            ppw->delta_ncdm[n_ncdm] = rho_delta_ncdm/ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm];
-            ppw->theta_ncdm[n_ncdm] = rho_plus_p_theta_ncdm/
-              (ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm]);
-            ppw->shear_ncdm[n_ncdm] = rho_plus_p_shear_ncdm/
-              (ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm]);
-          }
-
-          ppw->delta_rho += rho_delta_ncdm;
-          ppw->rho_plus_p_theta += rho_plus_p_theta_ncdm;
-          ppw->rho_plus_p_shear += rho_plus_p_shear_ncdm;
-          ppw->delta_p += delta_p_ncdm;
-
-          ppw->rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm];
-        }
-      }
-      if (ppt->has_source_delta_m == _TRUE_) {
-        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
-          delta_rho_m += ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]*ppw->delta_ncdm[n_ncdm]; // contribution to delta rho_matter
-          rho_m += ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm];
-        }
-      }
-      if ((ppt->has_source_delta_m == _TRUE_) || (ppt->has_source_theta_m == _TRUE_)) {
-        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
-          rho_plus_p_theta_m += (ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm])
-            *ppw->theta_ncdm[n_ncdm]; // contribution to [(rho+p)theta]_matter
-          rho_plus_p_m += (ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm]);
-        }
-      }
-    }
 
     /* scalar field contribution.
        In Newtonian gauge, delta_scf depends on the metric perturbation psi which is inferred
@@ -7505,9 +7408,8 @@ int perturbations_total_stress_energy(
           //do nothing
         }
         else{
-          ppw->rho_plus_p_theta +=  1./3.*
+          rho_plus_p_theta_scf =  1./3.*
             k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
-          ppw->rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
         }
         if(pba->scf_evolve_as_fluid == _TRUE_){
           if(ppt->use_big_theta_scf == _TRUE_){
@@ -7521,15 +7423,147 @@ int perturbations_total_stress_energy(
 
       }
       else { //evolving via fluid mimicking fld
-        ppw->rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
         if(ppt->use_big_theta_scf == _TRUE_){
-          ppw->rho_plus_p_theta = ppw->rho_plus_p_theta + ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_big_theta_scf];
+          rho_plus_p_theta_scf =  ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_big_theta_scf];
         }
         else {
-          ppw->rho_plus_p_theta = ppw->rho_plus_p_theta + (1.+ppw->pvecback[pba->index_bg_w_scf])*ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_theta_scf];
+          rho_plus_p_theta_scf =  (1.+ppw->pvecback[pba->index_bg_w_scf])*ppw->pvecback[pba->index_bg_rho_scf]*y[ppw->pv->index_pt_theta_scf];
+        }
+      }
+
+
+      ppw->rho_plus_p_theta += rho_plus_p_theta_scf;
+      ppw->rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf];
+
+      if(ppt->include_scf_in_delta_cb == _TRUE_){
+        /* if we want to include scf contribution to delta_cb, we have to do it now!
+        if we only want to include it inside of delta_m, it will be done later */
+        if (ppt->has_source_delta_m == _TRUE_) {
+            delta_rho_m += delta_rho_scf; // contribution to delta rho_matter
+            rho_m += ppw->pvecback[pba->index_bg_rho_scf];
+        }
+        if ((ppt->has_source_delta_m == _TRUE_) || (ppt->has_source_theta_m == _TRUE_)) {
+            rho_plus_p_theta_m += rho_plus_p_theta_scf; // contribution to [(rho+p)theta]_matter
+            rho_plus_p_m += (ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf]);
+        }
+      }
+
+    }
+
+
+
+    /* infer delta_cb abd theta_cb (perturbations from CDM and baryons) before adding ncdm */
+    if ((ppt->has_source_delta_m == _TRUE_) && (ppt->has_source_delta_cb == _TRUE_))
+      ppw->delta_cb = delta_rho_m/rho_m;
+
+    if (((ppt->has_source_delta_m == _TRUE_) || (ppt->has_source_theta_m == _TRUE_)) &&
+        ((ppt->has_source_delta_cb == _TRUE_) || (ppt->has_source_theta_cb == _TRUE_)))
+      ppw->theta_cb = rho_plus_p_theta_m/rho_plus_p_m;
+
+
+    /*VP: if we have not included delta_scf to delta_cb, do we want to add the scf contribution to delta_m?*/
+    if(pba->has_scf == _TRUE_ && ppt->include_scf_in_delta_m == _TRUE_){
+        if (ppt->has_source_delta_m == _TRUE_) {
+            delta_rho_m += delta_rho_scf; // contribution to delta rho_matter
+            rho_m += ppw->pvecback[pba->index_bg_rho_scf];
+        }
+        if ((ppt->has_source_delta_m == _TRUE_) || (ppt->has_source_theta_m == _TRUE_)) {
+            rho_plus_p_theta_m += rho_plus_p_theta_scf; // contribution to [(rho+p)theta]_matter
+            rho_plus_p_m += (ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf]);
+        }
+    }
+
+
+    /* non-cold dark matter contribution */
+    if (pba->has_ncdm == _TRUE_) {
+      idx = ppw->pv->index_pt_psi0_ncdm1;
+      if (ppw->approx[ppw->index_ap_ncdmfa] == (int)ncdmfa_on){
+        // The perturbations are evolved integrated:
+        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
+          rho_ncdm_bg = ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm];
+          p_ncdm_bg = ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm];
+          pseudo_p_ncdm = ppw->pvecback[pba->index_bg_pseudo_p_ncdm1+n_ncdm];
+
+          rho_plus_p_ncdm = rho_ncdm_bg + p_ncdm_bg;
+          w_ncdm = p_ncdm_bg/rho_ncdm_bg;
+          cg2_ncdm = w_ncdm*(1.0-1.0/(3.0+3.0*w_ncdm)*(3.0*w_ncdm-2.0+pseudo_p_ncdm/p_ncdm_bg));
+          if ((ppt->has_source_delta_ncdm == _TRUE_) || (ppt->has_source_theta_ncdm == _TRUE_) || (ppt->has_source_delta_m == _TRUE_)) {
+            ppw->delta_ncdm[n_ncdm] = y[idx];
+            ppw->theta_ncdm[n_ncdm] = y[idx+1];
+            ppw->shear_ncdm[n_ncdm] = y[idx+2];
+          }
+
+          ppw->delta_rho += rho_ncdm_bg*y[idx];
+          ppw->rho_plus_p_theta += rho_plus_p_ncdm*y[idx+1];
+          ppw->rho_plus_p_shear += rho_plus_p_ncdm*y[idx+2];
+          ppw->delta_p += cg2_ncdm*rho_ncdm_bg*y[idx];
+
+          ppw->rho_plus_p_tot += rho_plus_p_ncdm;
+
+          idx += ppw->pv->l_max_ncdm[n_ncdm]+1;
+        }
+      }
+      else{
+        // We must integrate to find perturbations:
+        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
+          rho_delta_ncdm = 0.0;
+          rho_plus_p_theta_ncdm = 0.0;
+          rho_plus_p_shear_ncdm = 0.0;
+          delta_p_ncdm = 0.0;
+          factor = pba->factor_ncdm[n_ncdm]/pow(a,4);
+
+          for (index_q=0; index_q < ppw->pv->q_size_ncdm[n_ncdm]; index_q ++) {
+
+            q = pba->q_ncdm[n_ncdm][index_q];
+            q2 = q*q;
+            epsilon = sqrt(q2+pba->M_ncdm[n_ncdm]*pba->M_ncdm[n_ncdm]*a2);
+
+            rho_delta_ncdm += q2*epsilon*pba->w_ncdm[n_ncdm][index_q]*y[idx];
+            rho_plus_p_theta_ncdm += q2*q*pba->w_ncdm[n_ncdm][index_q]*y[idx+1];
+            rho_plus_p_shear_ncdm += q2*q2/epsilon*pba->w_ncdm[n_ncdm][index_q]*y[idx+2];
+            delta_p_ncdm += q2*q2/epsilon*pba->w_ncdm[n_ncdm][index_q]*y[idx];
+
+            //Jump to next momentum bin:
+            idx+=(ppw->pv->l_max_ncdm[n_ncdm]+1);
+          }
+
+          rho_delta_ncdm *= factor;
+          rho_plus_p_theta_ncdm *= k*factor;
+          rho_plus_p_shear_ncdm *= 2.0/3.0*factor;
+          delta_p_ncdm *= factor/3.;
+
+          if ((ppt->has_source_delta_ncdm == _TRUE_) || (ppt->has_source_theta_ncdm == _TRUE_) || (ppt->has_source_delta_m == _TRUE_)) {
+            ppw->delta_ncdm[n_ncdm] = rho_delta_ncdm/ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm];
+            ppw->theta_ncdm[n_ncdm] = rho_plus_p_theta_ncdm/
+              (ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm]);
+            ppw->shear_ncdm[n_ncdm] = rho_plus_p_shear_ncdm/
+              (ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm]);
+          }
+
+          ppw->delta_rho += rho_delta_ncdm;
+          ppw->rho_plus_p_theta += rho_plus_p_theta_ncdm;
+          ppw->rho_plus_p_shear += rho_plus_p_shear_ncdm;
+          ppw->delta_p += delta_p_ncdm;
+
+          ppw->rho_plus_p_tot += ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm];
+        }
+      }
+      if (ppt->has_source_delta_m == _TRUE_) {
+        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
+          delta_rho_m += ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]*ppw->delta_ncdm[n_ncdm]; // contribution to delta rho_matter
+          rho_m += ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm];
+        }
+      }
+      if ((ppt->has_source_delta_m == _TRUE_) || (ppt->has_source_theta_m == _TRUE_)) {
+        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
+          rho_plus_p_theta_m += (ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm])
+            *ppw->theta_ncdm[n_ncdm]; // contribution to [(rho+p)theta]_matter
+          rho_plus_p_m += (ppw->pvecback[pba->index_bg_rho_ncdm1+n_ncdm]+ppw->pvecback[pba->index_bg_p_ncdm1+n_ncdm]);
         }
       }
     }
+
+
 
     /* add your extra species here */
 

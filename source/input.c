@@ -656,7 +656,6 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                 fzw.scf_parameters[0]=pow(10,fzw.scf_parameters[0]);
               }
               flag2 =_TRUE_;
-
            }
 
        class_test(flag2==_FALSE_,
@@ -4154,6 +4153,41 @@ int input_read_parameters_species(struct file_content * pfc,
     }
 
 
+    class_call(parser_read_string(pfc,
+                                  "include_scf_in_delta_m",
+                                  &string1,
+                                  &flag1,
+                                  errmsg),
+                errmsg,
+                errmsg);
+
+    if (flag1 == _TRUE_){
+      if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+        ppt->include_scf_in_delta_m = _TRUE_;
+      }
+      else {
+        ppt->include_scf_in_delta_m = _FALSE_;
+      }
+    }
+
+    class_call(parser_read_string(pfc,
+                                  "include_scf_in_delta_cb",
+                                  &string1,
+                                  &flag1,
+                                  errmsg),
+                errmsg,
+                errmsg);
+
+    if (flag1 == _TRUE_){
+      if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+        ppt->include_scf_in_delta_cb = _TRUE_;
+      }
+      else {
+        ppt->include_scf_in_delta_cb = _FALSE_;
+      }
+    }
+
+
 
     class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
                errmsg,
@@ -4178,6 +4212,9 @@ int input_read_parameters_species(struct file_content * pfc,
                     errmsg);
         if(flag1 == _TRUE_){
          pba->n_axion = param1;
+         if(pba->n_axion==1){
+           ppt->include_scf_in_delta_m = _TRUE_;
+         }
         }
         else{
           class_stop(errmsg,"incomprehensible input '%d' for the field 'n_axion'",param1);
@@ -4319,6 +4356,8 @@ int input_read_parameters_species(struct file_content * pfc,
             }
 
              flag2 =_TRUE_;
+         // ppt->include_scf_in_delta_m = _TRUE_;//always include scf contribution if we consider axion.
+
        }
    class_test(flag2==_FALSE_,
                   errmsg,
@@ -7166,6 +7205,8 @@ int input_default_params(struct background *pba,
   ppt->use_delta_scf_over_1plusw = _FALSE_;
   pba->scf_evolve_as_fluid = _FALSE_;
   pba->scf_evolve_like_axionCAMB = _FALSE_;
+  ppt->include_scf_in_delta_m = _FALSE_;
+  ppt->include_scf_in_delta_cb = _FALSE_;
 
   pba->a_c = 1.;
   pba->ede_parametrization = pheno_axion;
