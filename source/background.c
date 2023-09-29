@@ -304,7 +304,6 @@ int background_tau_of_z(
                                       pba->error_message),
              pba->error_message,
              pba->error_message);
-
   return _SUCCESS_;
 }
 /**
@@ -3066,6 +3065,10 @@ int background_derivs(
    if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ ){
      if(pba->m_scf*pba->H0/H >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations at m > 3H by default.
        pba->scf_kg_eq = _FALSE_;
+       if(pba->scf_potential==axionquad &&  pba->a_c==1.0 ){
+         pba->a_c = a; //we defined a_c as the time at which the transiton occurs. this is necessary for the perts.
+         //for other potentials, a_c was already defined.
+       }
      }
      else{
        pba->scf_kg_eq = _TRUE_;

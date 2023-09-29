@@ -7431,6 +7431,12 @@ int perturbations_total_stress_energy(
           else {
             if(pba->scf_potential == axionquad){
               cs2_scf = k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2)/(1+k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2));
+              a_over_ac = a/pba->a_c;
+              ca2_scf = -4*pow(a_over_ac,3/2)*pow(pba->a_c,3)
+                    /(pow(a,3)*pow(a_over_ac,3/2)+pow(a_over_ac,3/2)*pow(pba->a_c,3))/2;
+              // printf("a %e a_c %e ca2_scf %e\n", a,pba->a_c,ca2_scf);
+              // cs2_scf = (a*pba->m_scf*pba->H0)/k*(pow(1+pow(k/a/(pba->m_scf*pba->H0),2),0.5)-1)+5./4.*pow(ppw->pvecback[pba->index_bg_H]/(pba->m_scf*pba->H0),2);
+              // printf("old cs2 %e new cs2 %e \n", k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2)/(1+k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2)), cs2_scf);
             }
             else if(pba->scf_potential == axion){
               cs2_scf = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
@@ -7458,8 +7464,12 @@ int perturbations_total_stress_energy(
         else{ //evolving as fluid
               if(pba->scf_potential == axionquad){
                 cs2_scf = k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2)/(1+k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a2));
-                ca2_scf = 0;
-              }
+                // cs2_scf = (a*pba->m_scf*pba->H0)/k*(pow(1+pow(k/a/(pba->m_scf*pba->H0),2),0.5)-1)+5./4.*pow(ppw->pvecback[pba->index_bg_H]/(pba->m_scf*pba->H0),2);
+                a_over_ac = a/pba->a_c;
+                ca2_scf = -4*pow(a_over_ac,3/2)*pow(pba->a_c,3)
+                      /(pow(a,3)*pow(a_over_ac,3/2)+pow(a_over_ac,3/2)*pow(pba->a_c,3))/2;
+                // printf("a %e a_c %e ca2_scf %e\n", a,pba->a_c,ca2_scf);
+                }
               else if(pba->scf_potential == axion){
                 cs2_scf = (2*a*a*(pba->n_axion-1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k)/(2*a*a*(pba->n_axion+1)*pow(pba->omega_axion*pow(a,-3*(pba->n_axion-1)/(pba->n_axion+1)),2)+k*k);
                 a_over_ac = a/pow(10,pba->log10_axion_ac);
@@ -10107,6 +10117,9 @@ int perturbations_derivs(double tau,
         else if(pba->scf_potential == axionquad){
             cs2 = k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a*a)/(1+k2/(4*pba->m_scf*pba->H0*pba->m_scf*pba->H0*a*a));
             ca2=0;
+            a_over_ac = a/pba->a_c;
+            // ca2 = -4*pow(a_over_ac,3/2)*pow(pba->a_c,3)
+            //       /(pow(a,3)*pow(a_over_ac,3/2)+pow(a_over_ac,3/2)*pow(pba->a_c,3))/2;
 
         }
         /*identical to fld above */
