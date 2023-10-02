@@ -3089,7 +3089,17 @@ int background_derivs(
   if (pba->has_idm == _TRUE_){
     rho_M += pvecback[pba->index_bg_rho_idm];
   }
-
+  if (pba->has_scf == _TRUE_ && pba->include_scf_in_growth_factor == _TRUE_) {
+    /*VP: add the scf contribution if the user wants to, e.g., for axion-like dark matter */
+    if(pba->scf_potential==axionquad)
+    rho_M += pvecback[pba->index_bg_rho_scf];
+    else if(pba->scf_potential==axion && pba->n_axion ==1){
+      rho_M += pvecback[pba->index_bg_rho_scf];
+    }
+    else{
+      /*ignore contribution*/
+    }
+  }
   dy[pba->index_bi_D] = y[pba->index_bi_D_prime]/a/H;
   dy[pba->index_bi_D_prime] = -y[pba->index_bi_D_prime] + 1.5*a*rho_M*y[pba->index_bi_D]/H;
 

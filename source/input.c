@@ -4154,6 +4154,23 @@ int input_read_parameters_species(struct file_content * pfc,
 
 
     class_call(parser_read_string(pfc,
+                                  "include_scf_in_growth_factor",
+                                  &string1,
+                                  &flag1,
+                                  errmsg),
+                errmsg,
+                errmsg);
+
+    if (flag1 == _TRUE_){
+      if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+        pba->include_scf_in_growth_factor = _TRUE_;
+      }
+      else {
+        pba->include_scf_in_growth_factor = _FALSE_;
+      }
+    }
+
+    class_call(parser_read_string(pfc,
                                   "include_scf_in_delta_m",
                                   &string1,
                                   &flag1,
@@ -7207,7 +7224,7 @@ int input_default_params(struct background *pba,
   pba->scf_evolve_like_axionCAMB = _FALSE_;
   ppt->include_scf_in_delta_m = _FALSE_;
   ppt->include_scf_in_delta_cb = _FALSE_;
-
+  pba->include_scf_in_growth_factor=_FALSE_;
   pba->a_c = 1.;
   pba->ede_parametrization = pheno_axion;
   pba->nu_fld = 1.;
