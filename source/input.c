@@ -4010,6 +4010,45 @@ int input_read_parameters_species(struct file_content * pfc,
 
 
 
+      //new param to take DMDE drag term into account
+      //this param is used both for fluid EDE and scalar field EDE when it is ran with the fluid approx,
+      //so we put it inbetween both species....
+      class_read_double("DMDE_interaction",ppt->DMDE_interaction);
+      class_call(parser_read_string(pfc,
+                                    "scales_like_fEDE",
+                                    &string1,
+                                    &flag1,
+                                    errmsg),
+                  errmsg,
+                  errmsg);
+      if (flag1 == _TRUE_){
+        if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+          ppt->scales_like_fEDE = _TRUE_;
+        }
+        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
+          ppt->scales_like_fEDE = _FALSE_;
+        }
+      }
+      class_call(parser_read_string(pfc,
+                                    "scales_like_fEDE_over_k2",
+                                    &string1,
+                                    &flag1,
+                                    errmsg),
+                  errmsg,
+                  errmsg);
+      if (flag1 == _TRUE_){
+        if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+          ppt->scales_like_fEDE_over_k2 = _TRUE_;
+        }
+        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
+          ppt->scales_like_fEDE_over_k2 = _FALSE_;
+        }
+      }
+
+
+
+
+
 
 
 
