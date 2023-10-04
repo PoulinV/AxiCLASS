@@ -7479,7 +7479,7 @@ int perturbations_total_stress_energy(
 
 
     /*VP: if we have not included delta_scf to delta_cb, do we want to add the scf contribution to delta_m?*/
-    if(pba->has_scf == _TRUE_ && ppt->include_scf_in_delta_m == _TRUE_){
+    if(pba->has_scf == _TRUE_ && ppt->include_scf_in_delta_m == _TRUE_ && ppt->include_scf_in_delta_m == _FALSE_){
         if (ppt->has_source_delta_m == _TRUE_) {
             delta_rho_m += delta_rho_scf; // contribution to delta rho_matter
             rho_m += ppw->pvecback[pba->index_bg_rho_scf];
