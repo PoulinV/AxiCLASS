@@ -4014,6 +4014,7 @@ int input_read_parameters_species(struct file_content * pfc,
       //this param is used both for fluid EDE and scalar field EDE when it is ran with the fluid approx,
       //so we put it inbetween both species....
       class_read_double("DMDE_interaction",ppt->DMDE_interaction);
+      class_test(ppt->DMDE_interaction!=0 && pba->Omega0_idm==0.0,errmsg,"you have DMDE_interaction !=0 but no IDM, please check your input file.")
       class_call(parser_read_string(pfc,
                                     "scales_like_fEDE",
                                     &string1,
@@ -4412,7 +4413,7 @@ int input_read_parameters_species(struct file_content * pfc,
             }
 
              flag2 =_TRUE_;
-         // ppt->include_scf_in_delta_m = _TRUE_;//always include scf contribution if we consider axion.
+         ppt->include_scf_in_delta_m = _TRUE_;//always include scf contribution if we consider axion.
 
        }
    class_test(flag2==_FALSE_,

@@ -1443,6 +1443,7 @@ int fourier_init(
 
     printf(" -> sigma_12 = %e for total matter \n", pfo->sigma12 );
       if(pfo->get_lyman_alpha_tilt_and_amplitude == _TRUE_){
+    printf(" -> lya scale = %e 1/Mpc \n", pfo->kp_lya);
     printf(" -> amplitude at lya scale = %e \n", pfo->Delta_Lsquared_lya);
     printf(" -> tilt at lya scale = %e \n", pfo->n_L_lya);
     }
