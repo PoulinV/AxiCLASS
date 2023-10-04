@@ -7274,7 +7274,9 @@ int input_default_params(struct background *pba,
   pba->w_fld_f = 1.;
   pba->cs2_is_wn = _FALSE_;
 
-
+  ppt->DMDE_interaction = 0;
+  ppt->scales_like_fEDE = _FALSE_;
+  ppt->scales_like_fEDE_over_k2 = _FALSE_;
   /** - all verbose parameters */
 
 
