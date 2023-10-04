@@ -4092,6 +4092,8 @@ int input_read_parameters_species(struct file_content * pfc,
                                          errmsg),
              errmsg,errmsg);
   if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0 || pba->Omega0_scf != 0 || pba->scf_parameters_size != 0){
+
+    class_test(ppt->gauge==newtonian,errmsg,"the scalar field module does not work in newtonian gauge! please restart in synchronous gauge.");
     // printf("here in scf!\n");
     // if (input_verbose > 0) printf(" adjusted to incorporate the axion contribution Omega_Lambda = %e\n",pba->Omega0_lambda);
 
