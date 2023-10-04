@@ -2351,7 +2351,7 @@ int background_solve(
     }
 
     /* EDE pheno_axion fluid calculations to determine f_ede_peak */
-    if( (pba->has_fld) && (pba->ede_parametrization == pheno_axion) ){
+    if( (pba->has_fld) && (pba->ede_parametrization == pheno_axion) && pba->fluid_equation_of_state == EDE){
       z_peak_new = pba->z_table[index_loga];
       f_ede_new = pba->background_table[index_loga*pba->bg_size+pba->index_bg_Omega_fld];
       if(f_ede_new > pba->f_ede_peak){
@@ -2359,9 +2359,9 @@ int background_solve(
         pba->f_ede_peak = f_ede_new;
         if(pba->background_verbose>8) printf("f_ede_peak = %.2e \t>= %.2e = f_ede_now\n", pba->f_ede_peak, f_ede_new);
       }
+      if(pba->background_verbose>2)printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
     }
 
-    if(pba->background_verbose>2 && pba->ede_parametrization == pheno_axion && pba->has_fld==_TRUE_) printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
 
   if(pba->log10_axion_ac == -30 && pba->has_scf == _TRUE_ && pba->scf_potential == axion){
     pba->log10_axion_ac = -1*pba->log10_z_c;

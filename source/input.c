@@ -1009,7 +1009,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     free(unknown_parameter);
     free(fzw.unknown_parameters_index);
     free(fzw.target_name);
-    if(fzw.do_shooting_scf == _TRUE_){
+    if(fzw.do_shooting_scf == _TRUE_ && fzw.scf_parameters_size!=0){
       free(fzw.scf_parameters);
     }
 
