@@ -2444,8 +2444,8 @@ int background_solve(
       // printf("m_a = %g eV\n",(pba->scf_parameters[0]*pba->H0/1.5638e29));
       printf("m_a = %g eV\n",(pba->scf_parameters[0]));
       printf("H_0 = %g eV\n",pba->H0/_eV_over_Mpc_);
-      if (pba->has_cdm == _TRUE_) printf("     -> scf fraction of cdm = %g \n", (pvecback[pba->index_bg_rho_scf]/pvecback[pba->index_bg_rho_crit]) / ((pvecback[pba->index_bg_rho_scf]/pvecback[pba->index_bg_rho_crit]) + (pvecback[pba->index_bg_rho_cdm]/pvecback[pba->index_bg_rho_crit])) );
-      printf("     -> for reference, rho_crit = %g \n",pvecback[pba->index_bg_rho_crit]);
+      if (pba->has_cdm == _TRUE_) printf("     -> scf fraction of cdm today = %g \n", (pba->background_table[(pba->bt_size-1)*pba->bg_size+pba->index_bg_rho_scf]) / (pba->background_table[(pba->bt_size-1)*pba->bg_size+pba->index_bg_rho_scf] + pba->background_table[(pba->bt_size-1)*pba->bg_size+pba->index_bg_rho_cdm]) );
+      // printf("     -> for reference, rho_crit today = %g \n",pba->background_table[(pba->bt_size-1)*pba->bg_size+pba->index_bg_rho_crit]);
 
       }
       if(pba->scf_potential == axion){
