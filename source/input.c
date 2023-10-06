@@ -4063,6 +4063,12 @@ int input_read_parameters_species(struct file_content * pfc,
  class_call(parser_read_double(pfc,"log10_fraction_axion_ac",&param2,&flag2,errmsg),
             errmsg,
             errmsg);
+class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
+           errmsg,
+           errmsg);
+ class_test(class_at_least_two_of_three(flag1,flag2,flag3),
+            errmsg,
+            "You can only enter one of 'fraction_axion_ac', 'log10_fraction_axion_ac' or 'Omega_scf'.");
   if(flag1==_TRUE_){
     // class_read_double("fraction_axion_ac",pba->log10_fraction_axion_ac);
     class_test(param1 < 0,errmsg,"you have pba->fraction_axion_ac negative in your input file!!");
@@ -4076,6 +4082,13 @@ int input_read_parameters_species(struct file_content * pfc,
     class_test(param2 >= 0,errmsg,"you have pba->fraction_axion_ac greater or equal to than 1 in your input file!!");
     pba->log10_fraction_axion_ac=param2;
   }
+  if(flag3 == _TRUE_){
+    pba->Omega0_scf=param3;
+    //note that the parameter Omega0_scf may be re-assigned later, when checking if Omega0_scf is used to fullfil the closure relation.
+    //this is harmless.
+  }
+
+
 
   if(flag1 == _TRUE_ || flag2 == _TRUE_){
     class_read_double("log10_fraction_axion_ac_phi2n",pba->log10_fraction_axion_ac);
@@ -4083,19 +4096,23 @@ int input_read_parameters_species(struct file_content * pfc,
     class_read_double("m_axion",pba->m_scf);
     class_read_double("f_axion",pba->f_axion);
   }
-  /** - Read parameters describing scalar field potential */
-  class_call(parser_read_list_of_doubles(pfc,
-                                         "scf_parameters",
-                                         &(pba->scf_parameters_size),
-                                         &(pba->scf_parameters),
-                                         &flag1,
-                                         errmsg),
-             errmsg,errmsg);
-  if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0 || pba->Omega0_scf != 0 || pba->scf_parameters_size != 0){
+
+  if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0 || pba->Omega0_scf != 0){
 
     class_test(ppt->gauge==newtonian,errmsg,"the scalar field module does not work in newtonian gauge! please restart in synchronous gauge.");
     // printf("here in scf!\n");
     // if (input_verbose > 0) printf(" adjusted to incorporate the axion contribution Omega_Lambda = %e\n",pba->Omega0_lambda);
+
+
+    /** - Read parameters describing scalar field potential */
+    class_call(parser_read_list_of_doubles(pfc,
+                                           "scf_parameters",
+                                           &(pba->scf_parameters_size),
+                                           &(pba->scf_parameters),
+                                           &flag1,
+                                           errmsg),
+               errmsg,errmsg);
+
 
     /** - Assign a given scalar field potential */
     class_call(parser_read_string(pfc,"scf_has_perturbations",&string1,&flag1,errmsg),
