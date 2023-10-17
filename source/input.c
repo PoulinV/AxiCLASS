@@ -596,6 +596,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
 
 
+
   if(fzw.do_shooting_scf == _TRUE_){
 
 
@@ -618,7 +619,25 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
       class_read_double("scf_theta_ini_cobaya",fzw.scf_parameters[0]);
       class_read_double("scf_thetadot_ini_cobaya",fzw.scf_parameters[1]);
     }
+    class_call(parser_read_string(pfc,"loop_over_background_for_closure_relation",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
 
+   if ((flag1 == _TRUE_) && ((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL))) {
+      fzw.loop_over_background_for_closure_relation = _FALSE_;
+      // printf("here %d! \n",fzw.loop_over_background_for_closure_relation );
+    }
+    else {
+      fzw.loop_over_background_for_closure_relation = _TRUE_;
+      class_call(parser_read_double(pfc,"precision_loop_over_background",&param1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+
+      if(flag1==_TRUE_)fzw.precision_loop_over_background = param1;
+      else{
+        fzw.precision_loop_over_background = 1e-3; //default value.
+      }
+    }
     class_call(parser_read_string(pfc,"scf_potential",&string1,&flag1,errmsg),
                    errmsg,
                    errmsg);
@@ -4090,12 +4109,15 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
 
 
 
-  if(flag1 == _TRUE_ || flag2 == _TRUE_){
+  // if(flag1 == _TRUE_ || flag2 == _TRUE_){
     class_read_double("log10_fraction_axion_ac_phi2n",pba->log10_fraction_axion_ac);
     class_read_double("log10_axion_ac",pba->log10_axion_ac);
     class_read_double("m_axion",pba->m_scf);
     class_read_double("f_axion",pba->f_axion);
-  }
+
+
+    class_test(pba->m_scf == 0.0 && pba->f_axion != 0.0,errmsg,"you have pba->m_scf = 0 but pba->f_axion != 0.0. Please check your ini file! ");
+    class_test(pba->m_scf != 0.0 && pba->f_axion == 0.0,errmsg,"you have pba->m_scf != 0 but pba->f_axion = 0.0. Please check your ini file! ");
 
   if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0 || pba->Omega0_scf != 0){
 
@@ -4529,25 +4551,25 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
 
     /** Do we have to loop over background to correctly enforce the closure relation? this way be useful for species whose contribution today is not known **/
     // VP:Not implemented yet.
-    // class_call(parser_read_string(pfc,"loop_over_background_for_closure_relation",&string1,&flag1,errmsg),
-    //            errmsg,
-    //            errmsg);
-    //
-    // if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
-    //
-    //   pba->loop_over_background_for_closure_relation = _TRUE_;
-    //   class_call(parser_read_double(pfc,"precision_loop_over_background",&param1,&flag1,errmsg),
-    //              errmsg,
-    //              errmsg);
-    //
-    //   if(flag1==_TRUE_)pba->precision_loop_over_background = param1;
-    //   else{
-    //     pba->precision_loop_over_background = 1e-3; //default value.
-    //   }
-    // }
-    // else{
-    //   pba->loop_over_background_for_closure_relation = _FALSE_;
-    // }
+    class_call(parser_read_string(pfc,"loop_over_background_for_closure_relation",&string1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+
+   if ((flag1 == _TRUE_) && ((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL))) {
+      pba->loop_over_background_for_closure_relation = _FALSE_;
+      // printf("here %d! \n",pba->loop_over_background_for_closure_relation );
+    }
+    else {
+      pba->loop_over_background_for_closure_relation = _TRUE_;
+      class_call(parser_read_double(pfc,"precision_loop_over_background",&param1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+
+      if(flag1==_TRUE_)pba->precision_loop_over_background = param1;
+      else{
+        pba->precision_loop_over_background = 1e-3; //default value.
+      }
+    }
 
 
 

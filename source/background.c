@@ -2156,7 +2156,7 @@ int background_solve(
   double integration_stepsize;
   double ac, n, anow, Tosc;
   short is_axion_converged = _FALSE_;
-  double Omega0_axion_used;
+  double Omega0_axion_used=0;
 
   /* conformal distance in Mpc (equal to comoving radius in flat case) */
   double conformal_distance;
@@ -2183,17 +2183,7 @@ int background_solve(
   class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
   bpaw.pvecback = pvecback;
 
-  Omega0_axion_used = 0;
-  // while(is_axion_converged == _FALSE_){
-    // is_axion_converged = _TRUE_;
-    //NEW! To correctly incorporate the axion contribution to Omega_Lambda
-  /** - allocate vector of quantities to be integrated */
-  class_alloc(pvecback_integration,pba->bi_size*sizeof(double),pba->error_message);
 
-  /** - impose initial conditions with background_initial_conditions() */
-  class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&(loga_ini)),
-             pba->error_message,
-             pba->error_message);
 
   /** - Determine output vector */
   loga_final = 0.; // with our conventions, loga is in fact log(a/a_0); we integrate until today, when log(a/a_0) = 0
@@ -2202,7 +2192,6 @@ int background_solve(
   /** - allocate background tables */
   class_alloc(pba->tau_table,pba->bt_size * sizeof(double),pba->error_message);
   class_alloc(pba->z_table,pba->bt_size * sizeof(double),pba->error_message);
-  class_alloc(pba->loga_table,pba->bt_size * sizeof(double),pba->error_message);
 
   class_alloc(pba->d2tau_dz2_table,pba->bt_size * sizeof(double),pba->error_message);
   class_alloc(pba->d2z_dtau2_table,pba->bt_size * sizeof(double),pba->error_message);
@@ -2210,13 +2199,9 @@ int background_solve(
   class_alloc(pba->background_table,pba->bt_size * pba->bg_size * sizeof(double),pba->error_message);
   class_alloc(pba->d2background_dloga2_table,pba->bt_size * pba->bg_size * sizeof(double),pba->error_message);
 
-  class_alloc(used_in_output, pba->bt_size*sizeof(int), pba->error_message);
 
   /** - define values of loga at which results will be stored */
-  for (index_loga=0; index_loga<pba->bt_size; index_loga++) {
-    pba->loga_table[index_loga] = loga_ini + index_loga*(loga_final-loga_ini)/(pba->bt_size-1);
-    used_in_output[index_loga] = 1;
-  }
+
 
   /** - choose the right evolver */
   switch (ppr->background_evolver) {
@@ -2235,7 +2220,29 @@ int background_solve(
     }
     break;
   }
+if(pba->Omega0_scf!=0){
+  Omega0_axion_used = pba->Omega0_scf;
+}
+while(is_axion_converged == _FALSE_){
+//VP: new to axiclass: To correctly incorporate the axion contribution to Omega_Lambda in the case where it is not known.
+/** - allocate vector of quantities to be integrated */
+class_alloc(pvecback_integration,pba->bi_size*sizeof(double),pba->error_message);
 
+/** - impose initial conditions with background_initial_conditions() */
+class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&(loga_ini)),
+           pba->error_message,
+           pba->error_message);
+
+ class_alloc(pba->loga_table,pba->bt_size * sizeof(double),pba->error_message);
+ class_alloc(used_in_output, pba->bt_size*sizeof(int), pba->error_message);
+
+
+   for (index_loga=0; index_loga<pba->bt_size; index_loga++) {
+     pba->loga_table[index_loga] = loga_ini + index_loga*(loga_final-loga_ini)/(pba->bt_size-1);
+     used_in_output[index_loga] = 1;
+   }
+
+  // is_axion_converged = _TRUE_;
   /** - perform the integration */
   class_call(generic_evolver(background_derivs,
                              loga_ini,
@@ -2256,6 +2263,47 @@ int background_solve(
              pba->error_message,
              pba->error_message);
 
+
+             /* VP: loop over background to ensure the closure relation, to be updated*/
+     //
+     if(pba->loop_over_background_for_closure_relation == _TRUE_){
+       // printf("here!!\n");
+       if(pba->scf_potential == axion || pba->scf_potential == axionquad){
+         class_test(pba->has_scf == _FALSE_,pba->error_message,"it's weird, you have loop_over_background_for_closure_relation = yes and  scf_potential = axion or axionquad but no scf, there must be a problem in your ini file!");
+         pba->Omega0_axion = pvecback_integration[pba->index_bi_rho_scf]/pba->H0/pba->H0;
+         // printf("pba->Omega0_axion %e Omega0_axion_used %e pba->precision_loop_over_background %e\n", pba->Omega0_axion,Omega0_axion_used,pba->precision_loop_over_background);
+         if(pba->has_lambda == _TRUE_){
+           // printf(" original Omega_Lambda %e \n",pba->Omega0_lambda);
+           pba->Omega0_lambda-=pba->Omega0_axion;//we remove the axion contribution that we had "forgotten"
+           pba->Omega0_lambda+=Omega0_axion_used;//initially, this is 0. As the code shoots it will be updated
+           if(pba->background_verbose>0)printf(" adjusted Omega_Lambda to incorporate the axion contribution; new Omega_Lambda = %e  \n",pba->Omega0_lambda);
+           if(pba->background_verbose>=10)printf("how far? new %e old %e rel. diff. %e \n",pba->Omega0_axion, Omega0_axion_used,(pba->Omega0_axion-Omega0_axion_used)/pba->Omega0_axion);
+
+         }else if(pba->has_fld==_TRUE_){
+           //if pba->has_lambda == _FALSE_ and pba->has_fld==_TRUE_ it means we are using pba->Omega0_fld to enforce the closure equation.
+           pba->Omega0_fld -=pba->Omega0_axion;
+           pba->Omega0_fld +=Omega0_axion_used;
+           if(pba->background_verbose>0)printf(" adjusted Omega0_fld to incorporate the axion contribution; new Omega0_fld = %e  \n",pba->Omega0_fld);
+
+         }
+         //VP: test that the budget equation is satisfied or loop.
+         if(fabs(pba->Omega0_axion-Omega0_axion_used)/pba->Omega0_axion<pba->precision_loop_over_background){
+           //default is 1e-3
+           is_axion_converged = _TRUE_;
+         }
+         else{
+           Omega0_axion_used = pba->Omega0_axion;
+           free(pvecback_integration);
+           free(pba->loga_table);
+           free(used_in_output);
+          }
+       }
+
+       }else{
+         //no axion or no loop required so we ignore the loop.
+         is_axion_converged = _TRUE_;
+       }
+  }
   /** - recover some quantities today */
   /* -> age in Gyears */
   pba->age = pvecback_integration[pba->index_bi_time]/_Gyr_over_Mpc_;
@@ -2267,42 +2315,7 @@ int background_solve(
   }
 
 
-  /* VP: loop over background to ensure the closure relation, to be updated*/
-  //
-  // if(pba->loop_over_background_for_closure_relation == _TRUE_){
-  //   if (pba->has_scf == _TRUE_ && pba->scf_potential == axion || pba->scf_potential == phi_2n){
-  //     pba->Omega0_axion = pvecback_integration[pba->index_bi_rho_scf]/pba->H0/pba->H0;
-  //
-  //     if(pba->has_lambda == _TRUE_){
-  //       pba->Omega0_lambda-=pba->Omega0_axion;//we remove the axion contribution that we had "forgotten"
-  //       pba->Omega0_lambda+=Omega0_axion_used;//initially, this is 0. As the code shoots it will be updated
-  //       if(pba->background_verbose>0)printf(" adjusted Omega_Lambda to incorporate the axion contribution; new Omega_Lambda = %e  \n",pba->Omega0_lambda);
-  //     }else if(pba->has_fld==_TRUE_){
-  //       //if pba->has_lambda == _FALSE_ and pba->has_fld==_TRUE_ it means we are using pba->Omega0_fld to enforce the closure equation.
-  //       pba->Omega0_fld -=pba->Omega0_axion;
-  //       pba->Omega0_fld +=Omega0_axion_used;
-  //       if(pba->background_verbose>0)printf(" adjusted Omega0_fld to incorporate the axion contribution; new Omega0_fld = %e  \n",pba->Omega0_fld);
-  //
-  //     }
-  //     //VP: NEW test that the budget equation is satisfied or loop.
-  //     if(fabs(pba->Omega0_axion-Omega0_axion_used)<pba->precision_loop_over_background){
-  //       //default is 1e-3
-  //       is_axion_converged = _TRUE_;
-  //     }
-  //     else{Omega0_axion_used = pba->Omega0_axion;
-  //       class_call(gt_free(&gTable),
-  //                gTable.error_message,
-  //                pba->error_message);
-  //      }
-  //   }else{
-  //     //no axion so we ignore the loop.
-  //     is_axion_converged = _TRUE_;
-  //   }
-  // }else{
-  //   //the user required not to loop.
-  //   //flag set to True to ignore the loop.
-  //   is_axion_converged = _TRUE_;
-  // }
+
 
   if (pba->has_dr == _TRUE_){
     pba->Omega0_dr = pvecback_integration[pba->index_bi_rho_dr]/pba->H0/pba->H0;
@@ -2331,8 +2344,8 @@ int background_solve(
      /* Scalar field critical redshift and fractional energy density at z_c calculations */
      z_c_new = pba->z_table[index_loga];
      f_ede_new = pba->background_table[index_loga*pba->bg_size+pba->index_bg_Omega_scf];
-     // printf("f_ede_new %e old fede %e\n", f_ede_new,pba->f_ede);
-     if(f_ede_new > pba->f_ede && pba->n_axion >1.1){//there's a small problem when axion behaves like DM
+     // printf("f_ede_new %e old fede %e z_c_new %e\n", f_ede_new,pba->f_ede,z_c_new);
+     if(f_ede_new > pba->f_ede){//there's a small problem when axion behaves like DM
        pba->log10_z_c = log10(z_c_new);
        // pba->axion_ac = 1/z_c_new-1;
        pba->f_ede = f_ede_new;
@@ -2363,11 +2376,11 @@ int background_solve(
     }
 
 
-  if(pba->log10_axion_ac == -30 && pba->has_scf == _TRUE_ && pba->scf_potential == axion){
-    pba->log10_axion_ac = -1*pba->log10_z_c;
-    pba->a_c = pow(10,pba->log10_axion_ac);
-    // printf("pba->log10_axion_ac %e w_scf %e\n", pba->log10_axion_ac,pba->w_scf);
-  }
+  // if(pba->log10_axion_ac == -30 && pba->has_scf == _TRUE_ && pba->scf_potential == axion){
+  //   pba->log10_axion_ac = -1*pba->log10_z_c;
+  //   pba->a_c = pow(10,pba->log10_axion_ac);
+  //   printf("pba->log10_axion_ac %e w_scf %e\n", pba->log10_axion_ac,pba->w_scf);
+  // }
 
     pba->background_table[index_loga*pba->bg_size+pba->index_bg_ang_distance] = comoving_radius/(1.+pba->z_table[index_loga]);
     pba->background_table[index_loga*pba->bg_size+pba->index_bg_lum_distance] = comoving_radius*(1.+pba->z_table[index_loga]);
@@ -2452,7 +2465,7 @@ int background_solve(
       printf("Additional scf parameters used: \n");
       printf("n = %e m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion);
       printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
-      if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e\n", log10(1/pow(10,pba->log10_axion_ac)-1));
+      if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e pba->log10_axion_ac %e\n", log10(1/pow(10,pba->log10_axion_ac)-1),pba->log10_axion_ac);
       printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
       }
       if(pba->scf_potential ==phi_2n){
@@ -3350,6 +3363,11 @@ int background_output_budget(
     if (pba->has_scf == _TRUE_) {
       class_print_species("Scalar Field",scf);
       budget_other+=pba->Omega0_scf;
+      // printf("pba->Omega0_axion %e\n", pba->Omega0_axion);
+      if(pba->Omega0_axion!=0 && pba->Omega0_scf == 0.0){
+        class_print_species("Scalar Axion",axion);
+        budget_other+=pba->Omega0_axion;
+      }
     }
     // if(pba->has_scf && (pba->scf_potential == axion || pba->scf_potential == phi_2n)){
     //   _class_print_species_("Axion",axion);

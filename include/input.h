@@ -236,6 +236,8 @@ struct fzerofun_workspace {
   short scf_evolve_as_fluid_always; /** Should we evolve as a fluid or use KG eqs all the way through? */
   short do_shooting;        /**< Should we do shooting */
   short do_shooting_scf;        /**< Should we use shooting method to determine phi_init */
+  short loop_over_background_for_closure_relation;
+  double precision_loop_over_background;
   double m_scf;
   double f_axion;
   double Omega0_axion;
