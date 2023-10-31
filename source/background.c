@@ -2267,8 +2267,8 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
              /* VP: loop over background to ensure the closure relation, to be updated*/
      //
      if(pba->loop_over_background_for_closure_relation == _TRUE_){
-       // printf("here!!\n");
        if(pba->scf_potential == axion || pba->scf_potential == axionquad){
+
          class_test(pba->has_scf == _FALSE_,pba->error_message,"it's weird, you have loop_over_background_for_closure_relation = yes and  scf_potential = axion or axionquad but no scf, there must be a problem in your ini file!");
          pba->Omega0_axion = pvecback_integration[pba->index_bi_rho_scf]/pba->H0/pba->H0;
          // printf("pba->Omega0_axion %e Omega0_axion_used %e pba->precision_loop_over_background %e\n", pba->Omega0_axion,Omega0_axion_used,pba->precision_loop_over_background);
@@ -2297,8 +2297,10 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
            free(pba->loga_table);
            free(used_in_output);
           }
+       }else{
+         //no axion or no loop required so we ignore the loop.
+         is_axion_converged = _TRUE_;
        }
-
        }else{
          //no axion or no loop required so we ignore the loop.
          is_axion_converged = _TRUE_;
