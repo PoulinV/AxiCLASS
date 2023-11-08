@@ -3724,6 +3724,7 @@ int input_read_parameters_species(struct file_content * pfc,
                   if (flag1 == _TRUE_) {
                     if ((strstr(string1,"tracker") != NULL) ) pba->ede_parametrization = tracker;
                     else if ((strstr(string1,"pheno_axion") != NULL)) pba->ede_parametrization = pheno_axion;
+                    else if ((strstr(string1,"pheno_ADE") != NULL)) pba->ede_parametrization = pheno_ADE;
                     else class_stop(errmsg,"incomprehensible input '%s' for the field 'ede_parametrization'",string1);
                   }
 
@@ -3741,10 +3742,10 @@ int input_read_parameters_species(struct file_content * pfc,
                     /** Read in EDE parameters and set appropriate quantities here
                     *  Based on Poulin et al. 1811.04083
                     *  and a bit of Lin et al. 1905.12618*/
-                    else if (pba->ede_parametrization == pheno_axion) {
+                    else if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE) {
 
                       // First read in EDE parameters
-                      if(input_verbose > 5)printf("Reading in EDE pheno_axion parameters: \n");
+                      if(input_verbose > 5)printf("Reading in EDE pheno_axion / ADE parameters: \n");
 
                       // Read in the value of the critical redshift of the EDE or understand that it needs to be shooted for
                       class_call(parser_read_double(pfc,"a_c",&param1,&flag1,errmsg),
@@ -3802,25 +3803,30 @@ int input_read_parameters_species(struct file_content * pfc,
                       }
 
                       /* Check whether we want wn = cs2 */
-                      class_call(parser_read_string(pfc,
-                                       "cs2_is_wn",
-                                       &string1,
-                                       &flag1,
-                                       errmsg),
-                                errmsg,
-                                errmsg);
-                      if (flag1 == _TRUE_){
-                        if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
-                          pba->cs2_is_wn = _TRUE_;
-                          if(input_verbose>5)printf("Asked for cs2 = wn. Will read in cs2 or w_fld_f and accordingly set n_pheno_axion or cs2 respectively. \n");
-                        }
-                        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
-                          pba->cs2_is_wn = _FALSE_;
-                          if(input_verbose>5)printf("Set cs2 != wn. Will read in cs2 and either w_fld_f or n_pheno_axion separately. \n");
-                        }
-                        else {
-                          class_stop(errmsg,"incomprehensible input '%s' for the field 'cs2_is_wn'",string1);
-                        }
+                      //this parameter is useful for the pheno_ADE model
+                      if(pba->ede_parametrization == pheno_ADE){
+                          class_call(parser_read_string(pfc,
+                                           "cs2_is_wn",
+                                           &string1,
+                                           &flag1,
+                                           errmsg),
+                                    errmsg,
+                                    errmsg);
+                          if (flag1 == _TRUE_){
+                            if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+                              pba->cs2_is_wn = _TRUE_;
+                              if(input_verbose>5)printf("Asked for cs2 = wn. Will read in cs2 or w_fld_f and accordingly set n_pheno_axion or cs2 respectively. \n");
+                            }
+                            else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
+                              pba->cs2_is_wn = _FALSE_;
+                              if(input_verbose>5)printf("Set cs2 != wn. Will read in cs2 and either w_fld_f or n_pheno_axion separately. \n");
+                            }
+                            else {
+                              class_stop(errmsg,"incomprehensible input '%s' for the field 'cs2_is_wn'",string1);
+                            }
+                          }
+                      }else{
+                        pba->cs2_is_wn = _FALSE_;
                       }
 
                       /* If we want wn = cs2, read in cs2 and accordingly set n_pheno_axion */
@@ -3872,9 +3878,7 @@ int input_read_parameters_species(struct file_content * pfc,
                         class_call(parser_read_double(pfc,"n_pheno_axion",&param2,&flag2,errmsg),
                                     errmsg,
                                     errmsg);
-                        class_call(parser_read_double(pfc,"cs2_fld",&param3,&flag3,errmsg),
-                                    errmsg,
-                                    errmsg);
+
                         class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"You have passed both 'w_fld_f' and 'n_pheno_axion'. Please pass only one of them.\n");
                         // Input w_fld_f
                         if (flag1 == _TRUE_){
@@ -3890,86 +3894,105 @@ int input_read_parameters_species(struct file_content * pfc,
                           else pba->w_fld_f = 1.;
                           if(input_verbose>5)printf("Read in n_pheno_axion = %e\n\tand set w_fld_f = %e\n", pba->n_pheno_axion, pba->w_fld_f);
                         }
-                        // cs2 also still read in and allocated here
-                        if (flag3 == _TRUE_){
-                          pba->cs2_fld = param3;
-                          if(input_verbose>5)printf("Read in cs2_fld = %e \n", pba->cs2_fld);
+
+
+                        if(pba->ede_parametrization == pheno_axion){
+                          //in the pheno axion model, cs2 is a function of the axion parameters, which will be extracted later given some values for the pheno parameters (fEDE, zc, theta_i);
+                          class_call(parser_read_double(pfc,"Theta_initial_fld",&param1,&flag1,errmsg),
+                                      errmsg,
+                                      errmsg);
+                          if(flag1==_TRUE_)pba->Theta_initial_fld = param1;
+                          else{
+                            class_stop(errmsg,"you have ede_parametrization = pheno_axion defined but you forgot to give a value to Theta_initial_fld. Please adapt you input file.")
+                          }
                         }
-                        else {
-                          if(input_verbose>5)printf("No cs2_fld input, defaulting to cs2_fld = %e \n", pba->cs2_fld);
+                        else{
+                          class_call(parser_read_double(pfc,"cs2_fld",&param3,&flag3,errmsg),
+                                      errmsg,
+                                      errmsg);
+                          // cs2 also still read in and allocated here
+                          if (flag3 == _TRUE_){
+                            pba->cs2_fld = param3;
+                            if(input_verbose>5)printf("Read in cs2_fld = %e \n", pba->cs2_fld);
+                          }
+                          else {
+                            if(input_verbose>5)printf("No cs2_fld input, defaulting to cs2_fld = %e \n", pba->cs2_fld);
+                          }
                         }
+
+
                       }
 
 
 
-                                            /* one can specify the EDE density in many ways */
-                                            class_call(parser_read_double(pfc,"omega_fld",&param1,&flag1,errmsg), // physical density of fld today
-                                                      errmsg,
-                                                      errmsg);
-                                            class_call(parser_read_double(pfc,"Omega_fld",&param2,&flag2,errmsg), // fractional density of fld today
-                                                      errmsg,
-                                                      errmsg);
-                                            class_call(parser_read_double(pfc,"Omega_fld_ac",&param4,&flag4,errmsg), // fractional density at ac defined w/r to rho_crit_today
-                                                      errmsg,
-                                                      errmsg);
-                                            class_call(parser_read_double(pfc,"fraction_fld_ac",&param5,&flag5,errmsg), // fractional density at a_c
-                                                      errmsg,
-                                                      errmsg);
-                                            // test to ensure we haven't multiply input ede density
-                                              class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld'. Please pass only one of them.");
-                                              class_test(flag1==_TRUE_&&flag4==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld_ac'. Please pass only one of them.");
-                                              class_test(flag1==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'fraction_fld_ac'. Please pass only one of them.");
-                                              class_test(flag2==_TRUE_&&flag4==_TRUE_,errmsg,"you have passed both 'Omega_fld' and 'Omega_fld_ac'. Please pass only one of them.");
-                                              class_test(flag2==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld' and 'fraction_fld_ac'. Please pass only one of them.");
-                                              class_test(flag4==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld_ac' and 'fraction_fld_ac'. Please pass only one of them.");
+                        /* one can specify the EDE density in many ways */
+                        class_call(parser_read_double(pfc,"omega_fld",&param1,&flag1,errmsg), // physical density of fld today
+                                  errmsg,
+                                  errmsg);
+                        class_call(parser_read_double(pfc,"Omega_fld",&param2,&flag2,errmsg), // fractional density of fld today
+                                  errmsg,
+                                  errmsg);
+                        class_call(parser_read_double(pfc,"Omega_fld_ac",&param4,&flag4,errmsg), // fractional density at ac defined w/r to rho_crit_today
+                                  errmsg,
+                                  errmsg);
+                        class_call(parser_read_double(pfc,"fraction_fld_ac",&param5,&flag5,errmsg), // fractional density at a_c
+                                  errmsg,
+                                  errmsg);
+                        // test to ensure we haven't multiply input ede density
+                          class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld'. Please pass only one of them.");
+                          class_test(flag1==_TRUE_&&flag4==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld_ac'. Please pass only one of them.");
+                          class_test(flag1==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'fraction_fld_ac'. Please pass only one of them.");
+                          class_test(flag2==_TRUE_&&flag4==_TRUE_,errmsg,"you have passed both 'Omega_fld' and 'Omega_fld_ac'. Please pass only one of them.");
+                          class_test(flag2==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld' and 'fraction_fld_ac'. Please pass only one of them.");
+                          class_test(flag4==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld_ac' and 'fraction_fld_ac'. Please pass only one of them.");
 
 
 
 
-                                           // If you passed omega_fld today in input
-                                           if (flag1 == _TRUE_){
-                                             wn = pba->w_fld_f;
-                                             pba->Omega0_fld = param1/pba->h/pba->h;
-                                             pba->Omega_fld_ac = pba->Omega0_fld*pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld ))/2 , pba->nu_fld)
-                                                                                   *pow(1/pba->a_c,3*(wn+1));
-                                           }
-                                           // if you passed Omega_fld in input
-                                           else if(flag2 == _TRUE_){
-                                             if(pba->Omega0_lambda == 0.0){ // in this case, ensure that the closure relation is satisfy via Omega_fld.
-                                               pba->Omega0_fld = 1. - pba->Omega0_k - Omega_tot;
-                                             }
-                                             else{
-                                               pba->Omega0_fld = param2;
-                                             }
-                                             wn = pba->w_fld_f;
-                                             pba->Omega_fld_ac = pba->Omega0_fld*pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld ))/2 , pba->nu_fld)
-                                                                                   *pow(1/pba->a_c,3*(wn+1));
-                                           }
-                                           else if(flag4 == _TRUE_){
-                                             wn = pba->w_fld_f;
-                                             pba->Omega_fld_ac = param4;
-                                             pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
-                                                             /pow(1/pba->a_c,3*(wn+1))
-                                                             /pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld )) , pba->nu_fld);
-                                           }
-                                           else if(flag5 == _TRUE_){
-                                             wn = pba->w_fld_f;
-                                             pba->Omega_fld_ac = param5;//This is the fractional contribution at a_c.
-                                             // Omega_tot_ac = (pba->Omega0_cdm+pba->Omega0_b)*pow(pba->a_c,-3)+(pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+pba->Omega0_lambda;
-                                             //The input parameter gives us an approximate fraction. We will extract the real one in the run.
+                       // If you passed omega_fld today in input
+                       if (flag1 == _TRUE_){
+                         wn = pba->w_fld_f;
+                         pba->Omega0_fld = param1/pba->h/pba->h;
+                         pba->Omega_fld_ac = pba->Omega0_fld*pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld ))/2 , pba->nu_fld)
+                                                               *pow(1/pba->a_c,3*(wn+1));
+                       }
+                       // if you passed Omega_fld in input
+                       else if(flag2 == _TRUE_){
+                         if(pba->Omega0_lambda == 0.0){ // in this case, ensure that the closure relation is satisfy via Omega_fld.
+                           pba->Omega0_fld = 1. - pba->Omega0_k - Omega_tot;
+                         }
+                         else{
+                           pba->Omega0_fld = param2;
+                         }
+                         wn = pba->w_fld_f;
+                         pba->Omega_fld_ac = pba->Omega0_fld*pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld ))/2 , pba->nu_fld)
+                                                               *pow(1/pba->a_c,3*(wn+1));
+                       }
+                       else if(flag4 == _TRUE_){
+                         wn = pba->w_fld_f;
+                         pba->Omega_fld_ac = param4;
+                         pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
+                                         /pow(1/pba->a_c,3*(wn+1))
+                                         /pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld )) , pba->nu_fld);
+                       }
+                       else if(flag5 == _TRUE_){
+                         wn = pba->w_fld_f;
+                         pba->Omega_fld_ac = param5;//This is the fractional contribution at a_c.
+                         // Omega_tot_ac = (pba->Omega0_cdm+pba->Omega0_b)*pow(pba->a_c,-3)+(pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+pba->Omega0_lambda;
+                         //The input parameter gives us an approximate fraction. We will extract the real one in the run.
 
-                                             Omega0_rad = (4.*sigma_B/_c_*pow(pba->T_cmb,4.)) / (3.*_c_*_c_*1.e10*pba->h*pba->h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_)*(1+3.046*7./8.*pow(4./11.,4./3.));
-                                             Omega_tot_ac = (pba->Omega0_b+pba->Omega0_cdm)*pow(pba->a_c,-3)+(Omega0_rad)*pow(pba->a_c,-4);
-                                             class_test(pba->Omega_fld_ac==1.0,errmsg,"you cannot have pba->Omega_fld_ac=1.0!");
-                                             if(pba->Omega_fld_ac!=1.0)pba->Omega_fld_ac = Omega_tot_ac*pba->Omega_fld_ac/(1-pba->Omega_fld_ac);
-                                             // printf("here!\n");
-                                             pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
-                                                             /pow(1/pba->a_c,3*(wn+1))
-                                                             /pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld )) , pba->nu_fld);
-                                           }
-                                           else{
-                                             class_stop(errmsg,"you need to specify one of omega_fld, Omega_fld, Omega_fld_ac, fraction_fld_ac'");
-                                           }
+                         Omega0_rad = (4.*sigma_B/_c_*pow(pba->T_cmb,4.)) / (3.*_c_*_c_*1.e10*pba->h*pba->h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_)*(1+3.046*7./8.*pow(4./11.,4./3.));
+                         Omega_tot_ac = (pba->Omega0_b+pba->Omega0_cdm)*pow(pba->a_c,-3)+(Omega0_rad)*pow(pba->a_c,-4);
+                         class_test(pba->Omega_fld_ac==1.0,errmsg,"you cannot have pba->Omega_fld_ac=1.0!");
+                         if(pba->Omega_fld_ac!=1.0)pba->Omega_fld_ac = Omega_tot_ac*pba->Omega_fld_ac/(1-pba->Omega_fld_ac);
+                         // printf("here!\n");
+                         pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
+                                         /pow(1/pba->a_c,3*(wn+1))
+                                         /pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld )) , pba->nu_fld);
+                       }
+                       else{
+                         class_stop(errmsg,"you need to specify one of omega_fld, Omega_fld, Omega_fld_ac, fraction_fld_ac'");
+                       }
 
 
 

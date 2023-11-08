@@ -754,7 +754,7 @@ int background_w_fld(
     *w_fld = pba->w0_fld + pba->wa_fld * (1. - a);
     break;
   case EDE:
-    if (pba->ede_parametrization == pheno_axion){
+    if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
       // w_ede(a) defined from a mash-up of 1811.04083 and 1905.12618
       w = pba->w_fld_f; //e.o.s. once the field starts oscillating
       *w_fld = (1+w)/(1+pow(pba->a_c/a,3*(1+w)/pba->nu_fld))-1;
@@ -796,7 +796,7 @@ int background_w_fld(
     *dw_over_da_fld = - pba->wa_fld;
     break;
   case EDE:
-    if (pba->ede_parametrization == pheno_axion) {
+  if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
       *dw_over_da_fld = 0; // calculated directly in perturbations to avoid zeroes in the denominator
     }
     else {
@@ -825,7 +825,7 @@ int background_w_fld(
     *integral_fld = 3.*((1.+pba->w0_fld+pba->wa_fld)*log(1./a) + pba->wa_fld*(a-1.));
     break;
   case EDE:
-    if (pba->ede_parametrization == pheno_axion) {
+  if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
       *integral_fld = //-3*(1+w)*log(a/pba->a_today) - pba->nu_fld*log(1+ pow(pba->a_c[n]/a,3*(1+w)/pba->nu_fld));
         3*(1+w)*( log(1/a)
         + pba->nu_fld/3/(1+w)*log( (1 + pow((pba->a_c),3*(1+w)/pba->nu_fld) ) / (1 + pow((pba->a_c/a),3*(1+w)/pba->nu_fld) ) ) );
@@ -939,6 +939,49 @@ int background_init(
                pba->error_message,
                "Your choice for w(a--->0)=%g is suspicious, since it is bigger than -1/3 there cannot be radiation domination at early times\n",
                w_fld);
+
+      //if we have a pheno axion model, we need to extract the axion mass (in unit of H0) and decay constant (in unit of reduced planck mass) from the pheno parameters.
+      //We also extract the characteristic angular frequency of oscillations
+      //See 1806.10608, Eqs. 27, 28,30.
+     if(pba->ede_parametrization == pheno_axion){
+         if(pba->a_c<(pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm)){
+           //switch depending on whether ac is smaller or larger than a_eq (approximate)
+           p = 1./2;
+         }
+         else{
+           p = 2./3;
+         }
+
+         cos_initial = cos(pba->Theta_initial_fld);
+         sin_initial = sin(pba->Theta_initial_fld);
+         // printf("%e %e %e \n",cos_initial,sin_initial,p);
+
+         n = pba->n_pheno_axion;
+         wn = (n-1)/(n+1);
+
+         Eac = sqrt((pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+(pba->Omega0_b+pba->Omega0_cdm)*pow(pba->a_c,-3)+pba->Omega0_lambda+pba->Omega_fld_ac);
+         // Eac = sqrt((pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+(pba->Omega0_b+pba->Omega0_cdm)*pow(pba->a_c,-3));
+
+         xc = p/Eac;
+         f = 7./8;
+
+
+         if(n>50){
+           pba->m_fld = 0;
+           pba->alpha_fld = 0;
+           Gac = 0;
+           pba->omega_axion = 0;
+         }
+         else{
+           pba->m_fld = pow(1-cos_initial,(1.-n)/2.)*sqrt((1-f)*(6*p+2)*pba->Theta_initial_fld/(n*sin_initial))/xc;
+           pba->alpha_fld = sqrt(6 * pba->Omega_fld_ac)/pba->m_fld/pow(1-cos_initial,n/2);
+           Gac =sqrt(_PI_)*gsl_sf_gamma((n+1.)/(2*n))/gsl_sf_gamma(1+1./(2*n))*pow(2,-(n*n+1)/(2*n))*pow(3,0.5*(1./n-1))
+           *pow(pba->a_c,3-6./(1+n))*pow(pow(pba->a_c,6*n/(1+n))+1,0.5*(1./n-1));
+           pba->omega_axion = pba->H0*pba->m_fld*pow(1-cos_initial,0.5*(n-1))*Gac;
+         }
+         if (pba->background_verbose > 1)printf("axion parameters: pba->m_fld  %e /H0, pba->alpha_fld %e/Mpl pba->omega_axion today %e \n", pba->m_fld,pba->alpha_fld,pba->omega_axion);
+
+     }
   }
 
   /* in verbose mode, inform the user about the value of the ncdm
@@ -2150,7 +2193,7 @@ int background_solve(
 
   /* VP: scalar field critical reshift and fractional energy density at z_c */
   double z_c_new, f_ede_new, phi_c_new, counter_scf = 0;
-  /* parameters to find peak of pheno_axion EDE fluid */
+  /* parameters to find peak of pheno_axion/pheno_ADE EDE fluid */
   double z_peak_new;
  /* VP: some additional parameters in AxiCLASS */
   double integration_stepsize;
@@ -2366,15 +2409,17 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
     }
 
     /* EDE pheno_axion fluid calculations to determine f_ede_peak */
-    if( (pba->has_fld) && (pba->ede_parametrization == pheno_axion) && pba->fluid_equation_of_state == EDE){
-      z_peak_new = pba->z_table[index_loga];
-      f_ede_new = pba->background_table[index_loga*pba->bg_size+pba->index_bg_Omega_fld];
-      if(f_ede_new > pba->f_ede_peak){
-        pba->a_peak = 1./(1+z_peak_new);
-        pba->f_ede_peak = f_ede_new;
-        if(pba->background_verbose>8) printf("f_ede_peak = %.2e \t>= %.2e = f_ede_now\n", pba->f_ede_peak, f_ede_new);
+    if( pba->has_fld && pba->fluid_equation_of_state == EDE){
+      if(pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE ){
+          z_peak_new = pba->z_table[index_loga];
+          f_ede_new = pba->background_table[index_loga*pba->bg_size+pba->index_bg_Omega_fld];
+          if(f_ede_new > pba->f_ede_peak){
+            pba->a_peak = 1./(1+z_peak_new);
+            pba->f_ede_peak = f_ede_new;
+            if(pba->background_verbose>8) printf("f_ede_peak = %.2e \t>= %.2e = f_ede_now\n", pba->f_ede_peak, f_ede_new);
+          }
+          if(pba->background_verbose>2)printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
       }
-      if(pba->background_verbose>2)printf(" -> early dark energy parameters z_peak_ede = %e\tf_ede(z_peak) = %.3e \n", 1/pba->a_peak-1,pba->f_ede_peak);
     }
 
 

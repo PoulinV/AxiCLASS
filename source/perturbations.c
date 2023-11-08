@@ -806,7 +806,7 @@ int perturbations_init(
                ppt->error_message,
                "The fluid is meant to be negligible at early time, and unimportant for defining the initial conditions of other species. You are using parameters for which this assumption may break down, since at early times you have w_fld(a--->0) = %e >= 0",w_fld_ini);
 
-    if ( (pba->use_ppf == _FALSE_) && (pba->ede_parametrization != pheno_axion) ) {
+  if ( (pba->use_ppf == _FALSE_) && (pba->fluid_equation_of_state != EDE)) {
 
       class_test((w_fld_ini +1.0)*(w_fld_0+1.0) <= 0.0,
                  ppt->error_message,
@@ -3550,6 +3550,8 @@ int perturbations_prepare_k_output(struct background * pba,
       class_store_columntitle(ppt->scalar_titles, "delta_p_fld", pba->has_fld);
       class_store_columntitle(ppt->scalar_titles, "ca2_fld", pba->has_fld && pba->ede_parametrization == pheno_axion);
       class_store_columntitle(ppt->scalar_titles, "cs2_fld", pba->has_fld && pba->ede_parametrization == pheno_axion);
+      class_store_columntitle(ppt->scalar_titles, "ca2_fld", pba->has_fld && pba->ede_parametrization == pheno_ADE);
+      class_store_columntitle(ppt->scalar_titles, "cs2_fld", pba->has_fld && pba->ede_parametrization == pheno_ADE);
 
 
       ppt->number_of_scalar_titles =
@@ -5703,7 +5705,7 @@ int perturbations_initial_conditions(struct precision * ppr,
         class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);
 
           /*VP: NEW AXICLASS INITIAL CONDITIONS */
-        if(pba->ede_parametrization == pheno_axion){
+        if(pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
             /* the equations are more stable if we solve for delta/(1+w) and (1+w)*theta */
             if(ppt->use_delta_fld_over_1plusw == _TRUE_){
               ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
@@ -7097,7 +7099,7 @@ int perturbations_total_stress_energy(
   /** Variables used for FLD and PPF */
   double c_gamma_k_H_square;
   double Gamma_prime_plus_a_prime_over_a_Gamma, s2sq=1.;
-  double w_prime_fld, ca2_fld;
+  double w_prime_fld, ca2_fld,omega_bar_squared;
   double cs2_fld, wn_fld, exp_fld;
   double alpha, alpha_prime, metric_euler;
   double rho_t, p_t, rho_t_prime, p_t_prime;
@@ -7611,17 +7613,27 @@ int perturbations_total_stress_energy(
       w_prime_fld = dw_over_da_fld * a_prime_over_a * a;
 
       if (pba->use_ppf == _FALSE_) {
-        cs2_fld = pba->cs2_fld;
-
         if(pba->ede_parametrization == pheno_axion){
+          //pheno ADE and pheno axion are essentially identical but for the behavior of perturbations.
           wn_fld = pba->w_fld_f;
           exp_fld = 3*(1+wn_fld)/pba->nu_fld;
           ca2_fld = ( wn_fld*pba->nu_fld - pow((pba->a_c/a),exp_fld)*(pba->nu_fld + 1 + wn_fld) )
                 /( 1 + pow((pba->a_c/a),exp_fld) )
                 /pba->nu_fld;
+         omega_bar_squared=pow(pba->omega_axion*pow(a,-3*wn_fld),2);
+         cs2_fld = (2*a2*(pba->n_pheno_axion-1)*omega_bar_squared+k2)/(2*a2*(pba->n_pheno_axion+1)*omega_bar_squared+k2);
+        }
+        else if(pba->ede_parametrization == pheno_ADE){
+          wn_fld = pba->w_fld_f;
+          exp_fld = 3*(1+wn_fld)/pba->nu_fld;
+          ca2_fld = ( wn_fld*pba->nu_fld - pow((pba->a_c/a),exp_fld)*(pba->nu_fld + 1 + wn_fld) )
+                /( 1 + pow((pba->a_c/a),exp_fld) )
+                /pba->nu_fld;
+          cs2_fld = pba->cs2_fld;
         }
         else{
           ca2_fld = w_fld - w_prime_fld / 3. / (1.+w_fld) / a_prime_over_a;
+          cs2_fld = pba->cs2_fld;
         }
 
         if(ppt->use_delta_fld_over_1plusw)ppw->delta_rho_fld = (1+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]*y[ppw->pv->index_pt_delta_fld];
@@ -8623,7 +8635,7 @@ int perturbations_print_variables(double tau,
   /** Summary: */
 
   /** - define local variables */
-  double k;
+  double k,k2;
   int index_md;
   int index_k;
   struct precision * ppr;
@@ -8647,7 +8659,7 @@ int perturbations_print_variables(double tau,
   double delta_scf=0., theta_scf=0., delta_phi_scf,delta_phi_over_phi_scf, delta_phi_prime_scf;
   double big_theta_scf;
   double delta_fld=0., theta_fld=0., big_theta_fld=0., delta_p_over_rho_fld=0.;
-  double w_fld, dw_over_da_fld, integral_fld, w_prime_fld, exp_fld, wn_fld, ca2_fld, cs2_fld;
+  double w_fld, dw_over_da_fld, integral_fld, w_prime_fld, exp_fld, wn_fld, ca2_fld, cs2_fld,omega_bar_squared;
 
   /** - ncdm sector begins */
   int n_ncdm;
@@ -8672,6 +8684,7 @@ int perturbations_print_variables(double tau,
 
   pppaw = parameters_and_workspace;
   k = pppaw->k;
+  k2=k*k;
   index_md = pppaw->index_md;
 
   ppr = pppaw->ppr;
@@ -8973,6 +8986,17 @@ int perturbations_print_variables(double tau,
       class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);
       if(pba->ede_parametrization == pheno_axion){
         //assign cs2
+        omega_bar_squared=pow(pba->omega_axion*pow(a,-3*pba->w_fld_f),2);
+        cs2_fld = (2*a2*(pba->n_pheno_axion-1)*omega_bar_squared+k2)/(2*a2*(pba->n_pheno_axion+1)*omega_bar_squared+k2);
+        //assign ca2 // TK ca2_fld specified here
+        wn_fld = pba->w_fld_f;
+        exp_fld = 3*(1+wn_fld)/pba->nu_fld;
+        ca2_fld = ( wn_fld*pba->nu_fld - pow((pba->a_c/a),exp_fld)*(pba->nu_fld + 1 + wn_fld) )
+              /( 1 + pow((pba->a_c/a),exp_fld) )
+              /pba->nu_fld;
+      }
+      else if(pba->ede_parametrization == pheno_ADE){
+        //assign cs2
         cs2_fld=pba->cs2_fld;
         //assign ca2 // TK ca2_fld specified here
         wn_fld = pba->w_fld_f;
@@ -9165,7 +9189,8 @@ int perturbations_print_variables(double tau,
     class_store_double(dataptr, ppw->delta_p_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, ca2_fld, pba->has_fld && pba->ede_parametrization == pheno_axion, storeidx);
     class_store_double(dataptr, cs2_fld, pba->has_fld && pba->ede_parametrization == pheno_axion, storeidx);
-
+    class_store_double(dataptr, ca2_fld, pba->has_fld && pba->ede_parametrization == pheno_ADE, storeidx);
+    class_store_double(dataptr, cs2_fld, pba->has_fld && pba->ede_parametrization == pheno_ADE, storeidx);
     //fprintf(ppw->perturb_output_file,"\n");
 
   }
@@ -9388,7 +9413,7 @@ int perturbations_derivs(double tau,
   int index_q,n_ncdm,idx;
   double q,epsilon,dlnf0_dlnq,qk_div_epsilon;
   double rho_ncdm_bg,p_ncdm_bg,pseudo_p_ncdm,w_ncdm,ca2_ncdm,ceff2_ncdm=0.,cvis2_ncdm=0.;
-  double delta_rho_scf,delta_scf,rho_plus_p_theta_scf,theta_scf,theta_fld;
+  double delta_rho_scf,delta_scf,rho_plus_p_theta_scf,theta_scf,theta_fld,omega_bar_squared;
   double a_over_ac;
   /* for use with curvature */
   double cotKgen, sqrt_absK;
@@ -10117,13 +10142,25 @@ int perturbations_derivs(double tau,
           ca2 = ( wn_fld*pba->nu_fld - pow((pba->a_c/a),exp_fld)*(pba->nu_fld + 1 + wn_fld) )
                 /( 1 + pow((pba->a_c/a),exp_fld) )
                 /pba->nu_fld;
+          omega_bar_squared=pow(pba->omega_axion*pow(a,-3*wn_fld),2);
+          cs2 = (2*a2*(pba->n_pheno_axion-1)*omega_bar_squared+k2)/(2*a2*(pba->n_pheno_axion+1)*omega_bar_squared+k2);
+        }
+        else if (pba->ede_parametrization == pheno_ADE){
+          //assign ca2
+          wn_fld = pba->w_fld_f;
+          exp_fld = 3*(1+wn_fld)/pba->nu_fld;
+          ca2 = ( wn_fld*pba->nu_fld - pow((pba->a_c/a),exp_fld)*(pba->nu_fld + 1 + wn_fld) )
+                /( 1 + pow((pba->a_c/a),exp_fld) )
+                /pba->nu_fld;
+          cs2 = pba->cs2_fld;
+
         }
         else{
           w_prime_fld = dw_over_da_fld * a_prime_over_a * a;
           ca2 = w_fld - w_prime_fld / 3. / (1.+w_fld) / a_prime_over_a;
-        }
-        cs2 = pba->cs2_fld;
+          cs2 = pba->cs2_fld;
 
+        }
 
         /** - ----> fluid density */
         if(ppt->use_delta_fld_over_1plusw == _TRUE_){

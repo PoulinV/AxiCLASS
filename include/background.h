@@ -54,7 +54,7 @@ enum spatial_curvature {flat,open,closed};
 /** list of possible parametrisations of the DE equation of state */
 
 enum equation_of_state {CLP,EDE};
-enum ede_parametrization {tracker,pheno_axion};
+enum ede_parametrization {tracker,pheno_axion,pheno_ADE};
 
 
 /** list of possible parametrizations of the varying fundamental constants */
@@ -127,6 +127,10 @@ struct background
 
   double nu_fld; /**< parameter controlling width of ede transition from -1 to whatever w_f is */
   double n_pheno_axion; /**< exponent of (1-cos) in axion potential that fld is mimicing such that final eq of state of fld is n-1/n+1 */
+  double omega_axion; /**< characteristic angular frequency of the axion in the fluid approximation*/
+  double Theta_initial_fld; /**< The initial angle of the axion in the fluid approximation (in units of the decay constant, cannot exceed pi)*/
+  double m_fld; /**< mass of the axion-like fld [in unit of H0] for pheno_axion fld module; it is a derived parameter. */
+  double alpha_fld;/**< decay constant of the axion-like fld [in unit of the reduced planck mass] for pheno_axion fld module; it is a derived parameter. */
   double Omega_fld_ac; /**< fractional energy density of EDE at a_c */
   double n_cap_infinity; /**< n_fld higher than this is assumed to be infinite. Helps set w_fld_final = 1 */
   double w_fld_f; /**< Final eq of state of EDE */
@@ -140,6 +144,7 @@ struct background
 		     in the frame comoving with the fluid (so, this is
 		     not [delta p/delta rho] in the synchronous or
 		     newtonian gauge!) */
+
   double Omega0_ur; /**< \f$ \Omega_{0 \nu r} \f$: ultra-relativistic neutrinos */
 
   double Omega0_idm; /**< \f$ \Omega_{0 idm} \f$: interacting dark matter with photons, baryons, and idr */
@@ -168,7 +173,7 @@ struct background
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
-  double beta_scf; 
+  double beta_scf;
   double m_scf;
   double f_axion;
   double alpha_squared;
@@ -180,7 +185,6 @@ struct background
   double a_c;
   double log10_fraction_axion_ac;
   double adptative_stepsize;
-  double omega_axion;
   double Omega0_axion;
   double Omega_axion_ac;
   double log10_z_c; //
