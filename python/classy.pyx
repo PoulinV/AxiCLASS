@@ -2276,6 +2276,8 @@ cdef class Class:
                 value = self.ba.m_ncdm_in_eV[0]
             elif name == 'm_ncdm_tot':
                 value = self.ba.Omega0_ncdm_tot*self.ba.h*self.ba.h*93.14
+            elif name == 'Omega0_ncdm_tot':
+                value = self.ba.Omega0_ncdm_tot               
             elif name == 'Neff':
                 value = self.ba.Neff
             elif name == 'Omega_axion_ac':
