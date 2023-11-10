@@ -917,8 +917,7 @@ int background_init(
     printf("Running CLASS version %s\n",_VERSION_);
     printf("Computing background\n");
   }
-  /** - //VP: to test whether the fraction of ncdm over cdm is too large. default is never too large. */
-  class_test(pba->Omega0_ncdm_tot>pba->max_fraction_ncdm*pba->Omega0_cdm,pba->error_message,"User defined max fraction of ncdm %e is exceeded: %e",pba->max_fraction_ncdm,pba->max_fraction_ncdm*pba->Omega0_cdm);
+
   // printf("pba->Omega0_ncdm_tot %e %e\n",pba->Omega0_ncdm_tot, pba->max_fraction_ncdm);
 
   /** - if shooting failed during input, catch the error here */
@@ -932,6 +931,10 @@ int background_init(
              pba->error_message,
              pba->error_message);
 
+   /** - //VP: to test whether the fraction of ncdm over cdm is too large. default is never too large. */
+   if(pba->has_ncdm == _TRUE_ && pba->has_cdm == _TRUE_){
+     class_test(pba->Omega0_ncdm_tot>pba->max_fraction_ncdm*pba->Omega0_cdm,pba->error_message,"User defined max fraction of ncdm %e is exceeded: %e",pba->max_fraction_ncdm,pba->Omega0_ncdm_tot/pba->Omega0_cdm);
+   }
   /* fluid equation of state */
   if (pba->has_fld == _TRUE_) {
     pba->f_ede_peak = 0.0;
