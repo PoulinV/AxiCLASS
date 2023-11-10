@@ -3205,9 +3205,8 @@ int input_read_parameters_species(struct file_content * pfc,
 
   }
   class_test(pba->Omega0_ncdm_tot<0,errmsg,"You cannot set the NCDM density to negative values.");
-  class_read_double("max_fraction_ncdm",pba->max_fraction_ncdm);
-  class_test(pba->Omega0_ncdm_tot>pba->max_fraction_ncdm*pba->Omega0_cdm,errmsg,"User defined max fraction of ncdm %e is exceeded: %e",pba->max_fraction_ncdm,pba->max_fraction_ncdm*pba->Omega0_cdm);
-  // printf("pba->Omega0_ncdm_tot %e %e\n",pba->Omega0_ncdm_tot, pba->max_fraction_ncdm);
+  class_read_double("max_fraction_ncdm",pba->max_fraction_ncdm);//VP: to test whether the fraction of ncdm over cdm is too large. default is never too large.
+
   if (has_m_budget == _TRUE_) {
     class_test(Omega_m_remaining < pba->Omega0_ncdm_tot, errmsg, "Too much energy density from massive species. At this point only %e is left for Omega_m, but requested 'Omega_ncdm = %e' (summed over all species)",Omega_m_remaining, pba->Omega0_ncdm_tot);
     Omega_m_remaining-= pba->Omega0_ncdm_tot;
