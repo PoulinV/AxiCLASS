@@ -3093,6 +3093,19 @@ int input_read_parameters_species(struct file_content * pfc,
     class_read_list_of_doubles_or_default("m_ncdm",pba->m_ncdm_in_eV,0.0,N_ncdm);
     class_read_list_of_doubles_or_default("Omega_ncdm",pba->Omega0_ncdm,0.0,N_ncdm);
     class_read_list_of_doubles_or_default("omega_ncdm",pba->M_ncdm,0.0,N_ncdm);
+    if (N_ncdm>0) {
+      //VP add a check to run with log10mncdm
+       class_call(parser_read_string(pfc,"mncdm_is_log10",&string1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+
+       if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+         //if mncdm_is_log10 is true it means we are running on log10_mncdm so we update it.
+         pba->m_ncdm_in_eV[0]=pow(10,pba->m_ncdm_in_eV[0]);
+         // printf("pba->m_ncdm_in_eV[0]= %e\n", pba->m_ncdm_in_eV[0]);
+       }
+    }
+
     for (n=0; n<N_ncdm; n++){
       if (pba->M_ncdm[n]!=0.0){
         /* Test */
