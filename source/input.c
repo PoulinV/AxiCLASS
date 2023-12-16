@@ -1663,17 +1663,17 @@ int input_get_guess(double *xguess,
           // }
 
         }
-        else if (ba.scf_tuning_index == 3 && (ba.scf_potential == axion) ){
+        else if (ba.scf_tuning_index == 0 && (ba.scf_potential == axion) ){
           // if(ba.scf_parameters[0]>1){
           //   xguess[index_guess] = _PI_*ba.scf_parameters[2];//set IC based on f_a.
           //   dxdy[index_guess] = 0.5*xguess[index_guess]; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
           // }
           // else{
-
+          // printf("here!!\n");
             // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.scf_parameters[1]),0.5)));
-            xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.f_axion),0.5)));
+            xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.m_scf),0.5)));
             // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*(ba.Omega0_cdm+ba.Omega0_b))); //there should be a switch depending on the mass.
-            dxdy[index_guess] = 0.5*xguess[index_guess];
+            dxdy[index_guess] = 0.5*xguess[index_guess]/ba.Omega0_scf ;
           // }
           // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
           // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);

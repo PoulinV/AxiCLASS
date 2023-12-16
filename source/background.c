@@ -933,6 +933,7 @@ int background_init(
 
    /** - //VP: to test whether the fraction of ncdm over cdm is too large. default is never too large. */
    if(pba->has_ncdm == _TRUE_ && pba->has_cdm == _TRUE_){
+     if (pba->background_verbose > 1)printf(" fraction of ncdm is %e \n", pba->Omega0_ncdm_tot/pba->Omega0_cdm);
      class_test(pba->Omega0_ncdm_tot>pba->max_fraction_ncdm*pba->Omega0_cdm,pba->error_message,"User defined max fraction of ncdm %e is exceeded: %e",pba->max_fraction_ncdm,pba->Omega0_ncdm_tot/pba->Omega0_cdm);
    }
   /* fluid equation of state */
@@ -2318,35 +2319,39 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
      //
      if(pba->loop_over_background_for_closure_relation == _TRUE_){
        if(pba->scf_potential == axion || pba->scf_potential == axionquad){
-
-         class_test(pba->has_scf == _FALSE_,pba->error_message,"it's weird, you have loop_over_background_for_closure_relation = yes and  scf_potential = axion or axionquad but no scf, there must be a problem in your ini file!");
-         pba->Omega0_axion = pvecback_integration[pba->index_bi_rho_scf]/pba->H0/pba->H0;
-         // printf("pba->Omega0_axion %e Omega0_axion_used %e pba->precision_loop_over_background %e\n", pba->Omega0_axion,Omega0_axion_used,pba->precision_loop_over_background);
-         if(pba->has_lambda == _TRUE_){
-           // printf(" original Omega_Lambda %e \n",pba->Omega0_lambda);
-           pba->Omega0_lambda-=pba->Omega0_axion;//we remove the axion contribution that we had "forgotten"
-           pba->Omega0_lambda+=Omega0_axion_used;//initially, this is 0. As the code shoots it will be updated
-           if(pba->background_verbose>0)printf(" adjusted Omega_Lambda to incorporate the axion contribution; new Omega_Lambda = %e  \n",pba->Omega0_lambda);
-           if(pba->background_verbose>=10)printf("how far? new %e old %e rel. diff. %e \n",pba->Omega0_axion, Omega0_axion_used,(pba->Omega0_axion-Omega0_axion_used)/pba->Omega0_axion);
-
-         }else if(pba->has_fld==_TRUE_){
-           //if pba->has_lambda == _FALSE_ and pba->has_fld==_TRUE_ it means we are using pba->Omega0_fld to enforce the closure equation.
-           pba->Omega0_fld -=pba->Omega0_axion;
-           pba->Omega0_fld +=Omega0_axion_used;
-           if(pba->background_verbose>0)printf(" adjusted Omega0_fld to incorporate the axion contribution; new Omega0_fld = %e  \n",pba->Omega0_fld);
-
-         }
-         //VP: test that the budget equation is satisfied or loop.
-         if(fabs(pba->Omega0_axion-Omega0_axion_used)/pba->Omega0_axion<pba->precision_loop_over_background){
-           //default is 1e-3
+         if(pba->Omega0_scf>0){
+           //already included Omega_sf in the contribution
            is_axion_converged = _TRUE_;
+         }else{
+           class_test(pba->has_scf == _FALSE_,pba->error_message,"it's weird, you have loop_over_background_for_closure_relation = yes and  scf_potential = axion or axionquad but no scf, there must be a problem in your ini file!");
+           pba->Omega0_axion = pvecback_integration[pba->index_bi_rho_scf]/pba->H0/pba->H0;
+           // printf("pba->Omega0_axion %e Omega0_axion_used %e pba->precision_loop_over_background %e\n", pba->Omega0_axion,Omega0_axion_used,pba->precision_loop_over_background);
+           if(pba->has_lambda == _TRUE_){
+             // printf(" original Omega_Lambda %e \n",pba->Omega0_lambda);
+             pba->Omega0_lambda-=pba->Omega0_axion;//we remove the axion contribution that we had "forgotten"
+             pba->Omega0_lambda+=Omega0_axion_used;//initially, this is 0. As the code shoots it will be updated
+             if(pba->background_verbose>0)printf(" adjusted Omega_Lambda to incorporate the axion contribution; new Omega_Lambda = %e  \n",pba->Omega0_lambda);
+             if(pba->background_verbose>=10)printf("how far? new %e old %e rel. diff. %e \n",pba->Omega0_axion, Omega0_axion_used,(pba->Omega0_axion-Omega0_axion_used)/pba->Omega0_axion);
+
+           }else if(pba->has_fld==_TRUE_){
+             //if pba->has_lambda == _FALSE_ and pba->has_fld==_TRUE_ it means we are using pba->Omega0_fld to enforce the closure equation.
+             pba->Omega0_fld -=pba->Omega0_axion;
+             pba->Omega0_fld +=Omega0_axion_used;
+             if(pba->background_verbose>0)printf(" adjusted Omega0_fld to incorporate the axion contribution; new Omega0_fld = %e  \n",pba->Omega0_fld);
+
+           }
+           //VP: test that the budget equation is satisfied or loop.
+           if(fabs(pba->Omega0_axion-Omega0_axion_used)/pba->Omega0_axion<pba->precision_loop_over_background){
+             //default is 1e-3
+             is_axion_converged = _TRUE_;
+           }
+           else{
+             Omega0_axion_used = pba->Omega0_axion;
+             free(pvecback_integration);
+             free(pba->loga_table);
+             free(used_in_output);
+            }
          }
-         else{
-           Omega0_axion_used = pba->Omega0_axion;
-           free(pvecback_integration);
-           free(pba->loga_table);
-           free(used_in_output);
-          }
        }else{
          //no axion or no loop required so we ignore the loop.
          is_axion_converged = _TRUE_;
