@@ -3504,6 +3504,7 @@ int perturbations_prepare_k_output(struct background * pba,
       /* Interacting dark matter */
       class_store_columntitle(ppt->scalar_titles,"delta_idm",pba->has_idm);
       class_store_columntitle(ppt->scalar_titles,"theta_idm",pba->has_idm);
+      class_store_columntitle(ppt->scalar_titles,"Gamma_idm_ede",pba->has_idm && ppt->DMDE_interaction > 0);
       /* Non-cold dark matter */
       if ((pba->has_ncdm == _TRUE_) && ((ppt->has_density_transfers == _TRUE_) || (ppt->has_velocity_transfers == _TRUE_) || (ppt->has_source_delta_m == _TRUE_))) {
         for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
@@ -4599,6 +4600,7 @@ int perturbations_vector_init(
 
         ppv->y[ppv->index_pt_theta_idm] =
           ppw->pv->y[ppw->pv->index_pt_theta_idm];
+
       }
 
       if (pba->has_dcdm == _TRUE_) {
@@ -8650,7 +8652,7 @@ int perturbations_print_variables(double tau,
   double delta_g,theta_g,shear_g,l4_g,pol0_g,pol1_g,pol2_g,pol4_g;
   double delta_b,theta_b;
   double delta_cdm=0.,theta_cdm=0.;
-  double delta_idm=0., theta_idm=0.;
+  double delta_idm=0., theta_idm=0.,Gamma_idm_ede=0.,f_norm;
   double delta_dcdm=0.,theta_dcdm=0.;
   double delta_dr=0.,theta_dr=0.,shear_dr=0., f_dr=1.0;
   double delta_ur=0.,theta_ur=0.,shear_ur=0.,l4_ur=0.;
@@ -8840,6 +8842,19 @@ int perturbations_print_variables(double tau,
     if (pba->has_idm == _TRUE_) {
       delta_idm = y[ppw->pv->index_pt_delta_idm];
       theta_idm = y[ppw->pv->index_pt_theta_idm];
+      if(ppt->DMDE_interaction>0){
+        f_norm =0;
+        if(pba->has_fld==_TRUE_ && ppt->has_idm_fld == _TRUE_){
+                      if(ppt->scales_like_fEDE == _TRUE_ || ppt->scales_like_fEDE_over_k2 == _TRUE_){
+                        f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];
+                        if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
+                      }
+                      else f_norm = pvecback[pba->index_bg_a];
+          }
+          else f_norm = 0;
+        Gamma_idm_ede = ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]/(pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]);
+        // printf("Gamma_idm_ede %e \n",  Gamma_idm_ede);
+      }
     }
 
     /* gravitational potentials */
@@ -9146,6 +9161,7 @@ int perturbations_print_variables(double tau,
     /* Interacting dark matter */
     class_store_double(dataptr, delta_idm, pba->has_idm, storeidx);
     class_store_double(dataptr, theta_idm, pba->has_idm, storeidx);
+    class_store_double(dataptr, Gamma_idm_ede, pba->has_idm && ppt->DMDE_interaction > 0, storeidx);
     /* Non-cold Dark Matter */
     if ((pba->has_ncdm == _TRUE_) && ((ppt->has_density_transfers == _TRUE_) || (ppt->has_velocity_transfers == _TRUE_) || (ppt->has_source_delta_m == _TRUE_))) {
       for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
@@ -9473,7 +9489,7 @@ int perturbations_derivs(double tau,
 
 	if(pba->has_fld==_TRUE_ && ppt->has_idm_fld == _TRUE_){
                 if(ppt->scales_like_fEDE == _TRUE_ || ppt->scales_like_fEDE_over_k2 == _TRUE_){
-                  f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak;
+                  f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];
                   if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
                 }
 	              else f_norm = pvecback[pba->index_bg_a];
