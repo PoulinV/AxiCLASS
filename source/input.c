@@ -572,6 +572,7 @@ int input_shooting(struct file_content * pfc,
 
 
 /* VP: We can bypass the whole shooting ,useful to debug */
+fzw.do_shooting = _TRUE_;
 class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
