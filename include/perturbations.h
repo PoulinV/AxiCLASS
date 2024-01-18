@@ -179,6 +179,7 @@ struct perturbations
   double three_cvis2_ur;/**< 3 x effective viscosity parameter for the ultrarelativistic perturbations */
 
   double DMDE_interaction;   //new param to take DMDE drag term into account
+  double index_DMDE_interaction;   //new param to control the scaling of Gamma with a; n = 0 scales like fEDE, n=3 scales like f_EDE / rho_m 
   double scales_like_fEDE;   //new param to choose the DMDE drag scaling.
   double scales_like_fEDE_over_k2;   //new param to choose the DMDE drag scaling.
   short has_idm_scf;

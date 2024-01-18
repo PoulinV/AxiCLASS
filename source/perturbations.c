@@ -5713,13 +5713,15 @@ int perturbations_initial_conditions(struct precision * ppr,
               ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
             }
             else{
-              ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
+              // ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
+              ppw->pv->y[ppw->pv->index_pt_delta_fld] = ppw->pv->y[ppw->pv->index_pt_delta_idm];
             }
             if (ppt->use_big_theta_fld == _TRUE_){
                 ppw->pv->y[ppw->pv->index_pt_big_theta_fld] *= -0.5*(1+w_fld)*k*ktau_three*pba->cs2_fld/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
             }
             else{
-              ppw->pv->y[ppw->pv->index_pt_theta_fld] = -0.5*k*ktau_three*pba->cs2_fld/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
+              ppw->pv->y[ppw->pv->index_pt_theta_fld] = ppw->pv->y[ppw->pv->index_pt_theta_idm];
+              // ppw->pv->y[ppw->pv->index_pt_theta_fld] = -0.5*k*ktau_three*pba->cs2_fld/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
             }
         }
         else{
@@ -8849,9 +8851,8 @@ int perturbations_print_variables(double tau,
                         f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];
                         if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
                       }
-                      else f_norm = pvecback[pba->index_bg_a];
-          }
-          else f_norm = 0;
+                      else f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction);//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1 by default
+        }
         Gamma_idm_ede = ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]/(pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]);
         // printf("Gamma_idm_ede %e \n",  Gamma_idm_ede);
       }
@@ -9489,10 +9490,10 @@ int perturbations_derivs(double tau,
 
 	if(pba->has_fld==_TRUE_ && ppt->has_idm_fld == _TRUE_){
                 if(ppt->scales_like_fEDE == _TRUE_ || ppt->scales_like_fEDE_over_k2 == _TRUE_){
-                  f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];
+                  f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];//scales prop to fEDE.
                   if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
                 }
-	              else f_norm = pvecback[pba->index_bg_a];
+                else f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction);//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1 by default
     }
 
     if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
@@ -9537,7 +9538,7 @@ int perturbations_derivs(double tau,
                       f_norm = ppw->pvecback[pba->index_bg_Omega_scf]/pba->f_ede;
                       if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
                     }
-                    else f_norm = pvecback[pba->index_bg_a];
+                    else f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction);//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1 by default
                     // printf("here f_norm %e\n", f_norm);
 
         }
@@ -9765,11 +9766,17 @@ int perturbations_derivs(double tau,
         dy[pv->index_pt_theta_idm] += -R_idm_b*(theta_idm-theta_b); /* correction to idm velocity due to idm_b */
       }
       if (ppt->has_idm_fld == _TRUE_){
+
         if(ppt->use_big_theta_fld==_TRUE_){
           class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);
           if(1+w_fld!=0.0)dy[pv->index_pt_theta_idm] += ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]*(y[pv->index_pt_big_theta_fld]/(1+w_fld)-theta_idm); /* new interaction between DE and cdm */
+
         }
-        else dy[pv->index_pt_theta_idm] += ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]*(y[pv->index_pt_theta_fld]-theta_idm);
+        else{
+            dy[pv->index_pt_theta_idm] += ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]*(y[pv->index_pt_theta_fld]-theta_idm);
+            // if((y[pv->index_pt_theta_fld]-theta_idm)>0)printf("Gamme DMDE %e (y[pv->index_pt_theta_fld]-theta_idm) %e a %e \n", ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm],(y[pv->index_pt_theta_fld]-theta_idm),a);
+
+        }
       }
       if (ppt->has_idm_scf == _TRUE_){
         if(pba->scf_evolve_as_fluid == _TRUE_ ){
@@ -10238,9 +10245,10 @@ int perturbations_derivs(double tau,
           // printf("ppt->DMDE_interaction %e f_norm %e\n", ppt->DMDE_interaction,f_norm);
           // printf("y[pv->index_pt_theta_idm] %e  \n", y[pv->index_pt_theta_idm]);
 
-          if(ppt->has_idm_fld==_TRUE_&& (1+w_fld)!= 0.0)dy[pv->index_pt_theta_fld] -= ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]*(pvecback[pba->index_bg_rho_idm]/((1+w_fld)*pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_idm]); /* cdm velocity */
+          if(ppt->has_idm_fld==_TRUE_&& (1+w_fld)!= 0.0){
+            dy[pv->index_pt_theta_fld] -= ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]*(pvecback[pba->index_bg_rho_idm]/((1+w_fld)*pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_idm]); /* cdm velocity */
 //            if(pba->has_cdm==_TRUE_ && ppt->DMDE_interaction > 0)dy[pv->index_pt_theta_fld] -= ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(ppw->pvecback[pba->index_bg_rho_cdm]/((1+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_cdm]); /* cdm velocity */
-
+          }
         }
       }
       else {

@@ -1,6 +1,6 @@
 ##baseline "Planck+BAO+SN1a" run (noSH0ES)
 #------Experiments to test (separated with commas)-----
-data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing','bao_smallz_2014','bao_boss_dr12','Pantheon']
+data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing','bao_smallz_2014','bao_boss_dr12']
 
 #------ Settings for the over-sampling.
 # The first element will always be set to 1, for it is the sampling of the
@@ -18,7 +18,7 @@ data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Pla
 # the three Planck likelihoods used, only Planck_highl requires nuisance
 # parameters, therefore over_sampling has a length of two (cosmology, plus one
 # set of nuisance).
-data.over_sampling=[1, 5, 5]
+data.over_sampling=[1, 5]
 
 #------ Parameter list -------
 
@@ -96,10 +96,6 @@ data.parameters['A_sbpx_143_217_EE'] = [       1,     1,     1,          0,     
 data.parameters['A_sbpx_217_217_EE'] = [       1,     1,     1,          0,     1, 'nuisance']
 data.parameters['A_planck']          = [ 1.00061,   0.9,   1.1,     0.0025,     1, 'nuisance']
 data.parameters['A_pol']             = [       1,     1,     1,          0,     1, 'nuisance']
-
-###Pantheon Nuisance parameters
-
-data.parameters['M']       = [-19.24, -19.5, -18.5, 0.01,  1, 'nuisance']
 
 
 data.parameters['age']          = [0, None, None, 0,     1,   'derived']

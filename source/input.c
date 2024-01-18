@@ -572,6 +572,7 @@ int input_shooting(struct file_content * pfc,
 
 
 /* VP: We can bypass the whole shooting ,useful to debug */
+fzw.do_shooting = _TRUE_; //default is always TRUE.
 class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -4072,6 +4073,7 @@ int input_read_parameters_species(struct file_content * pfc,
       //so we put it inbetween both species....
       class_read_double("DMDE_interaction",ppt->DMDE_interaction);
       class_test(ppt->DMDE_interaction!=0 && pba->Omega0_idm==0.0,errmsg,"you have DMDE_interaction !=0 but no IDM, please check your input file.")
+      class_read_double("index_DMDE_interaction",ppt->index_DMDE_interaction);
       class_call(parser_read_string(pfc,
                                     "scales_like_fEDE",
                                     &string1,
@@ -7356,6 +7358,7 @@ int input_default_params(struct background *pba,
   pba->cs2_is_wn = _FALSE_;
 
   ppt->DMDE_interaction = 0;
+  ppt->index_DMDE_interaction = 1;//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1.
   ppt->scales_like_fEDE = _FALSE_;
   ppt->scales_like_fEDE_over_k2 = _FALSE_;
   /** - all verbose parameters */
