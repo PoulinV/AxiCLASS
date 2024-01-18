@@ -126,15 +126,7 @@ data.cosmo_arguments['k_pivot'] = 0.05
 data.cosmo_arguments['scf_potential'] = 'axion'
 data.cosmo_arguments['n_axion'] = 3
 
-#to switch to fluid (security to avoid crash)
-data.cosmo_arguments['security_small_Omega_scf'] = 0.001
-data.cosmo_arguments['n_axion_security'] = 2.09
-data.cosmo_arguments['use_big_theta_scf'] = 'yes'
 #nb: the n_axion_security is only used if n is let free to vary
-
-#to better sample oscillations, require GSL
-data.cosmo_arguments['adptative_stepsize'] = 1000
-
 
 data.cosmo_arguments['scf_has_perturbations'] = 'yes'
 data.cosmo_arguments['attractor_ic_scf'] = 'no'

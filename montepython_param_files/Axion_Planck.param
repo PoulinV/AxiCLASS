@@ -1,51 +1,9 @@
+#-----CLASS v3.2.0 (branch: b'master', hash: b'6a24af048f500c7de34a7777c6cf935cb6ef8c6e')-----
+
 #------Experiments to test (separated with commas)-----
-#data.experiments=['core_lens_extr_mnu','euclid_lensing_theoritical_errors_0p025','euclid_pk_theoritical_errors_0p025','tau_21cm']
-#data.experiments=['Planck_highl_TTTEEE','Planck_lowl','Planck_lensing','sdss_lrgDR7','kids450_qe_likelihood_public','Pantheon','bao_boss','bao_fs_boss_dr12','SH0ES_18']
-#data.experiments=['Planck_highl_TTTEEE','Planck_lowl','Planck_lensing','Pantheon','bao_boss','bao_fs_boss_dr12','SH0ES_18','sdss_lrgDR7','kids450_qe_likelihood_public']
-#data.experiments=['Planck_highl_TTTEEE','Planck_lowl_TT','simlow','Planck_lensing','Pantheon','bao_boss','bao_fs_boss_dr12','SH0ES_18']
-#data.experiments=['Planck_highl_TTTEEE','Planck_lowl','Planck_lensing','Pantheon','bao_boss','bao_fs_boss_dr12','SH0ES_19']
-#data.experiments=['Planck_2018_highl_TTTEEE','Planck_2018_lowEE','Planck_2018_lowTT','Planck_2018_lensing']
 
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing','bao_smallz_2014','bao_fs_boss_dr12','Pantheon','cosmic_clocks_BC03_all','eBOSS_DR14_Lya_combined','sh0es_Mb']
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing','bao_smallz_2014','bao_fs_boss_dr12','Pantheon','cosmic_clocks_2021','rsd_growth','eBOSS_DR14_Lya_combined']
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing','bao_smallz_2014','bao_fs_boss_dr12','Pantheon','rsd_growth','eBOSS_DR14_Lya_combined','sh0es_Mb']
+data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing']
 
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing','bao_smallz_2014','bao_fs_boss_dr12','Pantheon_Plus','S8_KIDS_DES']
-
-data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing','bao_smallz_2014','bao_boss_dr12','Pantheon_Plus']
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing','bao_smallz_2014','bao_boss_dr12','Pantheon_Plus','eboss_Lya_gaussian']
-
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','eboss_Lya_gaussian']
-
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT']
-
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing']
-
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT', 'Planck_lensing','Pantheon','bao_smallz_2014','bao_boss_dr12','sh0es_21']
-
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT', 'Planck_lensing','Pantheon_Plus','bao_smallz_2014','bao_fs_boss_dr12','sh0es_Mb_22']
-
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT', 'Planck_lensing','Pantheon_Plus','bao_smallz_2014','bao_fs_boss_dr12','sh0es_Mb']
-
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Planck_lensing','Pantheon_Plus','bao_boss_dr16_LYAUTO','bao_boss_dr16_LYxQSO','bao_smallz_2014','bao_fs_boss_dr12_LRG','bao_fs_boss_dr16_LRG','bao_fs_boss_dr16_QSO','bao_fs_boss_mgs']
-
-
-#data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT', 'Planck_lensing','Pantheon','bao_smallz_2014','bao_fs_boss_dr12','SH0ES_19','S8_DESY1']
-
-#data.experiments=['Planck_2018_highl_TTTEEE','Planck_2018_lowEE','Planck_2018_lowTT','Planck_2018_lensing','Pantheon','bao_boss','bao_fs_boss_dr12','SZ_Combination','sdss_lrgDR7','kids450_qe_likelihood_public']
-#data.experiments=['Planck_2018_highl_TTTEEE','Planck_2018_lowEE','Planck_2018_lowTT','Planck_2018_lensing','Pantheon','bao_boss','bao_fs_boss_dr12','SH0ES_19','SZ_Combination','t_univers_gc']
-#data.experiments=['Planck_2018_highl_TTTEEE','Planck_2018_lowEE','Planck_2018_lowTT','SH0ES_19']
-#data.experiments=['Planck_2018_highl_TTTEEE','Planck_2018_lowEE','Planck_2018_lowTT','Planck_2018_lensing','SH0ES_19']
-#data.experiments=['Planck_2018_highl_TTTEEE','Planck_2018_lowEE','Planck_2018_lowTT','Planck_2018_lensing','Pantheon','bao_boss','bao_fs_boss_dr12']
-#data.experiments=['Planck_highl_TTTEEE','Planck_lowl','Planck_lensing']
-
-#data.experiments=['Planck_highl_TTTEEE','Planck_lowl','Planck_lensing','Pantheon','bao_boss','bao_fs_boss_dr12','SH0ES_18']
-#data.experiments=['Planck_highl_TTTEEE','Planck_lowl','Planck_lensing','kids450_qe_likelihood_public','Pantheon','bao_boss','SH0ES_18']
-#data.experiments=['Planck_highl_TTTEEE','Planck_lowl','Planck_lensing','JLA','bao_boss','bao_fs_boss_dr12','SH0ES_18']
-#data.experiments=['Planck_highl_TTTEEE','simlow','Planck_lensing','Planck_SZ','bao_boss','bao_boss_aniso','hst_riess_2016','CFHTLens_correlation']
-#data.experiments=['Planck_highl_TTTEEE','simlow','Planck_lensing','bao_boss','bao_boss_aniso','Planck_SZ','sdss_lrgDR7']
-#data.experiments=['Planck_highl_TTTEEE','simlow','Planck_lensing','Planck_SZ','bao_boss','WiggleZ','bao_boss_aniso']
-#data.experiments=['Planck_highl_TTTEEE','Planck_lowl','Planck_lensing']
 
 #------ Settings for the over-sampling.
 # The first element will always be set to 1, for it is the sampling of the
@@ -63,7 +21,7 @@ data.experiments=['Planck_highl_TTTEEE', 'Planck_lowl_EE', 'Planck_lowl_TT','Pla
 # the three Planck likelihoods used, only Planck_highl requires nuisance
 # parameters, therefore over_sampling has a length of two (cosmology, plus one
 # set of nuisance).
-data.over_sampling=[1, 5, 5]
+data.over_sampling=[1, 5]
 
 #------ Parameter list -------
 
@@ -79,22 +37,22 @@ data.over_sampling=[1, 5, 5]
 # Cosmological parameters list
 
 
-data.parameters['omega_b']	= [2.222,  1.8, 3, 0.016, 0.01,'cosmo']
-#data.parameters['omega_cdm']    = [0.1199,   0., 0.14, 0.0027,    1, 'cosmo']
-data.parameters['Omega_cdm'] 	= [0.25,0.,0.5,0.01,1,'cosmo']
-data.parameters['n_s']          = [0.9652,  0.8,1.2, 0.004, 1,   'cosmo']
+data.parameters['omega_b']	= [2.222,  1.8, 2.6, 0.016, 0.01,'cosmo']
+data.parameters['Omega_cdm'] 	= [0.25,0.15,0.35,0.1,1,'cosmo']
+data.parameters['n_s']          = [0.9652,  0.8,1.1, 0.004, 1,   'cosmo']
 data.parameters['ln10^{10}A_s'] = [  3.0447,   1.61,3.4,0.5,    1, 'cosmo']
-data.parameters['tau_reio']     = [0.078,  0.004,0.12, 0.0044,1,   'cosmo']
-data.parameters['100*theta_s']  = [ 1.0418,   1.0400, 1.0430,   3e-4,    1, 'cosmo']
-#data.parameters['h'] = [0.7,0.5,0.8,0.1,1,'cosmo']
+data.parameters['tau_reio']     = [0.078,  0.004,0.08, 0.0044,1,   'cosmo']
+data.parameters['h'] = [0.7,0.5,0.8,0.1,1,'cosmo']
 
+##axion mass
+data.parameters['scf_parameters__1'] = [-23,-27,-23,1,1,'cosmo']
+##axion initial velocity (fixed assuming slow roll)
 data.parameters['scf_parameters__3'] = [0,0.,1,0,1,'cosmo']
+##axion initial field value (will be shoot for)
 data.parameters['scf_parameters__2'] = [0.1,0.,1,0,1,'cosmo']
-data.parameters['scf_parameters__1'] = [-27,-27,-20,1,1,'cosmo']
-#data.parameters['scf_parameters__1'] = [1e-25,1e-27,1e-23,1,1,'cosmo']
 
-#data.parameters['Omega_scf'] = [0.02,1e-10,0.1,0.01,1,'cosmo']
-data.parameters['log10_fraction_scf'] = [-2,-5,-0.0004,0.5,1,'cosmo']
+##consider scf as a subcomponent of DM.
+data.parameters['Omega_scf'] = [0.05,0,0.1,0.1,1,'cosmo']
 
 
 # Nuisance parameter list, same call, except the name does not have to be a class name
@@ -146,65 +104,19 @@ data.parameters['A_sbpx_217_217_EE'] = [       1,     1,     1,          0,     
 data.parameters['A_planck']          = [ 1.00061,   0.9,   1.1,     0.0025,     1, 'nuisance']
 data.parameters['A_pol']             = [       1,     1,     1,          0,     1, 'nuisance']
 
-###JLA Nuisance parameters
-
-data.parameters['M']       = [-19.24, -19.5, -18.5, 0.01,  1, 'nuisance']
 
 
-# KIDS nuisance
-
-#data.parameters['m_corr'] = [-0.01368, -0.03368, 0.00632, 0.02, 1, 'nuisance']
-
-# amplitudes for residual noise power:
-#data.parameters['A_noise_z1'] = [0., -0.1, 0.1, 0.05, 1, 'nuisance']
-#data.parameters['A_noise_z2'] = [0., -0.1, 0.1, 0.05, 1, 'nuisance']
-#data.parameters['A_noise_z3'] = [0., -0.1, 0.1, 0.05, 1, 'nuisance']
-
-# amplitude for IA:
-#data.parameters['A_IA'] = [0., -6., 6., 0.5, 1, 'nuisance']
-
-# amplitude for baryon feedback:
-#data.parameters['A_bary'] = [2., 0., 10., 0.5, 1, 'nuisance']
-
-# Nuisance parameter list, same call, except the name does not have to be a class name
-
-#data.parameters['A_cib_217']         = [     61,    0,  200,     7,     1,'nuisance']   
-#data.parameters['cib_index']         = [   -1.3, -1.3, -1.3,     0,     1,'nuisance']   
-#data.parameters['xi_sz_cib']         = [   0.13,    0,    1,   0.3,     1,'nuisance']	 
-#data.parameters['A_sz']              = [   6.86,    0,   10,   1.9,     1,'nuisance'] 			      
-#data.parameters['ps_A_100_100']      = [  222.9,    0,  400,    30,     1,'nuisance'] 			      
-#data.parameters['ps_A_143_143']      = [     38,    0,  400,     8,     1,'nuisance'] 			      
-#data.parameters['ps_A_143_217']      = [   35.2,    0,  400,    10,     1,'nuisance'] 			      
-#data.parameters['ps_A_217_217']      = [  102.6,    0,  400,    11,     1,'nuisance'] 			      
-#data.parameters['ksz_norm']          = [      0,    0,   10,   4.2,     1,'nuisance'] 			      
-#data.parameters['gal545_A_100']      = [   6.75,    0,   50,   1.8,     1,'nuisance']   
-#data.parameters['gal545_A_143']      = [   9.41,    0,   50,   1.8,     1,'nuisance']   
-#data.parameters['gal545_A_143_217']  = [  19.28,    0,  100,   4.2,     1,'nuisance']   
-#data.parameters['gal545_A_217']      = [   81.7,    0,  400,   7.9,     1,'nuisance']   
-#data.parameters['calib_100T']        = [ 998.59,    0, 3000,  0.73, 0.001,'nuisance']  
-#data.parameters['calib_217T']        = [ 995.89,    0, 3000,   1.4, 0.001,'nuisance']  
-#data.parameters['A_planck']          = [100.028,   90,  110,  0.25,  0.01,'nuisance']  
-#data.parameters['P_shot']            = [      0,    0,    0,     0,     1,'nuisance']
-
-# Derived parameters
-
-#data.parameters['z_reio']          = [1, None, None, 0,     1,   'derived']
-#data.parameters['Omega_fld']    = [1, None, None, 0,     1,   'derived']
-#data.parameters['YHe']             = [1, None, None, 0,     1,   'derived']
+#derived parameters
 data.parameters['H0']              = [0, None, None, 0,     1,   'derived']
-data.parameters['h']              = [0, None, None, 0,     1,   'derived']
+data.parameters['100*theta_s']              = [0, None, None, 0,     1,   'derived']
 data.parameters['A_s']             = [0, None, None, 0,  1,   'derived']
 data.parameters['age']          = [0, None, None, 0,     1,   'derived']
 data.parameters['rs_rec']          = [0, None, None, 0,     1,   'derived']
 data.parameters['rd_rec']          = [0, None, None, 0,     1,   'derived']
 data.parameters['da_rec']          = [0, None, None, 0,     1,   'derived']
-#data.parameters['100*theta_s']          = [0, None, None, 0,     1,   'derived']
 data.parameters['sigma8']          = [0, None, None, 0,     1,   'derived']
 data.parameters['Omega_m']          = [0, None, None, 0,     1,   'derived']
 data.parameters['Omega_Lambda']          = [0, None, None, 0,     1,   'derived']
-#data.parameters['log10_f_axion'] = [0, None, None, 0,     1,   'derived']
-#data.parameters['log10_m_axion'] = [0, None, None, 0,     1,   'derived']
-#data.parameters['Omega0_axion'] = [0, None, None, 0,     1,   'derived']
 
 data.parameters['n_L_lya']= [0, None, None, 0,   1,  'derived']
 data.parameters['kp_lya']= [0, None, None, 0,   1,  'derived']
@@ -226,13 +138,15 @@ data.cosmo_arguments['do_shooting'] =  'yes'
 data.cosmo_arguments['do_shooting_scf'] = 'yes'
 data.cosmo_arguments['scf_has_perturbations'] = 'yes'
 data.cosmo_arguments['use_big_theta_scf'] = 'no'
+data.cosmo_arguments['use_delta_scf_over_1plusw'] = 'no'
 data.cosmo_arguments['axionquad_mass_is_log10'] = 'yes'
 data.cosmo_arguments['attractor_ic_scf'] = 'no'
-#data.cosmo_arguments['use_ppf'] = 'no'
 data.cosmo_arguments['scf_tuning_index'] = 1
 data.cosmo_arguments['compute damping scale'] = 'yes'
 data.cosmo_arguments['get_lyman_alpha_tilt_and_amplitude'] = 'yes'
-
+data.cosmo_arguments['include_scf_in_delta_m'] = 'yes'
+data.cosmo_arguments['include_scf_in_delta_cb'] = 'no'
+data.cosmo_arguments['include_scf_in_growth_factor'] = 'no'
 
 
 
@@ -262,25 +176,22 @@ data.cosmo_arguments['T_ncdm'] = 0.71611
 
 
 
-
 # Include non-linear corrections from halofit
 #data.cosmo_arguments['non_linear'] = 'halofit'
 
-# These two are required to get sigma8 as a derived parameter 
+# These two are required to get sigma8 as a derived parameter
 # (class must compute the P(k) until sufficient k)
-data.cosmo_arguments['output'] = 'mPk'
-#data.cosmo_arguments['output'] = 'mPk tCl lCl pCl'
+#data.cosmo_arguments['output'] = 'mPk'
+data.cosmo_arguments['output'] = 'mPk tCl lCl pCl'
 #data.cosmo_arguments['P_k_max_h/Mpc'] = 1
 data.cosmo_arguments['P_k_max_1/Mpc'] = 2
 data.cosmo_arguments['z_max_pk'] = 3.
 
 #------ Mcmc parameters ----
-#data.cosmo_arguments['input_verbose'] = 11
+#data.cosmo_arguments['input_verbose'] = 10
 #data.cosmo_arguments['background_verbose'] = 10
 #data.cosmo_arguments['fourier_verbose'] = 1
-#data.cosmo_arguments['thermodynamics_verbose']=10
+#data.cosmo_arguments['thermodynamics_verbose']=1
 #data.cosmo_arguments['nonlinear_verbose'] = 1
 data.N=20
 data.write_step=5
-
-
