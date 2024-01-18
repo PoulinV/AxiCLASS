@@ -1221,7 +1221,7 @@ int input_find_root(double *xzero,
 
   /** Then we do a linear hunt for the boundaries */
   /* Try fifteen times to go above and below the root (i.e. where shooting succeeds) */
-  for (iter=1; iter<=15; iter++){
+  for (iter=1; iter<=150; iter++){ //vp:default iter max is 15. We increase it to a large number to make sure shooting does not fail for axion.
     x2 = x1 - dx;
     /* Try three times to get a 'reasonable' value, i.e. no CLASS error */
     for (iter2=1; iter2 <= 3; iter2++) {
@@ -1674,7 +1674,7 @@ int input_get_guess(double *xguess,
             // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.scf_parameters[1]),0.5)));
             xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.m_scf),0.5)));
             // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*(ba.Omega0_cdm+ba.Omega0_b))); //there should be a switch depending on the mass.
-            dxdy[index_guess] = 0.5*xguess[index_guess]/ba.Omega0_scf ;
+            dxdy[index_guess] = xguess[index_guess]/ba.Omega0_scf ;
           // }
           // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
           // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
@@ -4342,7 +4342,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
          flag2 =_TRUE_;
        }
        if (strcmp(string1,"axion") == 0) {
-         ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
+         // ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
          flag1=_FALSE_;
          pba->scf_potential = axion;
          class_call(parser_read_double(pfc,"n_axion",&param1,&flag1,errmsg),
@@ -4481,7 +4481,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
        }
        if (strcmp(string1,"axionquad") == 0) {
          pba->scf_potential = axionquad;
-         ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
+         // ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
 
             class_call(parser_read_string(pfc,"axionquad_mass_is_log10",&string1,&flag1,errmsg),
                          errmsg,
