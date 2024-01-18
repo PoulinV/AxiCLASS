@@ -5713,15 +5713,15 @@ int perturbations_initial_conditions(struct precision * ppr,
               ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
             }
             else{
-              // ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
-              ppw->pv->y[ppw->pv->index_pt_delta_fld] = ppw->pv->y[ppw->pv->index_pt_delta_idm];
+              ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
+              // ppw->pv->y[ppw->pv->index_pt_delta_fld] = ppw->pv->y[ppw->pv->index_pt_delta_idm];
             }
             if (ppt->use_big_theta_fld == _TRUE_){
                 ppw->pv->y[ppw->pv->index_pt_big_theta_fld] *= -0.5*(1+w_fld)*k*ktau_three*pba->cs2_fld/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
             }
             else{
-              ppw->pv->y[ppw->pv->index_pt_theta_fld] = ppw->pv->y[ppw->pv->index_pt_theta_idm];
-              // ppw->pv->y[ppw->pv->index_pt_theta_fld] = -0.5*k*ktau_three*pba->cs2_fld/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
+              // ppw->pv->y[ppw->pv->index_pt_theta_fld] = ppw->pv->y[ppw->pv->index_pt_theta_idm];
+              ppw->pv->y[ppw->pv->index_pt_theta_fld] = -0.5*k*ktau_three*pba->cs2_fld/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
             }
         }
         else{
