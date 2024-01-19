@@ -4074,6 +4074,8 @@ int input_read_parameters_species(struct file_content * pfc,
       class_read_double("DMDE_interaction",ppt->DMDE_interaction);
       class_test(ppt->DMDE_interaction!=0 && pba->Omega0_idm==0.0,errmsg,"you have DMDE_interaction !=0 but no IDM, please check your input file.")
       class_read_double("index_DMDE_interaction",ppt->index_DMDE_interaction);
+      class_read_double("DMEDE_TCA_threshold",ppt->DMEDE_TCA_threshold);
+
       class_call(parser_read_string(pfc,
                                     "scales_like_fEDE",
                                     &string1,
@@ -7359,6 +7361,7 @@ int input_default_params(struct background *pba,
 
   ppt->DMDE_interaction = 0;
   ppt->index_DMDE_interaction = 1;//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1.
+  ppt->DMEDE_TCA_threshold = 1e9;
   ppt->scales_like_fEDE = _FALSE_;
   ppt->scales_like_fEDE_over_k2 = _FALSE_;
   /** - all verbose parameters */
