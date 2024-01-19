@@ -854,6 +854,11 @@ int perturbations_init(
     }
   }
 
+  if(pba->has_scf == _TRUE_ && pba->scf_potential == axion && ppt->perturbations_verbose > 0 &&  ppr->evolver == ndf15){
+    fprintf(stdout," -> [WARNING:] You are running with axions, we recommend using the rk evolver,  it has been found to be more stable for this model.\n");
+    fprintf(stdout," -> [WARNING:] If the code crashes with a step-size error, try to set 'evolver=0' in your ini file.\n");
+
+  }
 
   class_test(ppt->has_vectors == _TRUE_,
              ppt->error_message,
@@ -3394,6 +3399,7 @@ int perturbations_solve(
     else {
       generic_evolver = evolver_ndf15;
     }
+
 
     class_call(generic_evolver(perturbations_derivs,
                                interval_limit[index_interval],
@@ -7996,6 +8002,48 @@ int perturbations_sources(
     exp_mu_idm_g = pvecthermo[pth->index_th_exp_mu_idm_g];
   }
 
+
+
+
+      if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+        //this part appears twice: once in sources and once in derivs.
+        //defaulting to KG only for debugging
+        // ppt->scf_kg_eq[index_md][index_k] = 1;
+
+        //Here, we set a number of parameters that determines the way in which scf perturbations are computed.
+        if(pba->scf_evolve_like_axionCAMB == _TRUE_){
+            ppt->scf_kg_eq[index_md][index_k] = 0; //if we evolve like axionCAMB we never follow the KG equations
+            // pba->scf_fluid_eq = _TRUE_;
+        }
+        else{
+          if(pba->scf_evolve_as_fluid == _FALSE_){
+            // printf("here\n");
+            // pba->scf_fluid_eq = _FALSE_; //that is the standard case, we never follow the fluid equations
+            ppt->scf_kg_eq[index_md][index_k] = 1;
+          }
+          else{
+            if(pba->m_scf*pba->H0/pvecback[pba->index_bg_H] >= pba->threshold_scf_fluid_m_over_H){
+            // if(pvecback[pba->index_bg_Omega_scf] <= pba->threshold_scf_fluid_m_over_H && pvecback[pba->index_bg_a] > pba->a_c){
+              // printf("pvecback[pba->index_bg_a] %e pba->a_c %e\n",pvecback[pba->index_bg_a], pba->a_c);
+              // printf("fluid: a %e k %e\n", pvecback[pba->index_bg_a],k);
+              ppt->scf_kg_eq[index_md][index_k] = 0; //We switch to fluid equations
+              // printf("here fld a %e\n", pvecback[pba->index_bg_a]);
+              // pba->scf_fluid_eq = 1;
+            }
+            else {
+              // printf("KG: a %e k %e\n", pvecback[pba->index_bg_a],k);
+              ppt->scf_kg_eq[index_md][index_k] = 1;
+              // printf("here scf! a %e\n", pvecback[pba->index_bg_a]);
+
+              // pba->scf_fluid_eq = _FALSE_; //We follow standard equations
+            }
+            // printf("here pvecback[pba->index_bg_Omega_scf] %e threshold_scf_fluid_m_over_H %e a %e ppt->scf_kg_eq %d \n",pvecback[pba->index_bg_Omega_scf],pba->threshold_scf_fluid_m_over_H,pvecback[pba->index_bg_a],ppt->scf_kg_eq[index_md][index_k]);
+          }
+        }
+      }
+
+
+
   /** - for scalars */
   if (_scalars_) {
 
@@ -8979,7 +9027,6 @@ int perturbations_print_variables(double tau,
 
       //If we are behaving as a fluid, mimicking fld:
       else {
-        // printf("fld!!\n");
 
         if(ppt->use_delta_fld_over_1plusw == _TRUE_) delta_scf = (1+ppw->pvecback[pba->index_bg_w_scf])*y[ppw->pv->index_pt_delta_scf];
         else delta_scf = y[ppw->pv->index_pt_delta_scf];
@@ -9504,6 +9551,7 @@ int perturbations_derivs(double tau,
       //Here, we set a number of parameters that determines the way in which scf perturbations are computed.
       if(pba->scf_evolve_like_axionCAMB == _TRUE_){
           ppt->scf_kg_eq[index_md][index_k] = 0; //if we evolve like axionCAMB we never follow the KG equations
+
           // pba->scf_fluid_eq = _TRUE_;
       }
       else{
