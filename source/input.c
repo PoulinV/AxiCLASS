@@ -1931,7 +1931,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
       case fraction_axion_ac: // TLS where to print out log10_fraction_axion_ac and axion_ac
         // output[i] = log10(ba.f_ede)-pfzw->target_value[i];
         output[i] = ba.f_ede-pfzw->target_value[i];
-        if(input_verbose>10)printf("lgo10ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
+        if(input_verbose>10)printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", ba.f_ede,pfzw->target_value[i],output[i]);
         break;
       case log10_axion_ac:
         ac = 1./(pow(10,ba.log10_z_c)+1);
@@ -4344,7 +4344,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
          flag2 =_TRUE_;
        }
        if (strcmp(string1,"axion") == 0) {
-         // ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
+         ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
          flag1=_FALSE_;
          pba->scf_potential = axion;
          class_call(parser_read_double(pfc,"n_axion",&param1,&flag1,errmsg),
