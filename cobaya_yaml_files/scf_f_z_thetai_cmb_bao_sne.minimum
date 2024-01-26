@@ -1,0 +1,93 @@
+ -log(Like) = 1928.145728293243
+  chi-sq    = 3856.291456586486
+
+    1  3.054047728e+00   logA                                  \log(10^{10} A_\mathrm{s})
+    3  9.762548354e-01   n_s                                   n_\mathrm{s}
+    4  6.942553349e+01   H0                                    H_0
+    5  5.675368902e-02   f_axion_ac                            f_{\rm ede}(a_c)
+   11  2.719464130e+00   scf_param_1                           scf_1
+   13  -3.586941554e+00  log10_axion_ac                        \log_{10}a_c
+   14  2.259956761e-02   omega_b                               \Omega_\mathrm{b} h^2
+   15  1.248333591e-01   omega_cdm                             \Omega_\mathrm{c} h^2
+   21  5.399665289e-02   tau_reio                              \tau_\mathrm{reio}
+   34  1.001640276e+00   A_planck                              y_\mathrm{cal}
+   35  9.999400994e-01   calib_100T                            c_{100}
+   36  9.982311389e-01   calib_217T                            c_{217}
+   42  5.206932381e+01   A_cib_217                             A^\mathrm{CIB}_{217}
+   43  2.405367730e-01   xi_sz_cib                             \xi^{\mathrm{tSZ}\times\mathrm{CIB}}
+   44  6.236155343e+00   A_sz                                  A^\mathrm{tSZ}_{143}
+   45  2.953740315e-01   ksz_norm                              A^\mathrm{kSZ}
+   46  8.417408038e+00   gal545_A_100                          A^\mathrm{dustTT}_{100}
+   47  1.080452700e+01   gal545_A_143                          A^\mathrm{dustTT}_{143}
+   48  1.833233592e+01   gal545_A_143_217                      A^\mathrm{dustTT}_{\mathrm{143}\times\mathrm{217}}
+   49  9.104077269e+01   gal545_A_217                          A^\mathrm{dustTT}_{217}
+   54  2.749185847e+02   ps_A_100_100                          A^\mathrm{PS}_{100}
+   55  4.616096602e+01   ps_A_143_143                          A^\mathrm{PS}_{143}
+   56  4.002703188e+01   ps_A_143_217                          A^\mathrm{PS}_{\mathrm{143}\times\mathrm{217}}
+   57  1.123602539e+02   ps_A_217_217                          A^\mathrm{PS}_{217}
+   59  1.154327809e-01   galf_TE_A_100                         A^\mathrm{dustTE}_{100}
+   60  1.367161743e-01   galf_TE_A_100_143                     A^\mathrm{dustTE}_{\mathrm{100}\times\mathrm{143}}
+   61  4.824865098e-01   galf_TE_A_100_217                     A^\mathrm{dustTE}_{\mathrm{100}\times\mathrm{217}}
+   62  2.204790022e-01   galf_TE_A_143                         A^\mathrm{dustTE}_{143}
+   63  6.404559101e-01   galf_TE_A_143_217                     A^\mathrm{dustTE}_{\mathrm{143}\times\mathrm{217}}
+   64  2.046143665e+00   galf_TE_A_217                         A^\mathrm{dustTE}_{217}
+
+   18  0.06              m_ncdm                                m\ ncdm
+   37  1.0               A_pol                                 A\ pol
+   38  1.021             calib_100P                            calib\ 100P
+   39  0.966             calib_143P                            calib\ 143P
+   40  1.04              calib_217P                            calib\ 217P
+   41  -1.3              cib_index                             cib\ index
+   50  1.0               A_sbpx_100_100_TT                     A\ sbpx\ 100\ 100\ TT
+   51  1.0               A_sbpx_143_143_TT                     A\ sbpx\ 143\ 143\ TT
+   52  1.0               A_sbpx_143_217_TT                     A\ sbpx\ 143\ 217\ TT
+   53  1.0               A_sbpx_217_217_TT                     A\ sbpx\ 217\ 217\ TT
+   58  -2.4              galf_TE_index                         galf\ TE\ index
+   65  -2.4              galf_EE_index                         galf\ EE\ index
+   66  0.055             galf_EE_A_100                         A^\mathrm{dustEE}_{100}
+   67  0.04              galf_EE_A_100_143                     A^\mathrm{dustEE}_{\mathrm{100}\times\mathrm{143}}
+   68  0.094             galf_EE_A_100_217                     A^\mathrm{dustEE}_{\mathrm{100}\times\mathrm{217}}
+   69  0.086             galf_EE_A_143                         A^\mathrm{dustEE}_{143}
+   70  0.21              galf_EE_A_143_217                     A^\mathrm{dustEE}_{\mathrm{143}\times\mathrm{217}}
+   71  0.7               galf_EE_A_217                         A^\mathrm{dustEE}_{217}
+   72  1.0               A_cnoise_e2e_100_100_EE               A\ cnoise\ e2e\ 100\ 100\ EE
+   73  1.0               A_cnoise_e2e_143_143_EE               A\ cnoise\ e2e\ 143\ 143\ EE
+   74  1.0               A_cnoise_e2e_217_217_EE               A\ cnoise\ e2e\ 217\ 217\ EE
+   75  1.0               A_sbpx_100_100_EE                     A\ sbpx\ 100\ 100\ EE
+   76  1.0               A_sbpx_100_143_EE                     A\ sbpx\ 100\ 143\ EE
+   77  1.0               A_sbpx_100_217_EE                     A\ sbpx\ 100\ 217\ EE
+   78  1.0               A_sbpx_143_143_EE                     A\ sbpx\ 143\ 143\ EE
+   79  1.0               A_sbpx_143_217_EE                     A\ sbpx\ 143\ 217\ EE
+   80  1.0               A_sbpx_217_217_EE                     A\ sbpx\ 217\ 217\ EE
+
+    2  2.120098680e-09   A_s                                   A_\mathrm{s}
+    6  -1.246005904e+00  log10_fraction_axion_ac               log10\ fraction\ axion\ ac
+    7  5.675371277e-02   f_ede                                 f_{\rm ede}(a_{\rm peak})
+    8  3.586689014e+00   log10_z_c                             \log_{10}z_c
+    9  -0.900977         log10_f_axion                         \log_{10}f_{\rm axion}
+   10  5.545014000e+00   log10_m_axion                         \log_{10}m_{\rm axion}
+   16  3.072203582e-01   Omega_m                               \Omega_\mathrm{m}
+   17  1.480772848e-01   omegamh2                              \Omega_\mathrm{m} h^2
+   19  6.927048101e-01   Omega_Lambda                          \Omega_\Lambda
+   20  2.454795680e-01   YHe                                   Y_\mathrm{P}
+   22  7.696029663e+00   z_reio                                z_\mathrm{re}
+   23  8.225609776e-01   sigma8                                \sigma_8
+   24  9.872075993e-01   s8h5                                  \sigma_8/h^{0.5}
+   25  4.559246761e-01   s8omegamp5                            \sigma_8 \Omega_\mathrm{m}^{0.5}
+   26  8.324007654e-01   S8                                    S_8
+   27  6.123935395e-01   s8omegamp25                           \sigma_8 \Omega_\mathrm{m}^{0.25}
+   28  2.120098680e+00   A                                     10^9 A_\mathrm{s}
+   29  1.903071822e+00   clamp                                 10^9 A_\mathrm{s} e^{-2\tau}
+   30  1.348357830e+01   age                                   {\rm{Age}}/\mathrm{Gyr}
+   31  1.441093274e+02   rs_drag                               r_\mathrm{drag}
+   32  2.770822717e+03   chi2__CMB                             \chi^2_\mathrm{CMB}
+   33  5.395611978e+00   chi2__BAO                             \chi^2_\mathrm{BAO}
+   81  1.034876114e+03   chi2__SN                              \chi^2_\mathrm{SN}
+   82  2.206140322e+01   chi2__planck_2018_lowl.TT             \chi^2_{\rm planck\ 2018\ lowl.TT}
+   83  3.959731347e+02   chi2__planck_2018_lowl.EE             \chi^2_{\rm planck\ 2018\ lowl.EE}
+   84  2.343648237e+03   chi2__planck_2018_highl_plik.TTTEEE   \chi^2_{\rm planck\ 2018\ highl\ plik.TTTEEE}
+   85  9.139942092e+00   chi2__planck_2018_lensing.clik        \chi^2_{\rm planck\ 2018\ lensing.clik}
+   86  8.355376833e-03   chi2__bao.sixdf_2011_bao              \chi^2_{\rm bao.sixdf\ 2011\ bao}
+   87  1.463599694e+00   chi2__bao.sdss_dr7_mgs                \chi^2_{\rm bao.sdss\ dr7\ mgs}
+   88  3.923656907e+00   chi2__bao.sdss_dr12_consensus_bao     \chi^2_{\rm bao.sdss\ dr12\ consensus\ bao}
+   89  1.034876114e+03   chi2__sn.pantheon                     \chi^2_{\rm sn.pantheon}

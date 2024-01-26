@@ -9,7 +9,7 @@
  *
  * The following functions can be called from other modules:
  *
- * -# primordial_init() at the beginning (anytime after perturb_init() and before spectra_init())
+ * -# primordial_init() at the beginning (anytime after perturbations_init() and before harmonic_init())
  * -# primordial_spectrum_at_k() at any time for computing P(k) at any k
  * -# primordial_free() at the end
  */
@@ -223,7 +223,7 @@ int primordial_spectrum_at_k(
 
 int primordial_init(
                     struct precision  * ppr,
-                    struct perturbs   * ppt,
+                    struct perturbations   * ppt,
                     struct primordial * ppm
                     ) {
 
@@ -255,7 +255,12 @@ int primordial_init(
   /** - get kmin and kmax from perturbation structure. Test that they make sense. */
 
   k_min = ppt->k_min; /* first value, inferred from perturbations structure */
-  k_max = ppt->k_max; /* last value, inferred from perturbations structure */
+  if (ppm->has_k_max_for_primordial_pk == _TRUE_){
+    k_max = ppm->k_max_for_primordial_pk; /* last value, user-defined (i.e. if specified in .ini file) */
+  }
+  else{
+    k_max = ppt->k_max; /* last value, inferred from perturbations structure */
+  }
 
   class_test(k_min <= 0.,
              ppm->error_message,
@@ -636,7 +641,7 @@ int primordial_free(
  */
 
 int primordial_indices(
-                       struct perturbs   * ppt,
+                       struct perturbations   * ppt,
                        struct primordial * ppm
                        ) {
 
@@ -726,7 +731,7 @@ int primordial_get_lnk_list(
  */
 
 int primordial_analytic_spectrum_init(
-                                      struct perturbs   * ppt,
+                                      struct perturbations   * ppt,
                                       struct primordial * ppm
                                       ) {
 
@@ -1172,7 +1177,7 @@ int primordial_inflation_indices(
  */
 
 int primordial_inflation_solve_inflation(
-                                         struct perturbs * ppt,
+                                         struct perturbations * ppt,
                                          struct primordial * ppm,
                                          struct precision *ppr
                                          ) {
@@ -1555,7 +1560,7 @@ int primordial_inflation_solve_inflation(
  */
 
 int primordial_inflation_analytic_spectra(
-                                          struct perturbs * ppt,
+                                          struct perturbations * ppt,
                                           struct primordial * ppm,
                                           struct precision * ppr,
                                           double * y_ini
@@ -1631,7 +1636,7 @@ int primordial_inflation_analytic_spectra(
  */
 
 int primordial_inflation_spectra(
-                                 struct perturbs * ppt,
+                                 struct perturbations * ppt,
                                  struct primordial * ppm,
                                  struct precision * ppr,
                                  double * y_ini
@@ -1728,7 +1733,7 @@ int primordial_inflation_spectra(
  */
 
 int primordial_inflation_one_wavenumber(
-                                        struct perturbs * ppt,
+                                        struct perturbations * ppt,
                                         struct primordial * ppm,
                                         struct precision * ppr,
                                         double * y_ini,
@@ -2692,7 +2697,7 @@ int primordial_inflation_find_phi_pivot(
 
       sigma_B = 2. * pow(_PI_,5) * pow(_k_B_,4) / 15. / pow(_h_P_,3) / pow(_c_,2);
       Omega_g0 = (4.*sigma_B/_c_*pow(2.726,4.)) / (3.*_c_*_c_*1.e10*h*h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_);
-      Omega_r0 = 3.046*7./8.*pow(4./11.,4./3.)*Omega_g0;
+      Omega_r0 = 3.044*7./8.*pow(4./11.,4./3.)*Omega_g0;
 
       target = log(H0/0.05*pow(Omega_r0,0.5)*pow(2./100.,1./12.)*pow(rho_end/rho_c0,0.25));
 
@@ -3089,7 +3094,7 @@ int primordial_inflation_find_phi_pivot(
 /**
  * Routine returning derivative of system of background/perturbation
  * variables. Like other routines used by the generic integrator
- * (background_derivs, thermodynamics_derivs, perturb_derivs), this
+ * (background_derivs, thermodynamics_derivs, perturbations_derivs), this
  * routine has a generic list of arguments, and a slightly different
  * error management, with the error message returned directly in an
  * ErrMsg field.
@@ -3309,7 +3314,7 @@ int primordial_inflation_derivs(
  */
 
 int primordial_external_spectrum_init(
-                                      struct perturbs * ppt,
+                                      struct perturbations * ppt,
                                       struct primordial * ppm
                                       ) {
   /** Summary: */
@@ -3333,7 +3338,7 @@ int primordial_external_spectrum_init(
     pkt = (double *)malloc(n_data_guess*sizeof(double));
   /* Prepare the command */
   /* If the command is just a "cat", no arguments need to be passed */
-  if(strncmp("cat ", ppm->command, 4) == 0) {
+  if (strncmp("cat ", ppm->command, 4) == 0) {
     sprintf(arguments, " ");
   }
   /* otherwise pass the list of arguments */
@@ -3363,7 +3368,7 @@ int primordial_external_spectrum_init(
     }
     /* Standard technique in C: if too many data, double the size of the vectors */
     /* (it is faster and safer that reallocating every new line) */
-    if((n_data+1) > n_data_guess) {
+    if ((n_data+1) > n_data_guess) {
       n_data_guess *= 2;
       tmp = (double *)realloc(k,   n_data_guess*sizeof(double));
       class_test(tmp == NULL,
@@ -3391,7 +3396,7 @@ int primordial_external_spectrum_init(
     }
     n_data++;
     /* Check ascending order of the k's */
-    if(n_data>1) {
+    if (n_data>1) {
       class_test(k[n_data-1] <= k[n_data-2],
                  ppm->error_message,
                  "The k's are not strictly sorted in ascending order, "
@@ -3468,7 +3473,7 @@ int primordial_external_spectrum_init(
   return _SUCCESS_;
 }
 
-int primordial_output_titles(struct perturbs * ppt,
+int primordial_output_titles(struct perturbations * ppt,
                              struct primordial * ppm,
                              char titles[_MAXTITLESTRINGLENGTH_]
                              ){
@@ -3480,7 +3485,7 @@ int primordial_output_titles(struct perturbs * ppt,
 
 }
 
-int primordial_output_data(struct perturbs * ppt,
+int primordial_output_data(struct perturbations * ppt,
                            struct primordial * ppm,
                            int number_of_titles,
                            double *data){

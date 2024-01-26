@@ -126,35 +126,20 @@ data.cosmo_arguments['k_pivot'] = 0.05
 data.cosmo_arguments['scf_potential'] = 'axion'
 data.cosmo_arguments['n_axion'] = 3
 
-#to switch to fluid (security to avoid crash)
-data.cosmo_arguments['security_small_Omega_scf'] = 0.001
-data.cosmo_arguments['n_axion_security'] = 2.09
-data.cosmo_arguments['use_big_theta_scf'] = 'yes'
 #nb: the n_axion_security is only used if n is let free to vary
-
-#to better sample oscillations, require GSL
-data.cosmo_arguments['adptative_stepsize'] = 1000
-
 
 data.cosmo_arguments['scf_has_perturbations'] = 'yes'
 data.cosmo_arguments['attractor_ic_scf'] = 'no'
 
-#EDE shooting 
+#EDE shooting
 data.cosmo_arguments['do_shooting'] = 'yes'
 data.cosmo_arguments['do_shooting_scf'] = 'yes'
 data.cosmo_arguments['scf_tuning_index'] = 0
-data.cosmo_arguments['precision_newton_method_F'] = 1e-3
-data.cosmo_arguments['precision_newton_method_x'] = 1e-3
-
-#data.cosmo_arguments['compute damping scale'] = 'yes'
-#data.cosmo_arguments['Omega_Lambda'] = 0
-#data.cosmo_arguments['Omega_fld'] = 0
-#data.cosmo_arguments['Omega_scf'] = 1e-20
+data.cosmo_arguments['tol_shooting_deltax'] = 1e-3
+data.cosmo_arguments['tol_shooting_deltaF'] = 1e-3
 
 
 # Other cosmo parameters (fixed parameters, precision parameters, etc.)
-#data.cosmo_arguments['compute damping scale'] = 'yes'
-data.cosmo_arguments['sBBN file'] = data.path['cosmo']+'/bbn/sBBN.dat'
 data.cosmo_arguments['k_pivot'] = 0.05
 
 # The base model features two massless
@@ -168,22 +153,10 @@ data.cosmo_arguments['m_ncdm'] = 0.06
 data.cosmo_arguments['T_ncdm'] = 0.71611
 
 
-# Some additional parameters controlling precision of cosmological parameter extraction, vary if necessary
-#data.cosmo_arguments['tol_background_integration'] = 1.e-3
-#data.cosmo_arguments['tol_thermo_integration'] = 1.e-3
-#data.cosmo_arguments['tol_perturb_integration'] = 1.e-6
-#data.cosmo_arguments['reionization_optical_depth_tol'] = 1.e-5
-#data.cosmo_arguments['l_logstep'] = 1.08
-#data.cosmo_arguments['l_linstep'] = 25
-#data.cosmo_arguments['perturb_sampling_stepsize'] = 0.04
-#data.cosmo_arguments['delta_l_max'] = 1000
-#data.cosmo_arguments['k_per_decade_for_pk'] = 100
-
-
 # Include non-linear corrections from halofit
-data.cosmo_arguments['non linear'] = 'halofit'
+data.cosmo_arguments['non linear'] = 'hmcode'
 
-# These two are required to get sigma8 as a derived parameter 
+# These two are required to get sigma8 as a derived parameter
 # (class must compute the P(k) until sufficient k)
 data.cosmo_arguments['output'] = 'mPk'
 data.cosmo_arguments['P_k_max_h/Mpc'] = 1
