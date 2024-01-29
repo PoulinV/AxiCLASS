@@ -1359,6 +1359,7 @@ int perturbations_indices(
   ppt->has_source_delta_b = _FALSE_;
   ppt->has_source_delta_cdm = _FALSE_;
   ppt->has_source_delta_idm = _FALSE_;
+  ppt->has_source_delta_idm_ede = _FALSE_;
   ppt->has_source_delta_dcdm = _FALSE_;
   ppt->has_source_delta_fld = _FALSE_;
   ppt->has_source_delta_scf = _FALSE_;
@@ -1374,6 +1375,7 @@ int perturbations_indices(
   ppt->has_source_theta_b = _FALSE_;
   ppt->has_source_theta_cdm = _FALSE_;
   ppt->has_source_theta_idm = _FALSE_;
+  ppt->has_source_theta_idm_ede = _FALSE_;
   ppt->has_source_theta_dcdm = _FALSE_;
   ppt->has_source_theta_fld = _FALSE_;
   ppt->has_source_theta_scf = _FALSE_;
@@ -2236,6 +2238,7 @@ int perturbations_get_k_list(
                sizeof(double),
                ppt->error_message);
   if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+    printf("bug\n");
     class_alloc(ppt->scf_kg_eq,
                 ppt->md_size*sizeof(double*),
                 ppt->error_message);
@@ -2724,7 +2727,7 @@ int perturbations_get_k_list(
   }
 
   /* Set default of the array (do NOT remove) */
-  //ppt->index_k_output_values = NULL;
+  // ppt->index_k_output_values = NULL;
 
   /** - If user asked for k_output_values, add those to all k lists: */
   if (ppt->k_output_values_num > 0) {
@@ -2819,6 +2822,7 @@ int perturbations_get_k_list(
   free(k_max_cl);
 
   if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
+
     class_alloc(ppt->scf_kg_eq[ppt->index_md_scalars],
                 ppt->k_size[ppt->index_md_scalars]*sizeof(double),ppt->error_message);
                 if (ppt->has_vectors == _TRUE_) {
@@ -3414,7 +3418,7 @@ int perturbations_solve(
       generic_evolver = evolver_ndf15;
     }
 
-
+// printf("before evolver\n");
     class_call(generic_evolver(perturbations_derivs,
                                interval_limit[index_interval],
                                interval_limit[index_interval+1],
@@ -3433,6 +3437,7 @@ int perturbations_solve(
                                ppt->error_message),
                ppt->error_message,
                ppt->error_message);
+               // printf("after evolver\n");
 
   }
 
@@ -3549,6 +3554,8 @@ int perturbations_prepare_k_output(struct background * pba,
       class_store_columntitle(ppt->scalar_titles, "shear_dr", pba->has_dr);
       /* Scalar field scf, initialised regardless of fluid flag. */
       if (pba->scf_has_perturbations == _TRUE_){
+        printf("bug\n");
+
       class_store_columntitle(ppt->scalar_titles, "delta_phi_scf", pba->has_scf);
       class_store_columntitle(ppt->scalar_titles, "delta_phi_over_phi_scf", pba->has_scf);
       class_store_columntitle(ppt->scalar_titles, "delta_phi_prime_scf", pba->has_scf);
@@ -4180,6 +4187,7 @@ int perturbations_vector_init(
     // CO 22.01.18 - delta and theta need to be initialised if we intend to use the fluid eqs
     if (pba->scf_has_perturbations == _TRUE_){
         if(pba->scf_evolve_like_axionCAMB == _FALSE_){
+          // printf("here\n");
           class_define_index(ppv->index_pt_phi_scf,pba->has_scf,index_pt,1); /* scalar field density */
           class_define_index(ppv->index_pt_phi_prime_scf,pba->has_scf,index_pt,1); /* scalar field velocity */
         }
@@ -4566,7 +4574,7 @@ int perturbations_vector_init(
     ppw->pv = ppv;
 
     /** - --> (c) fill the vector ppw-->pv-->y with appropriate initial conditions */
-
+    // printf("here before IC\n");
     class_call(perturbations_initial_conditions(ppr,
                                                 pba,
                                                 ppt,
@@ -4577,12 +4585,15 @@ int perturbations_vector_init(
                                                 ppw),
                ppt->error_message,
                ppt->error_message);
+               // printf("here after IC\n");
+
 
   }
 
   /** - case of switching approximation while a wavenumber is being integrated */
 
   else {
+    // printf("here after IC 2\n");
 
     /** - --> (a) for the scalar mode: */
 
@@ -5499,6 +5510,7 @@ int perturbations_vector_init(
     }
 
     /** - --> (d) free the previous vector of perturbations */
+    // printf("here berfore vector free\n");
 
     class_call(perturbations_vector_free(ppw->pv),
                ppt->error_message,
@@ -5870,8 +5882,10 @@ int perturbations_initial_conditions(struct precision * ppr,
         // printf("m_scf is %e pba->w_scf %e ca2 %e cs2 %e\n", pba->m_scf,pba->w_scf,ca2,pba->cs2_scf);
 
         if(pba->scf_evolve_like_axionCAMB == _FALSE_) {
-          ppw->pv->y[ppw->pv->index_pt_phi_scf] = 0.;//a*a/k/k/ppw->pvecback[pba->index_bg_phi_prime_scf]*k*ktau_three/4.*1./(4.-6.*(1./3.)+3.*1.) * (ppw->pvecback[pba->index_bg_rho_scf] + ppw->pvecback[pba->index_bg_p_scf])* ppr->curvature_ini * s2_squared;
-          ppw->pv->y[ppw->pv->index_pt_phi_prime_scf] = 0.;//a*a/ppw->pvecback[pba->index_bg_phi_prime_scf]*( - ktau_two/4.*(1.+1./3.)*(4.-3.*1.)/(4.-6.*(1/3.)+3.*1.)*ppw->pvecback[pba->index_bg_rho_scf] - ppw->pvecback[pba->index_bg_dV_scf]*ppw->pv->y[ppw->pv->index_pt_phi_scf])* ppr->curvature_ini * s2_squared;
+          ppw->pv->y[ppw->pv->index_pt_phi_scf] = a*a/k/k/ppw->pvecback[pba->index_bg_phi_prime_scf]*k*ktau_three/4.*1./(4.-6.*(1./3.)+3.*1.) * (ppw->pvecback[pba->index_bg_rho_scf] + ppw->pvecback[pba->index_bg_p_scf])* ppr->curvature_ini * s2_squared;
+          ppw->pv->y[ppw->pv->index_pt_phi_prime_scf] = a*a/ppw->pvecback[pba->index_bg_phi_prime_scf]*( - ktau_two/4.*(1.+1./3.)*(4.-3.*1.)/(4.-6.*(1/3.)+3.*1.)*ppw->pvecback[pba->index_bg_rho_scf] - ppw->pvecback[pba->index_bg_dV_scf]*ppw->pv->y[ppw->pv->index_pt_phi_scf])* ppr->curvature_ini * s2_squared;
+          // ppw->pv->y[ppw->pv->index_pt_phi_scf] = 0.;//a*a/k/k/ppw->pvecback[pba->index_bg_phi_prime_scf]*k*ktau_three/4.*1./(4.-6.*(1./3.)+3.*1.) * (ppw->pvecback[pba->index_bg_rho_scf] + ppw->pvecback[pba->index_bg_p_scf])* ppr->curvature_ini * s2_squared;
+          // ppw->pv->y[ppw->pv->index_pt_phi_prime_scf] = 0.;//a*a/ppw->pvecback[pba->index_bg_phi_prime_scf]*( - ktau_two/4.*(1.+1./3.)*(4.-3.*1.)/(4.-6.*(1/3.)+3.*1.)*ppw->pvecback[pba->index_bg_rho_scf] - ppw->pvecback[pba->index_bg_dV_scf]*ppw->pv->y[ppw->pv->index_pt_phi_scf])* ppr->curvature_ini * s2_squared;
 
         }
         //CO 22.01.18 If we intend to use fluid eqs, we need delta and theta. Technically only theta because here we are in the synchronous gauge, but both for ease. Always need phi and phi prime.
@@ -6937,7 +6951,6 @@ int perturbations_einstein(
   /** - for scalar modes: */
 
   if (_scalars_) {
-
     /** - --> infer metric perturbations from Einstein equations */
 
     /* newtonian gauge */
@@ -7336,6 +7349,7 @@ int perturbations_total_stress_energy(
         rho_plus_p_m += ppw->pvecback[pba->index_bg_rho_cdm];
       }
     }
+    // printf("before pba->has_idm_ede %e\n", k);
 
     /* idm contribution */
     if (pba->has_idm == _TRUE_) {
@@ -7368,7 +7382,7 @@ int perturbations_total_stress_energy(
               rho_plus_p_theta_m += ppw->pvecback[pba->index_bg_rho_idm_ede]*y[ppw->pv->index_pt_theta_idm_ede]; // contribution to [(rho+p)theta]_matter
               rho_plus_p_m += ppw->pvecback[pba->index_bg_rho_idm_ede];
             }
-
+      // printf("after pba->has_idm_ede %e\n", k);
     }
 
     /* dcdm contribution */
@@ -7542,10 +7556,10 @@ int perturbations_total_stress_energy(
         }
         else{
 
-          ppw->rho_plus_p_theta +=  1./3.*
+          rho_plus_p_theta_scf = 1./3.*
             k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf];
             if(pba->has_idm_ede == _TRUE_)
-          ppw->rho_plus_p_theta +=  -1./3.*
+          rho_plus_p_theta_scf +=  -1./3.*
             ppw->pvecback[pba->index_bg_phi_prime_scf]*ppw->pvecback[pba->index_bg_phi_prime_scf]/a2*(2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]);
           // ppw->rho_plus_p_theta +=  k*k*(ppw->pvecback[pba->index_bg_rho_scf]+ppw->pvecback[pba->index_bg_p_scf])/(2*pba->beta_scf-1)*(-y[ppw->pv->index_pt_phi_scf]/ppw->pvecback[pba->index_bg_phi_prime_scf]+2*pba->beta_scf*y[ppw->pv->index_pt_theta_idm_ede]); //not sure about prefactor...
 
@@ -9767,7 +9781,7 @@ int perturbations_derivs(double tau,
 
 
 
-
+// printf("before pert einstein\n");
   /** - get metric perturbations with perturbations_einstein() */
   class_call(perturbations_einstein(ppr,
                                     pba,
@@ -9780,6 +9794,7 @@ int perturbations_derivs(double tau,
                                     ppw),
              ppt->error_message,
              error_message);
+             // printf("after pert einstein %e\n",k);
 
   /** - compute related background quantities */
 
@@ -10885,7 +10900,6 @@ int perturbations_derivs(double tau,
   /** - vector mode */
   if (_vectors_) {
 
-    fprintf(stderr,"we are in vectors\n");
 
     ssqrt3 = sqrt(1.-2.*pba->K/k2);
     cb2 = pvecthermo[pth->index_th_cb2];
@@ -11184,6 +11198,7 @@ int perturbations_derivs(double tau,
     dy[pv->index_pt_gwdot] = pvecmetric[ppw->index_mt_gw_prime_prime];
 
   }
+  // printf("before return success %e\n",k);
 
   return _SUCCESS_;
 }

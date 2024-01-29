@@ -7345,6 +7345,7 @@ int input_default_params(struct background *pba,
   /** 7.2) Interacting Dark Matter */
   /** 7.2.1.a) Current factional density of idm */
   pba->Omega0_idm = 0;
+  pba->Omega0_idm_ede = 0;
   /** 7.2.1.a) Mass of idm in eV*/
   pth->m_idm = 1.e9;
   /** 7.2.2) Current fractional density of idr */
