@@ -2238,7 +2238,6 @@ int perturbations_get_k_list(
                sizeof(double),
                ppt->error_message);
   if(pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_){
-    printf("bug\n");
     class_alloc(ppt->scf_kg_eq,
                 ppt->md_size*sizeof(double*),
                 ppt->error_message);
