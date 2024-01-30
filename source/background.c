@@ -1028,6 +1028,7 @@ int background_init(
           pba->w_scf = 0;
         }
         else if(pba->scf_potential == axion){
+
             if(pba->f_axion > 0 && pba->m_scf > 0){
               cos_initial = cos(pba->phi_ini_scf);
               sin_initial = sin(pba->phi_ini_scf);
@@ -2549,7 +2550,7 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
       }
       if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
-      printf("n = %e m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion);
+      printf("n = %e m_a = %e eV, f_a/mpl = %e and theta_i = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion,pba->scf_parameters[0]);
       printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
       if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e pba->log10_axion_ac %e\n", log10(1/pow(10,pba->log10_axion_ac)-1),pba->log10_axion_ac);
       printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);

@@ -1710,6 +1710,11 @@ int input_get_guess(double *xguess,
                 // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
                 // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
         }
+        else if (ba.scf_tuning_index == 2 && (ba.scf_potential == axion) ){
+                xguess[index_guess] = 3*ba.Omega0_scf/(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)); //set f_a^2 based on Om_scf, m_scf^2 and theta_i
+                dxdy[index_guess] = 3 /(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion));
+                // printf("index 0, x = %g, dxdy = %g\n",xguess[index_guess],dxdy[index_guess]);
+        }
 
         else{
           /* Default: take the passed value as xguess and set dxdy to 1. */
@@ -4211,7 +4216,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
 
 
     class_test(pba->m_scf == 0.0 && pba->f_axion != 0.0,errmsg,"you have pba->m_scf = 0 but pba->f_axion != 0.0. Please check your ini file! ");
-    class_test(pba->m_scf != 0.0 && pba->f_axion == 0.0,errmsg,"you have pba->m_scf != 0 but pba->f_axion = 0.0. Please check your ini file! ");
+    // class_test(pba->m_scf != 0.0 && pba->f_axion == 0.0,errmsg,"you have pba->m_scf != 0 but pba->f_axion = 0.0. Please check your ini file! ");
 
   if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0 || pba->Omega0_scf != 0){
 
@@ -4399,6 +4404,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
          ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
          flag1=_FALSE_;
          pba->scf_potential = axion;
+
          class_call(parser_read_double(pfc,"n_axion",&param1,&flag1,errmsg),
                     errmsg,
                     errmsg);
@@ -4417,6 +4423,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
         if(flag1 == _TRUE_){
          pba->f_axion = param1;
        }
+       class_test(pba->f_axion != 0 && pba->scf_parameters_size == 3,errmsg,"you have both f_axion defined and the third entry of scf_parameters table defined. Perhaps you are trying to shoot by adjusting f_axion. Please correct your ini file.");
          class_call(parser_read_double(pfc,"m_axion",&param1,&flag1,errmsg),
                     errmsg,
                     errmsg);
@@ -4629,8 +4636,14 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
           pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];//dummy: will be set later
         }else{
           // pba->phi_ini_scf = 0;//dummy: will be set later
-          pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2];
-          pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];
+          pba->phi_ini_scf = pba->scf_parameters[0];
+          pba->phi_prime_ini_scf = pba->scf_parameters[1];
+          if(pba->f_axion == 0.0 && pba->scf_parameters_size == 3){
+            // printf("here!!\n");
+            pba->f_axion = sqrt(pba->scf_parameters[2]);//one can also use the 3rd entry of the scf_parameters table to set f_axion. Useful when shooting.
+            // printf("pba->f_axion %e\n", pba->f_axion);
+
+          }
           // printf("%e %e \n",pba->phi_ini_scf,pba->phi_prime_ini_scf );
         }
 
