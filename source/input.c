@@ -1468,7 +1468,7 @@ int input_get_guess(double *xguess,
   double Omega_tot_ac, phi_initial,axc,fxc,p,guess,ac,fac,FF;
 
   int index_guess;
-  double Omega_rad;//hardcoded for simplicity; in any case this is an approximate guess for f(zc) and zc
+  double Omega_rad, Omega_m, Omega_r, a_eq;//hardcoded for simplicity; in any case this is an approximate guess for f(zc) and zc
   double Omega_LCDM;
   double H;
   double Vphi;//in CLASS, V is in unit of Mpl^2/Mpc^2. no extra factor Mpl^2.
@@ -1594,7 +1594,17 @@ int input_get_guess(double *xguess,
           }
           fxc=pow(10.,ba.log10_fraction_axion_ac);
           FF=0.8;
-          if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
+
+          Omega_r = ba.Omega0_g;
+          if(ba.has_ur == _TRUE_) Omega_r += ba.Omega0_ur;
+          Omega_m = ba.Omega0_b;
+          if(ba.has_cdm == _TRUE_) Omega_m += ba.Omega0_cdm;
+          if(ba.has_idm == _TRUE_) Omega_m += ba.Omega0_idm;
+          if(ba.has_dcdm == _TRUE_) Omega_m += ba.Omega0_dcdm;
+
+          a_eq = Omega_r /Omega_m;
+
+          if(axc<a_eq){
               guess = 0.25*(3.*fxc*pow(1.-cos(phi_initial),ba.n_axion)*ba.n_axion/tan(phi_initial/2.))/((1.-FF)*phi_initial*(5.*pow(1.-cos(FF*phi_initial),ba.n_axion)+2.*(1.-FF)*ba.n_axion*phi_initial*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)));
           } else {
               guess = 2./3.*fxc*ba.n_axion*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)/((1.-FF)*phi_initial*(3.*(pow(1.-cos(FF*phi_initial),ba.n_axion))+(1.-FF)*ba.n_axion*phi_initial*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)));
@@ -1632,7 +1642,15 @@ int input_get_guess(double *xguess,
                 fxc = 0;
               }
               FF=0.8;
-           if(axc<(ba.Omega0_g+ba.Omega0_ur)/(ba.Omega0_b+ba.Omega0_cdm)){
+              Omega_r = ba.Omega0_g;
+              if(ba.has_ur == _TRUE_) Omega_r += ba.Omega0_ur;
+              Omega_m = ba.Omega0_b;
+              if(ba.has_cdm == _TRUE_) Omega_m += ba.Omega0_cdm;
+              if(ba.has_idm == _TRUE_) Omega_m += ba.Omega0_idm;
+              if(ba.has_dcdm == _TRUE_) Omega_m += ba.Omega0_dcdm;
+
+              a_eq = Omega_r /Omega_m;
+           if(axc<a_eq){
              p = 1./2;
              guess = 2.*sqrt(5.*(1.-FF)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
              guess = pow(guess,-p)*axc;
@@ -4054,8 +4072,13 @@ int input_read_parameters_species(struct file_content * pfc,
                          // Omega_tot_ac = (pba->Omega0_cdm+pba->Omega0_b)*pow(pba->a_c,-3)+(pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+pba->Omega0_lambda;
                          //The input parameter gives us an approximate fraction. We will extract the real one in the run.
 
+                         Omega_m = pba->Omega0_b;
+                         if(pba->Omega0_cdm >0) Omega_m += pba->Omega0_cdm;
+                         if(pba->Omega0_idm >0) Omega_m += pba->Omega0_idm;
+                         if(pba->Omega0_dcdm >0) Omega_m += pba->Omega0_dcdm;
+
                          Omega0_rad = (4.*sigma_B/_c_*pow(pba->T_cmb,4.)) / (3.*_c_*_c_*1.e10*pba->h*pba->h/_Mpc_over_m_/_Mpc_over_m_/8./_PI_/_G_)*(1+3.046*7./8.*pow(4./11.,4./3.));
-                         Omega_tot_ac = (pba->Omega0_b+pba->Omega0_cdm)*pow(pba->a_c,-3)+(Omega0_rad)*pow(pba->a_c,-4);
+                         Omega_tot_ac = (Omega_m)*pow(pba->a_c,-3)+(Omega0_rad)*pow(pba->a_c,-4);
                          class_test(pba->Omega_fld_ac==1.0,errmsg,"you cannot have pba->Omega_fld_ac=1.0!");
                          if(pba->Omega_fld_ac!=1.0)pba->Omega_fld_ac = Omega_tot_ac*pba->Omega_fld_ac/(1-pba->Omega_fld_ac);
                          // printf("here!\n");

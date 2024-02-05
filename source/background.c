@@ -927,7 +927,7 @@ int background_init(
   double Neff, Omega_rad_neutrinos, Omega_tot_ac, N_dark;
   double w_fld, dw_over_da, integral_fld;
   double wn, f, p, Eac, xc,cos_initial,sin_initial, n, ac, Gac;
-
+  double Omega_r, Omega_m,a_eq;
   int filenum=0;
 
   /** - in verbose mode, provide some information */
@@ -970,7 +970,14 @@ int background_init(
       //We also extract the characteristic angular frequency of oscillations
       //See 1806.10608, Eqs. 27, 28,30.
      if(pba->ede_parametrization == pheno_axion){
-         if(pba->a_c<(pba->Omega0_g+pba->Omega0_ur)/(pba->Omega0_b+pba->Omega0_cdm)){
+       Omega_r = pba->Omega0_g;
+       if(pba->has_ur == _TRUE_) Omega_r += pba->Omega0_ur;
+       Omega_m = pba->Omega0_b;
+       if(pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
+       if(pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
+       if(pba->has_dcdm == _TRUE_) Omega_m += pba->Omega0_dcdm;
+          a_eq = Omega_r /Omega_m;
+         if(pba->a_c<a_eq){
            //switch depending on whether ac is smaller or larger than a_eq (approximate)
            p = 1./2;
          }
@@ -985,7 +992,7 @@ int background_init(
          n = pba->n_pheno_axion;
          wn = (n-1)/(n+1);
 
-         Eac = sqrt((pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+(pba->Omega0_b+pba->Omega0_cdm)*pow(pba->a_c,-3)+pba->Omega0_lambda+pba->Omega_fld_ac);
+         Eac = sqrt(Omega_r*pow(pba->a_c,-4)+Omega_m*pow(pba->a_c,-3)+pba->Omega0_lambda+pba->Omega_fld_ac);
          // Eac = sqrt((pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+(pba->Omega0_b+pba->Omega0_cdm)*pow(pba->a_c,-3));
 
          xc = p/Eac;
@@ -1051,9 +1058,17 @@ int background_init(
         // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
         // pba->mu_squared_alpha_squared= sqrt(pow(pba->mu_squared_alpha_squared,2));
         // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
-        Omega_rad_neutrinos = pba->Omega0_ur;
-        // printf("pba->Omega_ur %e Omega_rad_neutrinos %e\n",pba->Omega0_ur,Omega_rad_neutrinos);
-          if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm+pba->Omega0_idm_ede)){
+
+          Omega_r = pba->Omega0_g;
+          if(pba->has_ur == _TRUE_) Omega_r += pba->Omega0_ur;
+          Omega_m = pba->Omega0_b;
+          if(pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
+          if(pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
+          if(pba->has_dcdm == _TRUE_) Omega_m += pba->Omega0_dcdm;
+
+          a_eq = Omega_r /Omega_m;
+
+          if(pow(10,pba->log10_axion_ac)<a_eq){
             p = 1./2;
             pba->m_scf = pow(pow(10,pba->power_of_mu),-2.);
           }
@@ -1104,9 +1119,16 @@ int background_init(
             // pba->power_of_mu= sqrt(pow(pba->power_of_mu,2));
             // pba->mu_squared_alpha_squared= sqrt(pow(pba->mu_squared_alpha_squared,2));
             // Omega_rad_neutrinos = Neff/(1/7.*8./pow(4./11.,4./3.)/pba->Omega0_g);
-            Omega_rad_neutrinos = pba->Omega0_ur;
-            // printf("pba->Omega_ur %e Omega_rad_neutrinos %e\n",pba->Omega0_ur,Omega_rad_neutrinos);
-            if(pow(10,pba->log10_axion_ac)<(pba->Omega0_g+Omega_rad_neutrinos)/(pba->Omega0_b+pba->Omega0_cdm+pba->Omega0_idm_ede)){
+            Omega_r = pba->Omega0_g;
+            if(pba->has_ur == _TRUE_) Omega_r += pba->Omega0_ur;
+            Omega_m = pba->Omega0_b;
+            if(pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
+            if(pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
+            if(pba->has_dcdm == _TRUE_) Omega_m += pba->Omega0_dcdm;
+
+            a_eq = Omega_r /Omega_m;
+
+            if(pow(10,pba->log10_axion_ac)<a_eq){
               p = 1./2;
               pba->m_scf = pow(pow(10,pba->power_of_mu),-2.);
             }
