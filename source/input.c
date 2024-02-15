@@ -4433,8 +4433,11 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
                     errmsg);
         if(flag1 == _TRUE_){
          pba->n_axion = param1;
-         if(pba->n_axion==1){
-           ppt->include_scf_in_delta_m = _TRUE_;
+         // if(pba->n_axion==1){
+         //   ppt->include_scf_in_delta_m = _TRUE_;
+         // }
+         if(ppt->include_scf_in_delta_m == _FALSE_ && input_verbose>0){
+           printf("Warning: you have axion-like scf in your code but you are not including scf in the computation of delta_m. Is this normal? if you want to model axion DM, then add the flag: include_scf_in_delta_m = yes. By default it is false in case you want to model DE.");
          }
         }
         else{
@@ -4578,8 +4581,11 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
             }
 
              flag2 =_TRUE_;
-         ppt->include_scf_in_delta_m = _TRUE_;//always include scf contribution if we consider axion.
 
+         // ppt->include_scf_in_delta_m = _TRUE_;//always include scf contribution if we consider axion.
+         if(ppt->include_scf_in_delta_m == _FALSE_ && input_verbose>0){
+           printf("Warning: you have axion-like scf in your code but you are not including scf in the computation of delta_m. Is this normal? if you want to model axion DM, then add the flag: include_scf_in_delta_m = yes. By default it is false in case you want to model DE.");
+         }
        }
    class_test(flag2==_FALSE_,
                   errmsg,

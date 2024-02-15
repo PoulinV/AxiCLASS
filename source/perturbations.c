@@ -577,8 +577,6 @@ int perturbations_output_titles(
       class_store_columntitle(titles,"delta_phi_scf",ppt->has_scf);
       class_store_columntitle(titles,"delta_phi_over_phi_scf",ppt->has_scf);
       class_store_columntitle(titles,"delta_phi_prime_scf",ppt->has_scf);
-      class_store_columntitle(titles,"interaction_idm_ede",ppt->has_scf && pba->has_idm_ede);
-      class_store_columntitle(titles,"interaction_idm_ede_vEuler",ppt->has_scf && pba->has_idm_ede);
       class_store_columntitle(titles,"d_tot",_TRUE_);
       class_store_columntitle(titles,"phi",ppt->has_source_phi);
       class_store_columntitle(titles,"psi",ppt->has_source_psi);
@@ -3579,7 +3577,6 @@ int perturbations_prepare_k_output(struct background * pba,
       /** Fluid */
       class_store_columntitle(ppt->scalar_titles, "delta_fld", pba->has_fld);
       class_store_columntitle(ppt->scalar_titles, "theta_fld", pba->has_fld);
-      // class_store_columntitle(ppt->scalar_titles, "rho_plus_p_theta_fld", pba->has_fld);
       class_store_columntitle(ppt->scalar_titles, "delta_p_fld", pba->has_fld);
 
       if(pba->has_fld && pba->ede_parametrization == pheno_axion){
@@ -9256,73 +9253,73 @@ int perturbations_print_variables(double tau,
 
     /* converting synchronous variables to newtonian ones */
  // if (ppt->gauge == synchronous && ppt->gauge_output == newtonian_output) {
- if (ppt->gauge == synchronous) {
-
-    // printf("here!\n");
-      /* density and velocity perturbations (comment out if you wish to keep synchronous variables) */
-
-      delta_g -= 4. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
-      theta_g += k*k*alpha;
-
-      delta_b -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
-      theta_b += k*k*alpha;
-
-      if (pba->has_ur == _TRUE_) {
-        delta_ur -= 4. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
-        theta_ur += k*k*alpha;
-      }
-
-      if (pba->has_idr == _TRUE_) {
-        delta_idr -= 4. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
-        theta_idr += k*k*alpha;
-      }
-
-      if (pba->has_dr == _TRUE_) {
-        delta_dr += (-4.*a*H+a*pba->Gamma_dcdm*pvecback[pba->index_bg_rho_dcdm]/pvecback[pba->index_bg_rho_dr])*alpha;
-
-        theta_dr += k*k*alpha;
-      }
-
-      if (pba->has_cdm == _TRUE_) {
-        delta_cdm -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
-        theta_cdm += k*k*alpha;
-      }
-
-      if (pba->has_idm == _TRUE_) {
-        delta_idm -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
-        theta_idm += k*k*alpha;
-      }
-
-      if (pba->has_idm_ede == _TRUE_) {
-        delta_idm_ede -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
-        theta_idm_ede += k*k*alpha;
-      }
-
-      if (pba->has_ncdm == _TRUE_) {
-        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
-          /** - --> TODO: gauge transformation of delta, deltaP/rho (?) and theta using -= 3aH(1+w_ncdm) alpha for delta. */
-        }
-      }
-
-      if (pba->has_dcdm == _TRUE_) {
-        delta_dcdm += alpha*(-a*pba->Gamma_dcdm-3.*a*H);
-        theta_dcdm += k*k*alpha;
-      }
-
-      if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) {
-          delta_scf -= -3.0*alpha*pvecback[pba->index_bg_a]*H*(1+pvecback[pba->index_bg_w_scf]);
-        if(ppt->use_big_theta_scf == _TRUE_) big_theta_scf += (1.0+pvecback[pba->index_bg_w_scf])*k*k*alpha;
-        else theta_scf += k*k*alpha;
-      }
-
-      if (pba->has_fld == _TRUE_){
-        class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);
-        delta_fld -= 3.*(1.0+w_fld) * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
-        theta_fld += k*k*alpha;
-      }
-          // delta_p_over_rho_fld[n] = cs2[n]*delta_fld[n]+3*a_prime_over_a*(1+w_fld)*(cs2[n]-ca2[n])*theta_fld[n]/k2;
-
-    }
+ // if (ppt->gauge == synchronous) {
+ //
+ //    // printf("here!\n");
+ //      /* density and velocity perturbations (comment out if you wish to keep synchronous variables) */
+ //
+ //      delta_g -= 4. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+ //      theta_g += k*k*alpha;
+ //
+ //      delta_b -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+ //      theta_b += k*k*alpha;
+ //
+ //      if (pba->has_ur == _TRUE_) {
+ //        delta_ur -= 4. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+ //        theta_ur += k*k*alpha;
+ //      }
+ //
+ //      if (pba->has_idr == _TRUE_) {
+ //        delta_idr -= 4. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+ //        theta_idr += k*k*alpha;
+ //      }
+ //
+ //      if (pba->has_dr == _TRUE_) {
+ //        delta_dr += (-4.*a*H+a*pba->Gamma_dcdm*pvecback[pba->index_bg_rho_dcdm]/pvecback[pba->index_bg_rho_dr])*alpha;
+ //
+ //        theta_dr += k*k*alpha;
+ //      }
+ //
+ //      if (pba->has_cdm == _TRUE_) {
+ //        delta_cdm -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+ //        theta_cdm += k*k*alpha;
+ //      }
+ //
+ //      if (pba->has_idm == _TRUE_) {
+ //        delta_idm -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+ //        theta_idm += k*k*alpha;
+ //      }
+ //
+ //      if (pba->has_idm_ede == _TRUE_) {
+ //        delta_idm_ede -= 3. * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+ //        theta_idm_ede += k*k*alpha;
+ //      }
+ //
+ //      if (pba->has_ncdm == _TRUE_) {
+ //        for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
+ //          /** - --> TODO: gauge transformation of delta, deltaP/rho (?) and theta using -= 3aH(1+w_ncdm) alpha for delta. */
+ //        }
+ //      }
+ //
+ //      if (pba->has_dcdm == _TRUE_) {
+ //        delta_dcdm += alpha*(-a*pba->Gamma_dcdm-3.*a*H);
+ //        theta_dcdm += k*k*alpha;
+ //      }
+ //
+ //      if (pba->has_scf == _TRUE_ && pba->scf_has_perturbations == _TRUE_) {
+ //          delta_scf -= -3.0*alpha*pvecback[pba->index_bg_a]*H*(1+pvecback[pba->index_bg_w_scf]);
+ //        if(ppt->use_big_theta_scf == _TRUE_) big_theta_scf += (1.0+pvecback[pba->index_bg_w_scf])*k*k*alpha;
+ //        else theta_scf += k*k*alpha;
+ //      }
+ //
+ //      if (pba->has_fld == _TRUE_){
+ //        class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);
+ //        delta_fld -= 3.*(1.0+w_fld) * pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+ //        theta_fld += k*k*alpha;
+ //      }
+ //          // delta_p_over_rho_fld[n] = cs2[n]*delta_fld[n]+3*a_prime_over_a*(1+w_fld)*(cs2[n]-ca2[n])*theta_fld[n]/k2;
+ //
+ //    }
 
     //    fprintf(ppw->perturbations_output_file," ");
     /** - --> Handle (re-)allocation */
@@ -9373,9 +9370,7 @@ int perturbations_print_variables(double tau,
     /* Interacting dark matter ede */
     class_store_double(dataptr, delta_idm_ede, pba->has_idm_ede, storeidx);
     class_store_double(dataptr, theta_idm_ede, pba->has_idm_ede, storeidx);
-    /* Cold dark matter */
-    class_store_double(dataptr, delta_cdm, pba->has_cdm, storeidx);
-    class_store_double(dataptr, theta_cdm, pba->has_cdm, storeidx);
+
     /* Interacting dark matter */
     class_store_double(dataptr, delta_idm, pba->has_idm, storeidx);
     class_store_double(dataptr, theta_idm, pba->has_idm, storeidx);
@@ -9420,9 +9415,6 @@ int perturbations_print_variables(double tau,
     class_store_double(dataptr, amplitude_total, ppt->compute_phase_shift, storeidx);
 
     /** Fluid */
-
-    // class_store_double(dataptr, ppw->delta_rho_fld, pba->has_fld, storeidx);
-    // class_store_double(dataptr, ppw->rho_plus_p_theta_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, delta_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, theta_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, ppw->delta_p_fld, pba->has_fld, storeidx);
