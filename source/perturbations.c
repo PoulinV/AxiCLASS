@@ -3553,8 +3553,6 @@ int perturbations_prepare_k_output(struct background * pba,
       class_store_columntitle(ppt->scalar_titles, "shear_dr", pba->has_dr);
       /* Scalar field scf, initialised regardless of fluid flag. */
       if (pba->scf_has_perturbations == _TRUE_){
-        printf("bug\n");
-
       class_store_columntitle(ppt->scalar_titles, "delta_phi_scf", pba->has_scf);
       class_store_columntitle(ppt->scalar_titles, "delta_phi_over_phi_scf", pba->has_scf);
       class_store_columntitle(ppt->scalar_titles, "delta_phi_prime_scf", pba->has_scf);
@@ -3583,10 +3581,17 @@ int perturbations_prepare_k_output(struct background * pba,
       class_store_columntitle(ppt->scalar_titles, "theta_fld", pba->has_fld);
       // class_store_columntitle(ppt->scalar_titles, "rho_plus_p_theta_fld", pba->has_fld);
       class_store_columntitle(ppt->scalar_titles, "delta_p_fld", pba->has_fld);
-      class_store_columntitle(ppt->scalar_titles, "ca2_fld", pba->has_fld && pba->ede_parametrization == pheno_axion);
-      class_store_columntitle(ppt->scalar_titles, "cs2_fld", pba->has_fld && pba->ede_parametrization == pheno_axion);
-      class_store_columntitle(ppt->scalar_titles, "ca2_fld", pba->has_fld && pba->ede_parametrization == pheno_ADE);
-      class_store_columntitle(ppt->scalar_titles, "cs2_fld", pba->has_fld && pba->ede_parametrization == pheno_ADE);
+
+      if(pba->has_fld && pba->ede_parametrization == pheno_axion){
+        class_store_columntitle(ppt->scalar_titles, "ca2_fld",_TRUE_ );
+        class_store_columntitle(ppt->scalar_titles, "cs2_fld",_TRUE_);
+
+      }
+      if(pba->has_fld && pba->ede_parametrization == pheno_ADE){
+        class_store_columntitle(ppt->scalar_titles, "ca2_fld",_TRUE_ );
+        class_store_columntitle(ppt->scalar_titles, "cs2_fld",_TRUE_);
+
+      }
 
 
       ppt->number_of_scalar_titles =
@@ -9415,18 +9420,27 @@ int perturbations_print_variables(double tau,
     class_store_double(dataptr, amplitude_total, ppt->compute_phase_shift, storeidx);
 
     /** Fluid */
+
     // class_store_double(dataptr, ppw->delta_rho_fld, pba->has_fld, storeidx);
     // class_store_double(dataptr, ppw->rho_plus_p_theta_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, delta_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, theta_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, ppw->delta_p_fld, pba->has_fld, storeidx);
-    class_store_double(dataptr, ca2_fld, pba->has_fld && pba->ede_parametrization == pheno_axion, storeidx);
-    class_store_double(dataptr, cs2_fld, pba->has_fld && pba->ede_parametrization == pheno_axion, storeidx);
-    class_store_double(dataptr, ca2_fld, pba->has_fld && pba->ede_parametrization == pheno_ADE, storeidx);
-    class_store_double(dataptr, cs2_fld, pba->has_fld && pba->ede_parametrization == pheno_ADE, storeidx);
+    if(pba->has_fld && pba->ede_parametrization == pheno_axion){
+
+      class_store_double(dataptr, ca2_fld,_TRUE_, storeidx);
+      class_store_double(dataptr, cs2_fld,_TRUE_, storeidx);
+    }
+    if(pba->has_fld && pba->ede_parametrization == pheno_ADE){
+      class_store_double(dataptr, ca2_fld,_TRUE_, storeidx);
+      class_store_double(dataptr, cs2_fld,_TRUE_, storeidx);
+    }
+
     //fprintf(ppw->perturb_output_file,"\n");
 
   }
+
+
   /** - for tensor modes: */
 
   if (_tensors_) {
