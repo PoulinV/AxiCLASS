@@ -573,6 +573,7 @@ int input_shooting(struct file_content * pfc,
 
 /* VP: We can bypass the whole shooting ,useful to debug */
 fzw.do_shooting = _TRUE_; //default is always TRUE.
+// fzw.do_shooting_scf = _FALSE_;//default is always false.
 class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -583,6 +584,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     else {
       fzw.do_shooting = _TRUE_;
     }
+
 
     class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
              errmsg,
@@ -600,7 +602,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
   if(fzw.do_shooting_scf == _TRUE_){
 
-
+  fzw.scf_parameters_size = 0;
     class_call(parser_read_list_of_doubles(pfc,
                                          "scf_parameters",
                                          &(fzw.scf_parameters_size),
@@ -1596,11 +1598,11 @@ int input_get_guess(double *xguess,
           FF=0.8;
 
           Omega_r = ba.Omega0_g;
-          if(ba.has_ur == _TRUE_) Omega_r += ba.Omega0_ur;
+          if(ba.Omega0_ur > 0) Omega_r += ba.Omega0_ur;
           Omega_m = ba.Omega0_b;
-          if(ba.has_cdm == _TRUE_) Omega_m += ba.Omega0_cdm;
-          if(ba.has_idm == _TRUE_) Omega_m += ba.Omega0_idm;
-          if(ba.has_dcdm == _TRUE_) Omega_m += ba.Omega0_dcdm;
+          if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
+          if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+          if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
           a_eq = Omega_r /Omega_m;
 
@@ -1643,28 +1645,28 @@ int input_get_guess(double *xguess,
               }
               FF=0.8;
               Omega_r = ba.Omega0_g;
-              if(ba.has_ur == _TRUE_) Omega_r += ba.Omega0_ur;
+              if(ba.Omega0_ur > 0) Omega_r += ba.Omega0_ur;
               Omega_m = ba.Omega0_b;
-              if(ba.has_cdm == _TRUE_) Omega_m += ba.Omega0_cdm;
-              if(ba.has_idm == _TRUE_) Omega_m += ba.Omega0_idm;
-              if(ba.has_dcdm == _TRUE_) Omega_m += ba.Omega0_dcdm;
+              if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
+              if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+              if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
               a_eq = Omega_r /Omega_m;
            if(axc<a_eq){
              p = 1./2;
-             guess = 2.*sqrt(5.*(1.-FF)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
+             guess = 2.*sqrt(5.*(1.-FF)*(Omega_r)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
              guess = pow(guess,-p)*axc;
            }else{
              p = 2./3;
              guess =
-               3.*sqrt(1.5*(1.-FF)*phi_initial*(ba.Omega0_cdm+ba.Omega0_b)*pow(1.-cos(phi_initial),-ba.n_axion)*tan(phi_initial/2.)/ba.n_axion);
+               3.*sqrt(1.5*(1.-FF)*phi_initial*(Omega_m)*pow(1.-cos(phi_initial),-ba.n_axion)*tan(phi_initial/2.)/ba.n_axion);
              guess = pow(guess,-p)*axc;
            }
            xguess[index_guess] = log10(guess/1.6);
            dxdy[index_guess] = log10(guess/1.6);
            // dxdy[index_guess] = 100;
 
-          if(pfzw->input_verbose>10)printf("get guess: axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],(ba.Omega0_cdm+ba.Omega0_b),(ba.Omega0_g+ba.Omega0_ur));
+          if(pfzw->input_verbose>10)printf("get guess: axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],Omega_m,Omega_r);
 
            break;
 
@@ -1676,6 +1678,12 @@ int input_get_guess(double *xguess,
     * dxdy[index_guess] = -0.5081*pow(ba.Omega0_scf,-9./7.)`;
     *
     * - Version 3: use attractor solution */
+    Omega_r = ba.Omega0_g;
+    if(ba.Omega0_ur > 0) Omega_r += ba.Omega0_ur;
+    Omega_m = ba.Omega0_b;
+    if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
+    if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+    if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
         if (ba.scf_tuning_index == 0 && (ba.scf_potential == double_exp || ba.scf_potential == pol_times_exp) ){
           xguess[index_guess] = sqrt(3.0/ba.Omega0_scf);
@@ -1686,7 +1694,7 @@ int input_get_guess(double *xguess,
         if (ba.scf_tuning_index == 1 && (ba.scf_potential == axionquad)){
           // if (ba.scf_parameters[0] <= 1e18) {
           // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*ba.Omega0_g,0.75)/pow(ba.scf_parameters[0],0.5));//ba.scf_parameters[0] is the ratio m/H0
-           xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75)/pow(ba.scf_parameters[0]*_eV_over_Mpc_/ba.H0,0.5));//ba.scf_parameters[0] is the ratio m/H0
+           xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*(Omega_r),0.75)/pow(ba.scf_parameters[0]*_eV_over_Mpc_/ba.H0,0.5));//ba.scf_parameters[0] is the ratio m/H0
           // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/9*(ba.Omega0_b+ba.Omega0_cdm));//ba.scf_parameters[0] is the ratio m/H0
           // // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
           // // xguess[index_guess] =1e-8;
@@ -1712,7 +1720,7 @@ int input_get_guess(double *xguess,
           // else{
           // printf("here!!\n");
             // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.scf_parameters[1]),0.5)));
-            xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.m_scf),0.5)));
+            xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(Omega_r),0.75))*pow((ba.m_scf),0.5)));
             // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*(ba.Omega0_cdm+ba.Omega0_b))); //there should be a switch depending on the mass.
             dxdy[index_guess] = xguess[index_guess]/ba.Omega0_scf ;
           // }
@@ -5672,6 +5680,7 @@ int input_read_parameters_primordial(struct file_content * pfc,
         ppm->is_primordial_Pk_different = _FALSE_;
       }
 
+      ppm->calling_from_pk = _FALSE_;
       // printf("ppm->is_primordial_Pk_different %d\n", ppm->is_primordial_Pk_different);
       class_call(parser_read_double(pfc,"A_s",&param1,&flag1,errmsg),
                  errmsg,
@@ -7573,6 +7582,8 @@ int input_default_params(struct background *pba,
   ppm->k_pivot = 0.05;
 
   /** 1.b) For type 'analytic_Pk' */
+  ppm->is_primordial_Pk_different = _FALSE_;
+  ppm->calling_from_pk = _FALSE_;
   /** 1.b.1) For scalar perturbations */
   ppm->A_s = 2.100549e-09;
   /** 1.b.1.1) Adiabatic perturbations */

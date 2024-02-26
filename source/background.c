@@ -503,8 +503,12 @@ int background_functions(
     p_tot += pvecback[pba->index_bg_p_scf];
     dp_dloga += 0.0; /** <-- This depends on a_prime_over_a, so we cannot add it now! */
 
-    rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
-    rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+    if(pvecback[pba->index_bg_w_scf]<0){
+      //do not add anything, the scf is behaving like a component with negative e.o.s. i.e., likely a DE candidate.
+    }else{
+      rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
+      rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+    }
 
     if(pba->background_verbose>11) printf("here KG equation, a %e phi: %e, phi': %e rho_scf: %e \n", a, pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
 
@@ -540,9 +544,12 @@ int background_functions(
 
       rho_tot += pvecback[pba->index_bg_rho_scf];
       p_tot += pvecback[pba->index_bg_p_scf];
-      rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
-      rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
-
+      if(pvecback[pba->index_bg_w_scf]<0){
+        //do not add anything, the scf is behaving like a component with negative e.o.s. i.e., likely a DE candidate.
+      }else{
+        rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
+        rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+      }
     if(pba->background_verbose>11) printf("now fluid equation H %e p %e rho %e \n",3*pvecback[pba->index_bg_H],pvecback[pba->index_bg_p_scf],pvecback[pba->index_bg_rho_scf]);
 
   }
@@ -615,7 +622,8 @@ int background_functions(
     p_tot += w_fld * pvecback[pba->index_bg_rho_fld];
     dp_dloga += (a*dw_over_da-3*(1+w_fld)*w_fld)*pvecback[pba->index_bg_rho_fld];
 
-    if(w_fld>0){
+    if(w_fld>=0.0){
+      rho_r += 3.* w_fld * pvecback[pba->index_bg_rho_fld];
       rho_m += pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]; //the rest contributes matter
       // printf("w_fld %e pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld] %e\n", w_fld,pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]);
     }
