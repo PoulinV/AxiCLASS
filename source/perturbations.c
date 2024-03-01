@@ -802,9 +802,9 @@ int perturbations_init(
     class_call(background_w_fld(pba, 0., &w_fld_ini, &dw_over_da_fld, &integral_fld), pba->error_message, ppt->error_message);
     class_call(background_w_fld(pba, 1.,   &w_fld_0, &dw_over_da_fld, &integral_fld), pba->error_message, ppt->error_message);
 
-    class_test(w_fld_ini >= 0.,
-               ppt->error_message,
-               "The fluid is meant to be negligible at early time, and unimportant for defining the initial conditions of other species. You are using parameters for which this assumption may break down, since at early times you have w_fld(a--->0) = %e >= 0",w_fld_ini);
+    // class_test(w_fld_ini >= 0.,
+    //            ppt->error_message,
+    //            "The fluid is meant to be negligible at early time, and unimportant for defining the initial conditions of other species. You are using parameters for which this assumption may break down, since at early times you have w_fld(a--->0) = %e >= 0",w_fld_ini);
 
   if ( (pba->use_ppf == _FALSE_) && (pba->fluid_equation_of_state != EDE)) {
 
@@ -3559,6 +3559,8 @@ int perturbations_prepare_k_output(struct background * pba,
       class_store_columntitle(ppt->scalar_titles, "cs2_fld", pba->has_fld && pba->ede_parametrization == pheno_axion);
       class_store_columntitle(ppt->scalar_titles, "ca2_fld", pba->has_fld && pba->ede_parametrization == pheno_ADE);
       class_store_columntitle(ppt->scalar_titles, "cs2_fld", pba->has_fld && pba->ede_parametrization == pheno_ADE);
+      class_store_columntitle(ppt->scalar_titles, "ca2_fld", pba->has_fld && pba->ede_parametrization == EDE_is_DR);
+      class_store_columntitle(ppt->scalar_titles, "cs2_fld", pba->has_fld && pba->ede_parametrization == EDE_is_DR);
 
 
       ppt->number_of_scalar_titles =
@@ -5608,6 +5610,17 @@ int perturbations_initial_conditions(struct precision * ppr,
         rho_nu += ppw->pvecback[pba->index_bg_rho_ncdm1 + n_ncdm];
       }
     }
+    if (pba->has_fld == _TRUE_) {
+      class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);
+
+      if(w_fld>0){
+        rho_r += 3.* w_fld *ppw->pvecback[pba->index_bg_rho_fld];
+        rho_m += ppw->pvecback[pba->index_bg_rho_fld]-3.* w_fld *ppw->pvecback[pba->index_bg_rho_fld];
+        rho_nu += 3.* w_fld *ppw->pvecback[pba->index_bg_rho_fld];//assume the radiation part is neutrino-like.
+
+      }
+
+    }
 
     class_test(rho_r == 0.,
                ppt->error_message,
@@ -5713,7 +5726,7 @@ int perturbations_initial_conditions(struct precision * ppr,
         class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);
 
           /*VP: NEW AXICLASS INITIAL CONDITIONS */
-        if(pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
+        if(ppt->use_new_fld_IC == _TRUE_){
             /* the equations are more stable if we solve for delta/(1+w) and (1+w)*theta */
             if(ppt->use_delta_fld_over_1plusw == _TRUE_){
               ppw->pv->y[ppw->pv->index_pt_delta_fld] = 0.5*ktau_two*(1.+w_fld)*(-4.+3.*pba->cs2_fld)/(32.+6.*pba->cs2_fld+12.*pba->w_fld_f)* ppr->curvature_ini * s2_squared;
@@ -5841,8 +5854,10 @@ int perturbations_initial_conditions(struct precision * ppr,
         theta_ur = - k*ktau_three/36./(4.*fracnu+15.) * (4.*fracnu+11.+12.*s2_squared-3.*(8.*fracnu*fracnu+50.*fracnu+275.)/20./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini * s2_squared;
 
         shear_ur = ktau_two/(45.+12.*fracnu) * (3.*s2_squared-1.) * (1.+(4.*fracnu-5.)/4./(2.*fracnu+15.)*tau*om) * ppr->curvature_ini;//TBC /s2_squared; /* shear of ultra-relativistic neutrinos/relics */  //TBC:0
+        // shear_ur = 0;//TBC /s2_squared; /* shear of ultra-relativistic neutrinos/relics */  //TBC:0
 
         l3_ur = ktau_three*2./7./(12.*fracnu+45.)* ppr->curvature_ini;//TBC
+        // l3_ur = 0;//TBC
 
         if (pba->has_dr == _TRUE_) delta_dr = delta_ur;
       }
@@ -7635,11 +7650,24 @@ int perturbations_total_stress_energy(
         }
         else if(pba->ede_parametrization == pheno_ADE){
           wn_fld = pba->w_fld_f;
-          exp_fld = 3*(1+wn_fld)/pba->nu_fld;
-          ca2_fld = ( wn_fld*pba->nu_fld - pow((pba->a_c/a),exp_fld)*(pba->nu_fld + 1 + wn_fld) )
-                /( 1 + pow((pba->a_c/a),exp_fld) )
-                /pba->nu_fld;
+          // exp_fld = 3*(1+wn_fld)/pba->nu_fld;
+          // ca2_fld = ( wn_fld*pba->nu_fld - pow((pba->a_c/a),exp_fld)*(pba->nu_fld + 1 + wn_fld) )
+          //       /( 1 + pow((pba->a_c/a),exp_fld) )
+          //       /pba->nu_fld;
+          ca2_fld=pba->w_fld_i + (pba->w_fld_f -  pba->w_fld_i)*(pba->nu_fld*(1 + pba->w_fld_f) + pow(pba->a_c/a,3*(1 + pba->w_fld_f)/ pba->nu_fld)*(-1 + pba->nu_fld - pba->w_fld_f + pba->nu_fld*pba->w_fld_i))
+       /((1 + pow(pba->a_c/a,3*(1 + pba->w_fld_f)/pba->nu_fld))*pba->nu_fld*(1 + pba->w_fld_f + pow(pba->a_c/a,3*(1 + pba->w_fld_f)/pba->nu_fld)*(1 + pba->w_fld_i)));
+          // printf("ca2_fld %e dw_over_da_fld %e\n",ca2_fld,dw_over_da_fld );
           cs2_fld = pba->cs2_fld;
+        }
+        else if (pba->ede_parametrization == EDE_is_DR){
+          //assign ca2
+          wn_fld = 1./3;
+          ca2_fld = 1./3;
+          cs2_fld = 1./3;
+          // printf("1-3cs2 %e\n", 1-3*cs2);
+          // a_dw_over_da_fld_over_3_unplusw = 3*pba->a_c*(1+pba->w_fld_f)*(pba->w_fld_f-pba->w_fld_i)*pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld-1)/a/a/pba->nu_fld/pow(1 + pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld),2);
+          // ca2 = w_fld-a_dw_over_da_fld_over_3_unplusw;
+
         }
         else{
           ca2_fld = w_fld - w_prime_fld / 3. / (1.+w_fld) / a_prime_over_a;
@@ -8711,7 +8739,7 @@ int perturbations_print_variables(double tau,
   double delta_scf=0., theta_scf=0., delta_phi_scf,delta_phi_over_phi_scf, delta_phi_prime_scf;
   double big_theta_scf;
   double delta_fld=0., theta_fld=0., big_theta_fld=0., delta_p_over_rho_fld=0.;
-  double w_fld, dw_over_da_fld, integral_fld, w_prime_fld, exp_fld, wn_fld, ca2_fld, cs2_fld,omega_bar_squared;
+  double w_fld,dw_over_da_fld, integral_fld, w_prime_fld, exp_fld, wn_fld, ca2_fld, cs2_fld,omega_bar_squared;
 
   /** - ncdm sector begins */
   int n_ncdm;
@@ -9062,11 +9090,24 @@ int perturbations_print_variables(double tau,
         //assign cs2
         cs2_fld=pba->cs2_fld;
         //assign ca2 // TK ca2_fld specified here
-        wn_fld = pba->w_fld_f;
-        exp_fld = 3*(1+wn_fld)/pba->nu_fld;
-        ca2_fld = ( wn_fld*pba->nu_fld - pow((pba->a_c/a),exp_fld)*(pba->nu_fld + 1 + wn_fld) )
-              /( 1 + pow((pba->a_c/a),exp_fld) )
-              /pba->nu_fld;
+        // exp_fld = 3*(1+wn_fld)/pba->nu_fld;
+        // ca2_fld = ( wn_fld*pba->nu_fld - pow((pba->a_c/a),exp_fld)*(pba->nu_fld + 1 + wn_fld) )
+        //       /( 1 + pow((pba->a_c/a),exp_fld) )
+        //       /pba->nu_fld;
+        // a_dw_over_da_fld_over_3_unplusw = 3*pba->a_c*(1+pba->w_fld_f)*(pba->w_fld_f-pba->w_fld_i)*pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld-1)/a/a/pba->nu_fld/pow(1 + pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld),2);
+        // ca2_fld = w_fld-a_dw_over_da_fld_over_3_unplusw;
+        ca2_fld=pba->w_fld_i + (pba->w_fld_f -  pba->w_fld_i)*(pba->nu_fld*(1 + pba->w_fld_f) + pow(pba->a_c/a,3*(1 + pba->w_fld_f)/ pba->nu_fld)*(-1 + pba->nu_fld - pba->w_fld_f + pba->nu_fld*pba->w_fld_i))
+     /((1 + pow(pba->a_c/a,3*(1 + pba->w_fld_f)/pba->nu_fld))*pba->nu_fld*(1 + pba->w_fld_f + pow(pba->a_c/a,3*(1 + pba->w_fld_f)/pba->nu_fld)*(1 + pba->w_fld_i)));
+
+      }
+      else if (pba->ede_parametrization == EDE_is_DR){
+        //assign ca2
+        ca2_fld = 1./3;
+        cs2_fld = 1./3;
+        // printf("1-3cs2 %e\n", 1-3*cs2);
+        // a_dw_over_da_fld_over_3_unplusw = 3*pba->a_c*(1+pba->w_fld_f)*(pba->w_fld_f-pba->w_fld_i)*pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld-1)/a/a/pba->nu_fld/pow(1 + pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld),2);
+        // ca2 = w_fld-a_dw_over_da_fld_over_3_unplusw;
+
       }
 
       if(ppt->use_delta_fld_over_1plusw == _TRUE_)delta_fld = (1+w_fld)*y[ppw->pv->index_pt_delta_fld];
@@ -9256,6 +9297,8 @@ int perturbations_print_variables(double tau,
     class_store_double(dataptr, cs2_fld, pba->has_fld && pba->ede_parametrization == pheno_axion, storeidx);
     class_store_double(dataptr, ca2_fld, pba->has_fld && pba->ede_parametrization == pheno_ADE, storeidx);
     class_store_double(dataptr, cs2_fld, pba->has_fld && pba->ede_parametrization == pheno_ADE, storeidx);
+    class_store_double(dataptr, ca2_fld, pba->has_fld && pba->ede_parametrization == EDE_is_DR, storeidx);
+    class_store_double(dataptr, cs2_fld, pba->has_fld && pba->ede_parametrization == EDE_is_DR, storeidx);
     //fprintf(ppw->perturb_output_file,"\n");
 
   }
@@ -10236,6 +10279,19 @@ int perturbations_derivs(double tau,
                 /( 1 + pow((pba->a_c/a),exp_fld) )
                 /pba->nu_fld;
           cs2 = pba->cs2_fld;
+          // printf("1-3cs2 %e\n", 1-3*cs2);
+          // a_dw_over_da_fld_over_3_unplusw = 3*pba->a_c*(1+pba->w_fld_f)*(pba->w_fld_f-pba->w_fld_i)*pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld-1)/a/a/pba->nu_fld/pow(1 + pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld),2);
+          // ca2 = w_fld-a_dw_over_da_fld_over_3_unplusw;
+
+        }
+        else if (pba->ede_parametrization == EDE_is_DR){
+          //assign ca2
+          wn_fld = 1./3;
+          ca2 = 1./3;
+          cs2 = 1./3;
+          // printf("1-3cs2 %e\n", 1-3*cs2);
+          // a_dw_over_da_fld_over_3_unplusw = 3*pba->a_c*(1+pba->w_fld_f)*(pba->w_fld_f-pba->w_fld_i)*pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld-1)/a/a/pba->nu_fld/pow(1 + pow(pba->a_c/a,3*(1+pba->w_fld_f)/pba->nu_fld),2);
+          // ca2 = w_fld-a_dw_over_da_fld_over_3_unplusw;
 
         }
         else{
@@ -10258,7 +10314,7 @@ int perturbations_derivs(double tau,
           dy[pv->index_pt_delta_fld] = -(theta_fld+metric_continuity)-3.*a_prime_over_a*(cs2-ca2)*(y[pv->index_pt_delta_fld]+3.*a_prime_over_a*theta_fld/k2);
         }
         else{
-          dy[pv->index_pt_delta_fld] = -3.*(cs2-w_fld)*a_prime_over_a*y[pv->index_pt_delta_fld];
+          dy[pv->index_pt_delta_fld] =  -3.*(cs2-w_fld)*a_prime_over_a*y[pv->index_pt_delta_fld];
           // switch depending on whether or not big_theta_fld is being used, terms in continuity eq of delta_fld differ
           if(ppt->use_big_theta_fld == _TRUE_){
             dy[pv->index_pt_delta_fld] +=
@@ -10269,7 +10325,10 @@ int perturbations_derivs(double tau,
             dy[pv->index_pt_delta_fld] +=
             -(1+w_fld)*(y[pv->index_pt_theta_fld]+metric_continuity)
             -9.*(1+w_fld)*(cs2-ca2)*a_prime_over_a*a_prime_over_a*y[pv->index_pt_theta_fld]/k2;
+            // printf("(cs2-w_fld) %e (cs2-ca2) %e \n",(cs2-w_fld), (cs2-ca2));
           }
+          // printf("dy[pv->index_pt_delta_fld] %e -3.*(cs2-w_fld)*a_prime_over_a*y[pv->index_pt_delta_fld] %e   -9.*(1+w_fld)*(cs2-ca2)*a_prime_over_a*a_prime_over_a*y[pv->index_pt_theta_fld]/k2 %e\n",dy[pv->index_pt_delta_fld],-3.*(cs2-w_fld)*a_prime_over_a*y[pv->index_pt_delta_fld],   -9.*(1+w_fld)*(cs2-ca2)*a_prime_over_a*a_prime_over_a*y[pv->index_pt_theta_fld]/k2);
+
         }
 
 
@@ -10470,6 +10529,12 @@ int perturbations_derivs(double tau,
           k2*(ppt->three_ceff2_ur*y[pv->index_pt_delta_ur]/4.-s2_squared*y[pv->index_pt_shear_ur]) + metric_euler
           // non-standard term, non-zero if ceff2_ur not 1/3
           -(1.-ppt->three_ceff2_ur)*a_prime_over_a*y[pv->index_pt_theta_ur];
+          // dy[pv->index_pt_shear_ur] = 0;
+          // dy[pv->index_pt_l3_ur] = 0;
+          // dy[pv->index_pt_delta_ur+4] = 0;
+
+          // printf("dy[pv->index_pt_delta_fld] %e %e\n",dy[pv->index_pt_delta_fld],dy[pv->index_pt_delta_ur]);
+          // printf("dy[pv->index_pt_theta_fld] %e %e\n",dy[pv->index_pt_theta_fld],dy[pv->index_pt_theta_ur]);
 
         if (ppw->approx[ppw->index_ap_ufa] == (int)ufa_off) {
 

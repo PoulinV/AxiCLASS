@@ -361,6 +361,7 @@ struct perturbations
                                 So we redefine delta_fld == delta_fld / (1+w) */
   short include_scf_in_delta_m; /* do we include scf contribution to delta_m ? default is false, unless the potential is axionquad or axion with n=1 */
   short include_scf_in_delta_cb; /* do we include scf contribution to delta_cb ? default is false*/
+  short use_new_fld_IC; /* do we use the new IC from 2302.09032? in AxiCLASS, default is true*/
 
 
   /** @name - list of k values for each mode */

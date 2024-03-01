@@ -54,7 +54,7 @@ enum spatial_curvature {flat,open,closed};
 /** list of possible parametrisations of the DE equation of state */
 
 enum equation_of_state {CLP,EDE};
-enum ede_parametrization {tracker,pheno_axion,pheno_ADE};
+enum ede_parametrization {tracker,pheno_axion,pheno_ADE,EDE_is_DR};
 
 
 /** list of possible parametrizations of the varying fundamental constants */
@@ -134,6 +134,7 @@ struct background
   double Omega_fld_ac; /**< fractional energy density of EDE at a_c */
   double n_cap_infinity; /**< n_fld higher than this is assumed to be infinite. Helps set w_fld_final = 1 */
   double w_fld_f; /**< Final eq of state of EDE */
+  double w_fld_i; /**< Initial eq of state of EDE */
   double log10_a_c; /**< log10(a_c) to set a_c */
   double a_peak; /**< scale factor when EDE energy density peaks */
   double f_ede_peak; /**< maximum fractional energy density of EDE */
