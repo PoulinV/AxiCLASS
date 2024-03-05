@@ -607,8 +607,10 @@ int background_functions(
     p_tot += w_fld * pvecback[pba->index_bg_rho_fld];
     dp_dloga += (a*dw_over_da-3*(1+w_fld)*w_fld)*pvecback[pba->index_bg_rho_fld];
 
+    // printf("w_fld %e\n", w_fld);
     if(w_fld>0){
       rho_m += pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]; //the rest contributes matter
+      rho_r += 3.* w_fld * pvecback[pba->index_bg_rho_fld]; //the rest contributes matter
       // printf("w_fld %e pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld] %e\n", w_fld,pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]);
     }
   }
@@ -746,8 +748,8 @@ int background_w_fld(
   double dOmega_ede_over_da = 0.;
   double d2Omega_ede_over_da2 = 0.;
   double a_eq, Omega_r, Omega_m;
-  double w,dw,intw;
-
+  double w,w_f,w_i,dw,intw;
+  double powac,powa;
   /** - first, define the function w(a) */
   switch (pba->fluid_equation_of_state) {
   case CLP:
@@ -756,8 +758,13 @@ int background_w_fld(
   case EDE:
     if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
       // w_ede(a) defined from a mash-up of 1811.04083 and 1905.12618
-      w = pba->w_fld_f; //e.o.s. once the field starts oscillating
-      *w_fld = (1+w)/(1+pow(pba->a_c/a,3*(1+w)/pba->nu_fld))-1;
+      w_f = pba->w_fld_f; //e.o.s. once the field starts oscillating
+      w_i = pba->w_fld_i; //e.o.s. once the field starts oscillating
+      // *w_fld = (1+w_f)/(1+pow(pba->a_c/a,3*(1+w_f)/pba->nu_fld))-1;
+      *w_fld = (w_f-w_i)/(1+pow(pba->a_c/a,3*(w_f-w_i)/pba->nu_fld))+w_i;
+    }
+    else if(pba->ede_parametrization == EDE_is_DR){
+      *w_fld = 1./3;
     }
     else {
       // Omega_ede(a) taken from eq. (10) in 1706.00730
@@ -797,7 +804,12 @@ int background_w_fld(
     break;
   case EDE:
   if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
-      *dw_over_da_fld = 0; // calculated directly in perturbations to avoid zeroes in the denominator
+      *dw_over_da_fld =    (3*pba->a_c*pow(pba->a_c/a,-1+3*(1+w_f)/pba->nu_fld)*(1+w_f)*(w_f-w_i))
+      /(a*a*pba->nu_fld*pow(1 + (pba->a_c/a,3*(1+w_f)/pba->nu_fld),2));
+
+    }
+    else if(pba->ede_parametrization == EDE_is_DR){
+      *dw_over_da_fld = 0;
     }
     else {
       d2Omega_ede_over_da2 = 0.;
@@ -826,9 +838,19 @@ int background_w_fld(
     break;
   case EDE:
   if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
+    powac=pow(pba->a_c,3*(1+w_f)/pba->nu_fld);
+    powa=pow(a,3*(1+w_f));
       *integral_fld = //-3*(1+w)*log(a/pba->a_today) - pba->nu_fld*log(1+ pow(pba->a_c[n]/a,3*(1+w)/pba->nu_fld));
-        3*(1+w)*( log(1/a)
-        + pba->nu_fld/3/(1+w)*log( (1 + pow((pba->a_c),3*(1+w)/pba->nu_fld) ) / (1 + pow((pba->a_c/a),3*(1+w)/pba->nu_fld) ) ) );
+        // 3*(w_f-w_i)*( log(1/a)
+        // + pba->nu_fld/3/(w_f-w_i)*log( (1 + pow((pba->a_c),3*(w_f-w_i)/pba->nu_fld) ) / (1 + pow((pba->a_c/a),3*(w_f-w_i)/pba->nu_fld) ) ) )+3*a*(1+w_i);
+        -3*(1 + w_i)*log(a) + pba->nu_fld*(w_f-w_i)*(log(1+1/powac)-log(1/powac*(powa+powac)))/(1+w_f);
+
+      // *integral_fld = //-3*(1+w)*log(a/pba->a_today) - pba->nu_fld*log(1+ pow(pba->a_c[n]/a,3*(1+w)/pba->nu_fld));
+      //   3*(1+w)*( log(1/a)
+      //   + pba->nu_fld/3/(1+w)*log( (1 + pow((pba->a_c),3*(1+w)/pba->nu_fld) ) / (1 + pow((pba->a_c/a),3*(1+w)/pba->nu_fld) ) ) );
+    }
+    else if(pba->ede_parametrization == EDE_is_DR){
+      *integral_fld = -4*log(a);
     }
     else{
       class_stop(pba->error_message,"EDE implementation not finished: to finish it, read the comments in background.c just before this line\n");
@@ -943,10 +965,10 @@ int background_init(
 
     class_call(background_w_fld(pba,0.,&w_fld,&dw_over_da,&integral_fld), pba->error_message, pba->error_message);
 
-    class_test(w_fld >= 1./3.,
-               pba->error_message,
-               "Your choice for w(a--->0)=%g is suspicious, since it is bigger than -1/3 there cannot be radiation domination at early times\n",
-               w_fld);
+    // class_test(w_fld >= 1./3.,
+    //            pba->error_message,
+    //            "Your choice for w(a--->0)=%g is suspicious, since it is bigger than -1/3 there cannot be radiation domination at early times\n",
+    //            w_fld);
 
       //if we have a pheno axion model, we need to extract the axion mass (in unit of H0) and decay constant (in unit of reduced planck mass) from the pheno parameters.
       //We also extract the characteristic angular frequency of oscillations
@@ -2113,11 +2135,11 @@ int background_checks(
   if (pba->has_fld == _TRUE_) {
 
     class_call(background_w_fld(pba,0.,&w_fld,&dw_over_da,&integral_fld), pba->error_message, pba->error_message);
-
-    class_test(w_fld >= 1./3.,
-               pba->error_message,
-               "Your choice for w(a--->0)=%g is suspicious, since it is bigger than 1/3 there cannot be radiation domination at early times\n",
-               w_fld);
+    //
+    // class_test(w_fld >= 1./3.,
+    //            pba->error_message,
+    //            "Your choice for w(a--->0)=%g is suspicious, since it is bigger than 1/3 there cannot be radiation domination at early times\n",
+    //            w_fld);
   }
 
   /* Varying fundamental constants */
@@ -2742,6 +2764,8 @@ int background_initial_conditions(
 
     /* rho_fld at initial time */
     pvecback_integration[pba->index_bi_rho_fld] = rho_fld_today * exp(integral_fld);
+    printf("pba->Omega0_fld %e  exp(integral_fld) %e\n", pba->Omega0_fld,exp(integral_fld));
+    printf("pba->Omega0_ur %e  exp(integral_fld) %e\n", pba->Omega0_ur);
 
   }
 
@@ -2971,6 +2995,7 @@ int background_output_titles(
   }
   class_store_columntitle(titles,"(.)rho_lambda",pba->has_lambda);
   class_store_columntitle(titles,"(.)rho_fld",pba->has_fld);
+  class_store_columntitle(titles,"(.)Omega_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)w_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)rho_ur",pba->has_ur);
 
@@ -3049,6 +3074,7 @@ int background_output_data(
     }
     class_store_double(dataptr,pvecback[pba->index_bg_rho_lambda],pba->has_lambda,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_fld],pba->has_fld,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_Omega_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_w_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_ur],pba->has_ur,storeidx);
 

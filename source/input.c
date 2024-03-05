@@ -2867,15 +2867,15 @@ int input_read_parameters_species(struct file_content * pfc,
   /** Summary: */
 
   /** - Define local variables */
-  int flag1,flag2,flag3,flag4,flag5;
-  double param1, param2, param3,param4,param5;
+  int flag1,flag2,flag3,flag4,flag5,flag6;
+  double param1, param2, param3,param4,param5,param6;
   char string1[_ARGUMENT_LENGTH_MAX_];
   int fileentries;
   int N_ncdm=0, n, entries_read;
   double rho_ncdm;
   double scf_lambda;
   double fnu_factor;
-  double wn, Omega_tot_ac, Omega0_rad,Omega_m, Omega_r;
+  double wn, wi,powac,Omega_tot_ac, Omega0_rad,Omega_m, Omega_r;
   double Omega_tot;
   double sigma_B; // Stefan-Boltzmann constant
   double stat_f_idr = 7./8.;
@@ -3759,6 +3759,7 @@ int input_read_parameters_species(struct file_content * pfc,
                     if ((strstr(string1,"tracker") != NULL) ) pba->ede_parametrization = tracker;
                     else if ((strstr(string1,"pheno_axion") != NULL)) pba->ede_parametrization = pheno_axion;
                     else if ((strstr(string1,"pheno_ADE") != NULL)) pba->ede_parametrization = pheno_ADE;
+                    else if ((strstr(string1,"EDE_is_DR") != NULL)) pba->ede_parametrization = EDE_is_DR;
                     else class_stop(errmsg,"incomprehensible input '%s' for the field 'ede_parametrization'",string1);
                   }
 
@@ -3858,7 +3859,6 @@ int input_read_parameters_species(struct file_content * pfc,
                             else {
                               class_stop(errmsg,"incomprehensible input '%s' for the field 'cs2_is_wn'",string1);
                             }
-                          }
                       }else{
                         pba->cs2_is_wn = _FALSE_;
                       }
@@ -3928,8 +3928,20 @@ int input_read_parameters_species(struct file_content * pfc,
                           else pba->w_fld_f = 1.;
                           if(input_verbose>5)printf("Read in n_pheno_axion = %e\n\tand set w_fld_f = %e\n", pba->n_pheno_axion, pba->w_fld_f);
                         }
+                        }
 
+                                                class_call(parser_read_double(pfc,"w_fld_i",&param1,&flag1,errmsg),
+                                                            errmsg,
+                                                            errmsg);
+                                                if (flag1 == _TRUE_){
+                                                  pba->w_fld_i = param1;
+                                                }
+                                                else{
+                                                  pba->w_fld_i = -1;
+                                                }
+                                                printf("pba->w_fld_i %e\n", pba->w_fld_i);
 
+                      }
                         if(pba->ede_parametrization == pheno_axion){
                           //in the pheno axion model, cs2 is a function of the axion parameters, which will be extracted later given some values for the pheno parameters (fEDE, zc, theta_i);
                           class_call(parser_read_double(pfc,"Theta_initial_fld",&param1,&flag1,errmsg),
@@ -3955,9 +3967,6 @@ int input_read_parameters_species(struct file_content * pfc,
                         }
 
 
-                      }
-
-
 
                         /* one can specify the EDE density in many ways */
                         class_call(parser_read_double(pfc,"omega_fld",&param1,&flag1,errmsg), // physical density of fld today
@@ -3972,6 +3981,9 @@ int input_read_parameters_species(struct file_content * pfc,
                         class_call(parser_read_double(pfc,"fraction_fld_ac",&param5,&flag5,errmsg), // fractional density at a_c
                                   errmsg,
                                   errmsg);
+                        class_call(parser_read_double(pfc,"N_eff_fld",&param6,&flag6,errmsg), // fractional density at a_c
+                                  errmsg,
+                                  errmsg);
                         // test to ensure we haven't multiply input ede density
                           class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld'. Please pass only one of them.");
                           class_test(flag1==_TRUE_&&flag4==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld_ac'. Please pass only one of them.");
@@ -3980,15 +3992,15 @@ int input_read_parameters_species(struct file_content * pfc,
                           class_test(flag2==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld' and 'fraction_fld_ac'. Please pass only one of them.");
                           class_test(flag4==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld_ac' and 'fraction_fld_ac'. Please pass only one of them.");
 
-
-
+                          wn = pba->w_fld_f;
+                          wi = pba->w_fld_i;
+                          powac=pow(pba->a_c,-3*(1+wn)/pba->nu_fld);
 
                        // If you passed omega_fld today in input
                        if (flag1 == _TRUE_){
-                         wn = pba->w_fld_f;
+
                          pba->Omega0_fld = param1/pba->h/pba->h;
-                         pba->Omega_fld_ac = pba->Omega0_fld*pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld ))/2 , pba->nu_fld)
-                                                               *pow(1/pba->a_c,3*(wn+1));
+                         pba->Omega_fld_ac = pba->Omega0_fld*exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
                        }
                        // if you passed Omega_fld in input
                        else if(flag2 == _TRUE_){
@@ -3998,19 +4010,15 @@ int input_read_parameters_species(struct file_content * pfc,
                          else{
                            pba->Omega0_fld = param2;
                          }
-                         wn = pba->w_fld_f;
-                         pba->Omega_fld_ac = pba->Omega0_fld*pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld ))/2 , pba->nu_fld)
-                                                               *pow(1/pba->a_c,3*(wn+1));
+
+                         pba->Omega_fld_ac = pba->Omega0_fld*exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
                        }
                        else if(flag4 == _TRUE_){
-                         wn = pba->w_fld_f;
+
                          pba->Omega_fld_ac = param4;
-                         pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
-                                         /pow(1/pba->a_c,3*(wn+1))
-                                         /pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld )) , pba->nu_fld);
+                         pba->Omega0_fld = pba->Omega_fld_ac/exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
                        }
                        else if(flag5 == _TRUE_){
-                         wn = pba->w_fld_f;
                          pba->Omega_fld_ac = param5;//This is the fractional contribution at a_c.
                          // Omega_tot_ac = (pba->Omega0_cdm+pba->Omega0_b)*pow(pba->a_c,-3)+(pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+pba->Omega0_lambda;
                          //The input parameter gives us an approximate fraction. We will extract the real one in the run.
@@ -4024,10 +4032,16 @@ int input_read_parameters_species(struct file_content * pfc,
                          Omega_tot_ac = (Omega_m)*pow(pba->a_c,-3)+(Omega0_rad)*pow(pba->a_c,-4);
                          class_test(pba->Omega_fld_ac==1.0,errmsg,"you cannot have pba->Omega_fld_ac=1.0!");
                          if(pba->Omega_fld_ac!=1.0)pba->Omega_fld_ac = Omega_tot_ac*pba->Omega_fld_ac/(1-pba->Omega_fld_ac);
-                         // printf("here!\n");
-                         pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
-                                         /pow(1/pba->a_c,3*(wn+1))
-                                         /pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld )) , pba->nu_fld);
+                         // pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
+                         //                 /pow(1/pba->a_c,3*(wn-wi))
+                         //                 /pow((1+ pow( pba->a_c , 3*(wn-wi)/pba->nu_fld )) , pba->nu_fld);
+
+                         pba->Omega0_fld = pba->Omega_fld_ac/exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
+                       }
+                       else if(flag6 == _TRUE_){
+
+                         pba->Omega0_fld = param6*7./8.*pow(4./11.,4./3.)*pba->Omega0_g;
+                         pba->Omega_fld_ac = pba->Omega0_fld*exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
                        }
                        else{
                          class_stop(errmsg,"you need to specify one of omega_fld, Omega_fld, Omega_fld_ac, fraction_fld_ac'");
@@ -4040,6 +4054,35 @@ int input_read_parameters_species(struct file_content * pfc,
 
                     }
 
+            if(pba->ede_parametrization==EDE_is_DR){
+              class_call(parser_read_double(pfc,"N_eff_fld",&param1,&flag1,errmsg),
+                        errmsg,
+                        errmsg);
+              if(flag1 == _TRUE_){
+                pba->Omega0_fld = param1*7./8.*pow(4./11.,4./3.)*pba->Omega0_g;
+              }
+              else{
+                class_stop(errmsg,"you are running with ede_parametrization==EDE_is_DR, you need to specify N_eff_fld'");
+              }
+
+
+            }
+
+
+           class_call(parser_read_string(pfc,"use_new_fld_IC",&string1,&flag1,errmsg),
+                     errmsg,
+                     errmsg);
+           if (flag1 == _TRUE_){
+             if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+               ppt->use_new_fld_IC = _TRUE_;
+             }
+             else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
+               ppt->use_new_fld_IC = _FALSE_;
+             }
+             else {
+               class_stop(errmsg,"incomprehensible input '%s' for the field 'use_new_fld_IC'",string1);
+             }
+           }
 
 
 
@@ -7380,6 +7423,7 @@ int input_default_params(struct background *pba,
   pba->n_cap_infinity = 500;
   pba->Omega_fld_ac = 0.;
   pba->w_fld_f = 1.;
+  pba->w_fld_i = -1.;
   pba->cs2_is_wn = _FALSE_;
 
   ppt->DMDE_interaction = 0;
@@ -7402,6 +7446,7 @@ int input_default_params(struct background *pba,
   pba->fluid_equation_of_state = CLP;
   pba->w0_fld = -1.;
   pba->cs2_fld = 1.;
+  ppt->use_new_fld_IC = _TRUE_;
   /** 9.a.2.1) 'CLP' case */
   pba->wa_fld = 0.;
   /** 9.a.2.2) 'EDE' case */
