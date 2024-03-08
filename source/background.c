@@ -1042,7 +1042,7 @@ int background_init(
             if(pba->f_axion > 0 && pba->m_scf > 0){
               cos_initial = cos(pba->phi_ini_scf);
               sin_initial = sin(pba->phi_ini_scf);
-              // printf("%e %e %e \n",cos_initial,sin_initial,p);
+              // printf("%e %e %e \n",cos_initial,sin_initial,pba->f_axion);
 
               n = pba->n_axion;
 
@@ -1050,7 +1050,6 @@ int background_init(
               Gac =sqrt(_PI_)*gsl_sf_gamma((n+1.)/(2*n))/gsl_sf_gamma(1+1./(2*n))*pow(2,-(n*n+1)/(2*n))*pow(3,0.5*(1./n-1))
               *pow(pba->a_c,3-6./(1+n))*pow(pow(pba->a_c,6*n/(1+n))+1,0.5*(1./n-1));
               pba->omega_axion = pba->H0*pba->m_scf*pow(1-cos_initial,0.5*(n-1))*Gac;
-
             }
         else if(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac > -30){
            /*-30 is the default value*/

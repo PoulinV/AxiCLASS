@@ -600,7 +600,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
   if(fzw.do_shooting_scf == _TRUE_){
 
-
+    fzw.scf_parameters_size = 0;
     class_call(parser_read_list_of_doubles(pfc,
                                          "scf_parameters",
                                          &(fzw.scf_parameters_size),
@@ -1650,6 +1650,12 @@ int input_get_guess(double *xguess,
     * dxdy[index_guess] = -0.5081*pow(ba.Omega0_scf,-9./7.)`;
     *
     * - Version 3: use attractor solution */
+    Omega_r = ba.Omega0_g;
+    if(ba.Omega0_ur > 0) Omega_r += ba.Omega0_ur;
+    Omega_m = ba.Omega0_b;
+    if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
+    if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+    if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
         if (ba.scf_tuning_index == 0 && (ba.scf_potential == double_exp || ba.scf_potential == pol_times_exp) ){
           xguess[index_guess] = sqrt(3.0/ba.Omega0_scf);
@@ -1660,7 +1666,7 @@ int input_get_guess(double *xguess,
         if (ba.scf_tuning_index == 1 && (ba.scf_potential == axionquad)){
           // if (ba.scf_parameters[0] <= 1e18) {
           // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*ba.Omega0_g,0.75)/pow(ba.scf_parameters[0],0.5));//ba.scf_parameters[0] is the ratio m/H0
-           xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75)/pow(ba.scf_parameters[0]*_eV_over_Mpc_/ba.H0,0.5));//ba.scf_parameters[0] is the ratio m/H0
+           xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/pow(9*(Omega_r),0.75)/pow(ba.scf_parameters[0]*_eV_over_Mpc_/ba.H0,0.5));//ba.scf_parameters[0] is the ratio m/H0
           // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/9*(ba.Omega0_b+ba.Omega0_cdm));//ba.scf_parameters[0] is the ratio m/H0
           // // xguess[index_guess] = 0.01*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
           // // xguess[index_guess] =1e-8;
@@ -1686,13 +1692,24 @@ int input_get_guess(double *xguess,
           // else{
           // printf("here!!\n");
             // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.scf_parameters[1]),0.5)));
-            xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.m_scf),0.5)));
-            // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*(ba.Omega0_cdm+ba.Omega0_b))); //there should be a switch depending on the mass.
-            dxdy[index_guess] = xguess[index_guess]/ba.Omega0_scf ;
+            if(ba.m_scf>1e6){ //should be updated with a better matching of m_scf and z_c
+              xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(Omega_r),0.75))*pow((ba.m_scf),0.5)));
+            }else{
+              if(ba.n_axion==1){
+                Omega_m += ba.Omega0_scf;
+              }
+              xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*Omega_m)); //there should be a switch depending on the mass.
+              dxdy[index_guess] = xguess[index_guess]/ba.Omega0_scf ;
+            }
           // }
           // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
           // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
 
+        }
+        else if (ba.scf_tuning_index == 2 && (ba.scf_potential == axion) ){
+                xguess[index_guess] = 3*ba.Omega0_scf/(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)); //set f_a^2 based on Om_scf, m_scf^2 and theta_i
+                dxdy[index_guess] = 3 /(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion));
+                // printf("index 0, x = %g, dxdy = %g\n",xguess[index_guess],dxdy[index_guess]);
         }
         else{
           /* Default: take the passed value as xguess and set dxdy to 1. */
@@ -4212,7 +4229,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
 
 
     class_test(pba->m_scf == 0.0 && pba->f_axion != 0.0,errmsg,"you have pba->m_scf = 0 but pba->f_axion != 0.0. Please check your ini file! ");
-    class_test(pba->m_scf != 0.0 && pba->f_axion == 0.0,errmsg,"you have pba->m_scf != 0 but pba->f_axion = 0.0. Please check your ini file! ");
+    // class_test(pba->m_scf != 0.0 && pba->f_axion == 0.0,errmsg,"you have pba->m_scf != 0 but pba->f_axion = 0.0. Please check your ini file! ");
 
   if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0 || pba->Omega0_scf != 0){
 
@@ -4418,6 +4435,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
         if(flag1 == _TRUE_){
          pba->f_axion = param1;
        }
+       class_test(pba->f_axion != 0 && pba->scf_parameters_size == 3,errmsg,"you have both f_axion defined and the third entry of scf_parameters table defined. Perhaps you are trying to shoot by adjusting f_axion. Please correct your ini file.");
          class_call(parser_read_double(pfc,"m_axion",&param1,&flag1,errmsg),
                     errmsg,
                     errmsg);
@@ -4630,11 +4648,16 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
           pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];//dummy: will be set later
         }else{
           // pba->phi_ini_scf = 0;//dummy: will be set later
-          pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2];
-          pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];
+          pba->phi_ini_scf = pba->scf_parameters[0];
+          pba->phi_prime_ini_scf = pba->scf_parameters[1];
           // printf("%e %e \n",pba->phi_ini_scf,pba->phi_prime_ini_scf );
-        }
+          if(pba->f_axion == 0.0 && pba->scf_parameters_size == 3){
+            // printf("here!!\n");
+            pba->f_axion = sqrt(pba->scf_parameters[2]);//one can also use the 3rd entry of the scf_parameters table to set f_axion. Useful when shooting.
+            // printf("pba->f_axion %e\n", pba->f_axion);
 
+          }
+        }
 
       }
     }
