@@ -661,10 +661,6 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
               fzw.scf_potential = phi_2n;
               flag2 =_TRUE_;
            }
-           if (strcmp(string1,"ax_cos_cubed") == 0) {
-              fzw.scf_potential = ax_cos_cubed;
-             flag2 =_TRUE_;
-           }
            if (strcmp(string1,"axionquad") == 0) {
               fzw.scf_potential = axionquad;
               class_call(parser_read_string(pfc,"axionquad_mass_is_log10",&string1,&flag1,errmsg),
@@ -680,7 +676,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
        class_test(flag2==_FALSE_,
                       errmsg,
-                      "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','axionquad','ax_cos_cubed'.");
+                      "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','axionquad'.");
 
 
 
@@ -1698,15 +1694,6 @@ int input_get_guess(double *xguess,
           // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
 
         }
-        else if (ba.scf_tuning_index == 2 && (ba.scf_potential == ax_cos_cubed) ){
-                xguess[index_guess] = 160*ba.scf_parameters[1]; //set IC based on f_a.
-                //0.2*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
-                //xguess[index_guess] =1e-8;
-                dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
-                // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
-                // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
-        }
-
         else{
           /* Default: take the passed value as xguess and set dxdy to 1. */
           xguess[index_guess] = ba.scf_parameters[ba.scf_tuning_index];
@@ -4567,7 +4554,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
        }
    class_test(flag2==_FALSE_,
                   errmsg,
-                  "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','axionquad','ax_cos_cubed'.");
+                  "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','axionquad'.");
      }
 
 

@@ -2576,10 +2576,6 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
         printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
         printf("     -> V0 = %e \t phi_i = %e => m_fld = %e pba->H0 %e\n", pba->V0_phi2n, pba->phi_ini_scf,pow(pow(2,pba->n_axion)*pba->V0_phi2n,0.5)/pba->H0,pba->H0);
       }
-      if(pba->scf_potential == ax_cos_cubed){
-      printf("Additional scf parameters used: \n");
-      printf("m_a = %g eV, f_a/mpl = %g\n",(pba->scf_parameters[0]/1.5638e29),pba->scf_parameters[1]);
-      }
 
       if (pba->has_lambda == _TRUE_) {
         printf("     -> Omega_Lambda = %g, wished %g\n",
@@ -3635,31 +3631,6 @@ double ddV_double_exp_scf(
 
 }
 
-/** parameters and functions for the axion (1-cos^3) potential
- * \f$ V_axion = m_a*m_a*f_a*f_a*(1 - cos(phi/f_a))^3
- */
-double V_ax_cos_cubed_scf(
-                  struct background *pba,
-                  double phi){
-    return pow(pba->scf_parameters[0],2)*pow(pba->scf_parameters[1],2)*(pow((1 - cos((phi/pba->scf_parameters[1])*_PI_/180)),3));
-
-}
-
-double dV_ax_cos_cubed_scf(
-                  struct background *pba,
-                  double phi){
-
-    return 3*pow(pba->scf_parameters[0],2)*pow(pba->scf_parameters[1],2)*sin((phi/pba->scf_parameters[1])*_PI_/180)*(pow((1 - cos((phi/pba->scf_parameters[1])*_PI_/180)),2));
-
-}
-
-double ddV_ax_cos_cubed_scf(
-                  struct background *pba,
-                  double phi){
-
-    // printf("1 %e 2 %e \n", exp(-pba->scf_parameters[0]*phi),pow(pba->scf_parameters[0],4));
-    return 12*pow(pba->scf_parameters[0],2)*pow(pba->scf_parameters[1],2)*(2 + 3*cos((phi/pba->scf_parameters[1])*_PI_/180))*(pow((sin((phi/(2*pba->scf_parameters[1]))*_PI_/180)),4));
-}
 /** parameters and functions for the axion potential
  * \f$ V_axion = m_a*m_a*f_a*f_a*(1 - cos(phi/f_a))
  */
@@ -3805,10 +3776,7 @@ double V_scf(
   else if(pba->scf_potential == axionquad){
     result = V_axionquad_scf(pba,phi);
   }
-  else if(pba->scf_potential == ax_cos_cubed){
-    result = V_ax_cos_cubed_scf(pba,phi);
-  }
-  // printf("result Vf %e\n", result);
+    // printf("result Vf %e\n", result);
 
   return result;
 }
@@ -3833,9 +3801,7 @@ double dV_scf(
   else if(pba->scf_potential == axionquad){
     result = dV_axionquad_scf(pba,phi);
   }
-  else if(pba->scf_potential == ax_cos_cubed){
-    result = dV_ax_cos_cubed_scf(pba,phi);
-  }
+
   // printf("result dVf %e\n", result);
 
   return result;
@@ -3865,9 +3831,7 @@ double ddV_scf(
     result = ddV_axionquad_scf(pba,phi);
   }
 
-  else if(pba->scf_potential == ax_cos_cubed){
-    result = ddV_ax_cos_cubed_scf(pba,phi);
-  }
+
   // printf("result ddVf %e\n", result);
   return result;
 
