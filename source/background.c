@@ -399,7 +399,7 @@ int background_functions(
   int n_ncdm;
   /* fluid's time-dependent equation of state parameter */
   double w_fld, dw_over_da, integral_fld;
-
+  // short kg_fld_switch;
   /* scalar field quantities */
   double phi = 0, phi_prime = 0;
   //printf("Inside background_functions.\n");//print_trigger
@@ -478,6 +478,8 @@ int background_functions(
     //printf("Scalar field? %f \n", pba->has_scf);//print_trigger
     /* Scalar field */
     if (pba->has_scf == _TRUE_ && pba->scf_kg_eq == _TRUE_) {
+
+    pba->kg_fld_switch = _FALSE_;
     //printf("Inside scf table update\n"); //print_trigger
     phi = pvecback_B[pba->index_bi_phi_scf];
     phi_prime = pvecback_B[pba->index_bi_phi_prime_scf];
@@ -515,7 +517,11 @@ int background_functions(
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
 
-
+    if(pba->kg_fld_switch == _FALSE_){
+      pba->kg_fld_switch = _TRUE_;
+      //if we just switched from KG to fluid, we need to correctly initialize the density.
+      pvecback_B[pba->index_bi_rho_scf] = (phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.;
+    }
     /****THE REAL QUANTITIES ARE ASSIGNED HERE****/
     //pvecback[pba->index_bg_rho_scf] = pba->Omega0_scf * pow(pba->H0,2) / pow(a_rel,3);
 
@@ -3152,7 +3158,7 @@ int background_derivs(
   pbpaw = parameters_and_workspace;
   pba =  pbpaw->pba;
   pvecback = pbpaw->pvecback;
-
+  double cos_initial,sin_initial,n,Gac;
   /** - scale factor a (in fact, given our normalisation conventions, this stands for a/a_0) */
   a = exp(loga);
 
@@ -3180,10 +3186,14 @@ int background_derivs(
    if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ ){
      if(pba->m_scf*pba->H0/H >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations at m > 3H by default.
        pba->scf_kg_eq = _FALSE_;
-       if(pba->scf_potential==axionquad &&  pba->a_c==1.0 ){
-         pba->a_c = a; //we defined a_c as the time at which the transiton occurs. this is necessary for the perts.
+       // if(pba->scf_potential==axionquad &&  pba->a_c==1.0 ){
+       if(pba->a_c==1.0 ){
+         pba->a_c = a; //we defined a_c as the time at which the transition occurs. this is necessary for the perts.
          //for other potentials, a_c was already defined.
        }
+
+       // printf("pba->a_c %e\n", pba->a_c);
+
      }
      else{
        pba->scf_kg_eq = _TRUE_;
@@ -3257,7 +3267,6 @@ int background_derivs(
     // if(pba->background_verbose > 11) printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
     }
     else if(pba->scf_kg_eq == _FALSE_) {
-
     dy[pba->index_bi_rho_scf] = -3.*y[pba->index_bi_rho_scf]*(1+pba->w_scf);
     dy[pba->index_bi_phi_scf] = 0;
     dy[pba->index_bi_phi_prime_scf] = 0;

@@ -197,6 +197,7 @@ struct background
 
   double n_axion_security;
   short scf_kg_eq;    /**< evolve scalar field with KG equations */
+  short kg_fld_switch;    /**< evolve scalar field with KG equations */
   short scf_fluid_eq;    /**< evolve scalar field with KG equations */
   short scf_evolve_like_axionCAMB; /**< evolve scalar field perturbations like axionCAMB */
   short scf_has_perturbations; /** do scalar field perts */

@@ -925,6 +925,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                      pba->shooting_error,
                      shooting_failed=_TRUE_);
 
+      printf("xwero %e\n", xzero);
       /* Store xzero */
       // This needs to be done with enough accuracy. A standard double has a relative
       // precision of around 1e-16, so 1e-20 should be good enough for the shooting
@@ -1241,7 +1242,7 @@ int input_find_root(double *xzero,
     x1 = x2;
     f1 = f2;
   }
-
+  // printf("here x1 %e x2 %e f1 %e f2 %e!!\n",x1,x2,f1,f2);
   /** Find root using Ridders method (Exchange for bisection if you are old-school) */
   class_call(input_fzero_ridder(input_fzerofun_1d,
                                 x1,
@@ -1254,6 +1255,7 @@ int input_find_root(double *xzero,
                                 fevals,
                                 errmsg),
              errmsg,errmsg);
+   // printf("here xzero %e!!\n",xzero);
 
   return _SUCCESS_;
 
@@ -1694,6 +1696,7 @@ int input_get_guess(double *xguess,
             // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.scf_parameters[1]),0.5)));
             if(ba.m_scf>1e6){ //should be updated with a better matching of m_scf and z_c
               xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(Omega_r),0.75))*pow((ba.m_scf),0.5)));
+              dxdy[index_guess] = xguess[index_guess]/ba.Omega0_scf ;
             }else{
               if(ba.n_axion==1){
                 Omega_m += ba.Omega0_scf;
@@ -1707,9 +1710,28 @@ int input_get_guess(double *xguess,
 
         }
         else if (ba.scf_tuning_index == 2 && (ba.scf_potential == axion) ){
-                xguess[index_guess] = 3*ba.Omega0_scf/(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)); //set f_a^2 based on Om_scf, m_scf^2 and theta_i
-                dxdy[index_guess] = 3 /(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion));
-                // printf("index 0, x = %g, dxdy = %g\n",xguess[index_guess],dxdy[index_guess]);
+         //
+         //  // class_test()
+         // if(pfzw->input_verbose>10)printf("guess input: m_ax=%e, phi_ini (theta)=%e. Omega_ax=%e\n",ba.m_scf, ba.scf_parameters[0],pfzw->target_value[index_guess]);
+         //
+         // guess = pow(pfzw->target_value[index_guess]*pow(ba.scf_parameters[0]/0.5,2)*pow(ba.m_scf/1e10,0.5),0.5); // f_ax^2
+         // // guess = pow(Omega_ax*pow(phi_initial/0.5,2)*pow(m_ax/1e10,0.5),0.5);
+         //
+         // xguess[index_guess] = log10(guess)-2;
+         // dxdy[index_guess] =  - log10(pow(pfzw->target_value[index_guess],0.5));
+         //
+         // // xguess[index_guess] = guess;
+         // // dxdy[index_guess] = guess*pow(Omega_ax,0.5);
+         //  //if(pfzw->input_verbose>10)printf("get guess: m_ax %e \n",m_ax);
+         //  if(pfzw->input_verbose>10)printf("get guess: Omega_scf %e log10_f_axion %e dxdy[index_guess] %e\n",pfzw->target_value[index_guess],xguess[index_guess],dxdy[index_guess]);
+
+
+          // OLD
+          xguess[index_guess] = 3*ba.Omega0_scf/(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)); //set f_a^2 based on Om_scf, m_scf^2 and theta_i
+          // xguess[index_guess] = ba.scf_parameters[ba.scf_tuning_index]; //set f_a^2 based on Om_scf, m_scf^2 and theta_i
+          dxdy[index_guess] = 3 /(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion));
+          // dxdy[index_guess] = xguess[index_guess]*0.1;
+          // printf("index 0, x = %g, dxdy = %g\n",xguess[index_guess],dxdy[index_guess]);
         }
         else{
           /* Default: take the passed value as xguess and set dxdy to 1. */
@@ -4101,6 +4123,7 @@ int input_read_parameters_species(struct file_content * pfc,
            if (flag1 == _TRUE_){
              if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
                ppt->use_big_theta_fld = _TRUE_;
+               class_stop(errmsg,"Big Theta is not working for now, to be debug. Please run with use_big_theta_fld = no (default).'");
              }
              else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
                ppt->use_big_theta_fld = _FALSE_;
@@ -4320,6 +4343,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
        }
        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
          ppt->use_delta_scf_over_1plusw = _FALSE_;
+         if(input_verbose>0)printf(" [WARNING:] you have use_delta_fld_over_1plusw = no. if you run axion or EDE where w can be equal to -1 the code is often more stable when using use_delta_fld_over_1plusw = yes.\n");
        }
      }
      //default is false
@@ -4441,6 +4465,8 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
                     errmsg);
         if(flag1 == _TRUE_){
           pba->m_scf = param1;
+          // printf("m_a = %e eV \n",(pba->m_scf*pba->H0/1.5638e29));
+
         }
         if(pba->m_scf == 0.0 || pba->f_axion == 0.0 ){
           class_call(parser_read_string(pfc,
@@ -4650,9 +4676,9 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
           // pba->phi_ini_scf = 0;//dummy: will be set later
           pba->phi_ini_scf = pba->scf_parameters[0];
           pba->phi_prime_ini_scf = pba->scf_parameters[1];
-          // printf("%e %e \n",pba->phi_ini_scf,pba->phi_prime_ini_scf );
           if(pba->f_axion == 0.0 && pba->scf_parameters_size == 3){
             // printf("here!!\n");
+            // pba->f_axion = pow(10,pba->scf_parameters[2]);//one can also use the 3rd entry of the scf_parameters table to set f_axion. Useful when shooting.
             pba->f_axion = sqrt(pba->scf_parameters[2]);//one can also use the 3rd entry of the scf_parameters table to set f_axion. Useful when shooting.
             // printf("pba->f_axion %e\n", pba->f_axion);
 
