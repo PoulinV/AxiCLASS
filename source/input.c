@@ -1572,11 +1572,11 @@ int input_get_guess(double *xguess,
           FF=0.8;
 
           Omega_r = ba.Omega0_g;
-          if(ba.has_ur == _TRUE_) Omega_r += ba.Omega0_ur;
+          if(ba.Omega0_ur > 0) Omega_r += ba.Omega0_ur;
           Omega_m = ba.Omega0_b;
-          if(ba.has_cdm == _TRUE_) Omega_m += ba.Omega0_cdm;
-          if(ba.has_idm == _TRUE_) Omega_m += ba.Omega0_idm;
-          if(ba.has_dcdm == _TRUE_) Omega_m += ba.Omega0_dcdm;
+          if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
+          if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+          if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
           a_eq = Omega_r /Omega_m;
 
@@ -1619,11 +1619,11 @@ int input_get_guess(double *xguess,
               }
               FF=0.8;
               Omega_r = ba.Omega0_g;
-              if(ba.has_ur == _TRUE_) Omega_r += ba.Omega0_ur;
+              if(ba.Omega0_ur > 0) Omega_r += ba.Omega0_ur;
               Omega_m = ba.Omega0_b;
-              if(ba.has_cdm == _TRUE_) Omega_m += ba.Omega0_cdm;
-              if(ba.has_idm == _TRUE_) Omega_m += ba.Omega0_idm;
-              if(ba.has_dcdm == _TRUE_) Omega_m += ba.Omega0_dcdm;
+              if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
+              if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+              if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
               a_eq = Omega_r /Omega_m;
            if(axc<a_eq){
