@@ -4686,6 +4686,8 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
 
 
       }
+
+      class_read_double("f_ede_max_allowed",pba->f_ede_max_allowed);//VP: default is, so it is ignored.
     }
   }
 
@@ -7446,6 +7448,7 @@ int input_default_params(struct background *pba,
   pba->threshold_scf_fluid_m_over_H = 3;
   pba->security_small_Omega_scf = -10;//set to a negative number so it is never used by default.
   pba->n_axion_security = -2.5;//set to a negative number so it is never used by default.
+  pba->f_ede_max_allowed = 1;
   ppt->use_big_theta_fld = _FALSE_;
 
   ppt->use_big_theta_scf = _FALSE_;

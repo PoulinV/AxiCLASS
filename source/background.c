@@ -2503,6 +2503,10 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
     pba->background_table[index_loga*pba->bg_size+pba->index_bg_lum_distance] = comoving_radius*(1.+pba->z_table[index_loga]);
   }
 
+
+    class_test(pba->f_ede > pba->f_ede_max_allowed,
+               pba->error_message,
+               "The value of pba->f_ede %e > %e, the model is likely excluded and may crash montepython, we reject it.",pba->f_ede,pba->f_ede_max_allowed);
   /** - fill tables of second derivatives (in view of spline interpolation) */
   class_call(array_spline_table_lines(pba->z_table,
                                       pba->bt_size,
