@@ -122,6 +122,14 @@
   (((a) == _TRUE_) && ((c) == _TRUE_)) ||                                       \
   (((b) == _TRUE_) && ((c) == _TRUE_))
 
+#define class_at_least_two_of_four(a,b,c,d)                                      \
+  (((a) == _TRUE_) && ((b) == _TRUE_)) ||                                       \
+  (((a) == _TRUE_) && ((c) == _TRUE_)) ||                                       \
+  (((b) == _TRUE_) && ((c) == _TRUE_)) ||                                       \
+  (((a) == _TRUE_) && ((d) == _TRUE_)) ||                                       \
+  (((b) == _TRUE_) && ((d) == _TRUE_)) ||                                       \
+  (((c) == _TRUE_) && ((d) == _TRUE_))
+
 #define class_none_of_three(a,b,c)                                              \
   ((a) == _FALSE_) && ((b) == _FALSE_) && ((c) == _FALSE_)
 
@@ -205,13 +213,13 @@
 
 enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr,
                   Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,
-                  fraction_axion_ac, log10_axion_ac, log10_fraction_axion_ac_phi2n,
+                  fraction_axion_ac, log10_axion_ac, Omega_scf_shoot_fa, log10_fraction_axion_ac_phi2n,
                   log10_axion_ac_phi2n, a_peak_eq, sigma8};
 /* Important: add one for each new target_names */
 enum computation_stage {cs_background, cs_thermodynamics, cs_perturbations,
                         cs_primordial, cs_nonlinear, cs_transfer, cs_spectra};
 /* Important: Keep this number equal to the number of target_names (except sigma8), and keep sigma8 at the very end */
-#define _NUM_TARGETS_ 12 //Keep this number as number of target_names
+#define _NUM_TARGETS_ 13 //Keep this number as number of target_names
 enum scf_pot_inp{
   pol_times_exp_inp, /** scf_potential set to pol_times_exp:V equals ((\phi-B)^\alpha + A)exp(-lambda*phi), see http://arxiv.org/abs/astro-ph/9908085.*/
   double_exp_inp, /* scf_potential set to double_exp: V equals \Lambda_1^4e^{-\lambda\phi}+\Lambda_2^4e^{-\mu\phi} */
@@ -243,6 +251,7 @@ struct fzerofun_workspace {
   double Omega0_axion;
   double log10_axion_ac;
   int n_axion;
+  double theta_axion;
   double w_scf;
   double threshold_scf_fluid_m_over_H;
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
