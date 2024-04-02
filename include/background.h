@@ -39,7 +39,7 @@ static double gsl_sf_gamma(double z) {
         x += p[n] / (z + 1.*n);
     // double complex t = z + 7.5;
     double t = z + 7.5;
-    return sqrt(2*M_PI) * pow(t, z+0.5) * exp(-t) * x;
+    return sqrt(2*_PI_) * pow(t, z+0.5) * exp(-t) * x;
 }
 
 
@@ -173,6 +173,7 @@ struct background
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
+  double theta_axion;
   double beta_scf;
   double m_scf;
   double f_axion;
