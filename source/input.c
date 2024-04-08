@@ -1678,7 +1678,7 @@ int input_get_guess(double *xguess,
           if(pfzw->input_verbose>10)printf("guess input: m_ax=%e, phi_ini (theta)=%e. Omega_ax=%e\n",m_ax, phi_initial,Omega_ax);
 
           guess = pow(Omega_ax*pow(phi_initial/0.5,2)*pow(m_ax/1e10,0.5),0.5); // f_ax^2
-          // guess = pow(Omega_ax*pow(phi_initial/0.5,2)*pow(m_ax/1e10,0.5),0.5); 
+          // guess = pow(Omega_ax*pow(phi_initial/0.5,2)*pow(m_ax/1e10,0.5),0.5);
 
          xguess[index_guess] = log10(guess)-2;
           dxdy[index_guess] =  1;//- log10(pow(Omega_ax,0.5));
@@ -4027,6 +4027,30 @@ int input_read_parameters_species(struct file_content * pfc,
 
                       }
                         if(pba->ede_parametrization == pheno_axion){
+
+                          class_call(parser_read_double(pfc,"w_fld_f",&param1,&flag1,errmsg),
+                                      errmsg,
+                                      errmsg);
+                          class_call(parser_read_double(pfc,"n_pheno_axion",&param2,&flag2,errmsg),
+                                      errmsg,
+                                      errmsg);
+
+                          class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"You have passed both 'w_fld_f' and 'n_pheno_axion'. Please pass only one of them.\n");
+                          // Input w_fld_f
+                          if (flag1 == _TRUE_){
+                            pba->w_fld_f = param1;
+                            if(pba->w_fld_f != 1.) pba->n_pheno_axion = (pba->w_fld_f + 1.) / (1. - pba->w_fld_f);
+                            else pba->n_pheno_axion = 1000.;
+                            if(input_verbose>5)printf("Read in w_fld_f = %e \n\tand set n_pheno_axion = %e\n", pba->w_fld_f, pba->n_pheno_axion);
+                          }
+                          // Input n_pheno_axion
+                          else if (flag2 == _TRUE_){
+                            pba->n_pheno_axion = param2;
+                            if (pba->n_cap_infinity > pba->n_pheno_axion) pba->w_fld_f = (pba->n_pheno_axion-1.)/(pba->n_pheno_axion+1.);
+                            else pba->w_fld_f = 1.;
+                            if(input_verbose>5)printf("Read in n_pheno_axion = %e\n\tand set w_fld_f = %e\n", pba->n_pheno_axion, pba->w_fld_f);
+                          }
+                          
                           //in the pheno axion model, cs2 is a function of the axion parameters, which will be extracted later given some values for the pheno parameters (fEDE, zc, theta_i);
                           class_call(parser_read_double(pfc,"Theta_initial_fld",&param1,&flag1,errmsg),
                                       errmsg,
