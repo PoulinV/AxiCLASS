@@ -8940,6 +8940,17 @@ int perturbations_print_variables(double tau,
                         f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];
                         if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
                       }
+                      else if (ppt->scales_like_WZDR == _TRUE_) {
+                        if(pvecback[pba->index_bg_a] < ppt->a_pivot_DMDE_interaction){
+                          f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction);
+                        }else{
+                          f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction-2)*pow(ppt->a_pivot_DMDE_interaction,2);
+                        }
+
+                          // f_norm = pow(1/(pvecback[pba->index_bg_a]*ppt->a_pivot_DMDE_interaction),2)/pow(1-0.05*pow(pvecback[pba->index_bg_a],-0.5)+0.131/pvecback[pba->index_bg_a],4);
+
+
+                      }
                       else f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction);//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1 by default
         }
         Gamma_idm_ede = ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]/(pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]);
@@ -9721,6 +9732,14 @@ int perturbations_derivs(double tau,
                   if(ppt->scales_like_fEDE == _TRUE_ || ppt->scales_like_fEDE_over_k2 == _TRUE_){
                     f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];//scales prop to fEDE.
                     if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
+                  }
+                  else if (ppt->scales_like_WZDR == _TRUE_) {
+                    if(a < ppt->a_pivot_DMDE_interaction){
+                      f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction);
+                    }else{
+                      f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction-2)*pow(ppt->a_pivot_DMDE_interaction,2);
+                    }
+
                   }
                   else f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction);//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1 by default
                   class_call(background_w_fld(pba,a,&w_fld,&dw_over_da_fld,&integral_fld), pba->error_message, ppt->error_message);

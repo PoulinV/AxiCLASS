@@ -4050,7 +4050,7 @@ int input_read_parameters_species(struct file_content * pfc,
                             else pba->w_fld_f = 1.;
                             if(input_verbose>5)printf("Read in n_pheno_axion = %e\n\tand set w_fld_f = %e\n", pba->n_pheno_axion, pba->w_fld_f);
                           }
-                          
+
                           //in the pheno axion model, cs2 is a function of the axion parameters, which will be extracted later given some values for the pheno parameters (fEDE, zc, theta_i);
                           class_call(parser_read_double(pfc,"Theta_initial_fld",&param1,&flag1,errmsg),
                                       errmsg,
@@ -4281,6 +4281,24 @@ int input_read_parameters_species(struct file_content * pfc,
           ppt->scales_like_fEDE_over_k2 = _FALSE_;
         }
       }
+      class_call(parser_read_string(pfc,
+                                    "scales_like_WZDR",
+                                    &string1,
+                                    &flag1,
+                                    errmsg),
+                  errmsg,
+                  errmsg);
+      if (flag1 == _TRUE_){
+        if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+          ppt->scales_like_WZDR = _TRUE_;
+          class_read_double("a_pivot_DMDE_interaction",ppt->a_pivot_DMDE_interaction);
+
+        }
+        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
+          ppt->scales_like_WZDR = _FALSE_;
+        }
+      }
+
 
 
 
@@ -7606,9 +7624,11 @@ int input_default_params(struct background *pba,
 
   ppt->DMDE_interaction = 0;
   ppt->index_DMDE_interaction = 1;//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1.
+  ppt->a_pivot_DMDE_interaction = 1e-4;//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1.
   ppt->DMEDE_TCA_threshold = 1e9;
   ppt->scales_like_fEDE = _FALSE_;
   ppt->scales_like_fEDE_over_k2 = _FALSE_;
+  ppt->scales_like_WZDR = _FALSE_;
   /** - all verbose parameters */
 
 
