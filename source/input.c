@@ -4293,6 +4293,20 @@ int input_read_parameters_species(struct file_content * pfc,
           ppt->scales_like_WZDR = _TRUE_;
           class_read_double("a_pivot_DMDE_interaction",ppt->a_pivot_DMDE_interaction);
 
+           class_call(parser_read_string(pfc,
+                                         "a_pivot_DMDE_interaction_is_ac",
+                                         &string1,
+                                         &flag1,
+                                         errmsg),
+                       errmsg,
+                       errmsg);
+           if (flag1 == _TRUE_){
+             if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+               ppt->a_pivot_DMDE_interaction = pba->a_c;
+             }
+          }
+
+
         }
         else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
           ppt->scales_like_WZDR = _FALSE_;
