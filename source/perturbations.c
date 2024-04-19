@@ -8937,7 +8937,7 @@ int perturbations_print_variables(double tau,
         f_norm =0;
         if(pba->has_fld==_TRUE_ && ppt->has_idm_fld == _TRUE_){
                       if(ppt->scales_like_fEDE == _TRUE_ || ppt->scales_like_fEDE_over_k2 == _TRUE_){
-                        f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];
+                        f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction-1)*ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];
                         if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
                       }
                       else if (ppt->scales_like_WZDR == _TRUE_) {
@@ -9730,7 +9730,7 @@ int perturbations_derivs(double tau,
 
     if(pba->has_fld==_TRUE_ && ppt->has_idm_fld == _TRUE_){
                   if(ppt->scales_like_fEDE == _TRUE_ || ppt->scales_like_fEDE_over_k2 == _TRUE_){
-                    f_norm = ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];//scales prop to fEDE.
+                    f_norm = pow(pvecback[pba->index_bg_a],ppt->index_DMDE_interaction-1)*ppw->pvecback[pba->index_bg_Omega_fld]/pba->f_ede_peak*ppw->pvecback[pba->index_bg_rho_idm];//scales prop to fEDE.
                     if(ppt->scales_like_fEDE_over_k2 == _TRUE_)f_norm /= k2;
                   }
                   else if (ppt->scales_like_WZDR == _TRUE_) {
