@@ -658,6 +658,15 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
            if (strcmp(string1,"axion") == 0) {
               fzw.scf_potential = axion;
               flag2 =_TRUE_;
+
+              class_call(parser_read_string(pfc,"theta_i_is_close_to_pi",&string1,&flag1,errmsg),
+              errmsg,
+              errmsg);
+               if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+                // if axionquad_mass_is_log10 is true it means we are running on log10_m_axion so we update it.
+                fzw.scf_parameters[0]= _PI_ - pow(10,fzw.scf_parameters[0]);
+               }
+
            }
            if (strcmp(string1,"phi_2n") == 0) {
               fzw.scf_potential = phi_2n;
@@ -4681,6 +4690,13 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
             // printf("pba->f_axion %e\n", pba->f_axion);
 
           }
+
+          class_call(parser_read_string(pfc,"theta_i_is_close_to_pi",&string1,&flag1,errmsg),
+              errmsg,
+              errmsg);
+         if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+          pba->scf_parameters[0] = _PI_ - pow(10,pba->scf_parameters[0]); //TLS
+          }
           // printf("%e %e \n",pba->phi_ini_scf,pba->phi_prime_ini_scf );
         }
 
@@ -4688,6 +4704,8 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
       }
 
       class_read_double("f_ede_max_allowed",pba->f_ede_max_allowed);//VP: default is, so it is ignored.
+      class_read_double("f_axion_max_allowed",pba->f_axion_max_allowed);//VP: default is, so it is ignored.
+
     }
   }
 
@@ -7449,6 +7467,7 @@ int input_default_params(struct background *pba,
   pba->security_small_Omega_scf = -10;//set to a negative number so it is never used by default.
   pba->n_axion_security = -2.5;//set to a negative number so it is never used by default.
   pba->f_ede_max_allowed = 1;
+  pba->f_axion_max_allowed = 1e15;
   ppt->use_big_theta_fld = _FALSE_;
 
   ppt->use_big_theta_scf = _FALSE_;

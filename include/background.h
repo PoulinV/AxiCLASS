@@ -193,6 +193,7 @@ struct background
   double zc_is_zeq; //enforce zc=zeq, with zeq=(Omega0_b+Omega0_cdm)/(Omega0_g+Omega0_ur);
   double f_ede; // TK added doubles to fill with values of the exact z_c and fraction_ede eventually
   double f_ede_max_allowed; // VP: security if fEDE is too large the code may crash. default is 1 (i.e. ignored), but can be adjusted if necessary by the user.
+  double f_axion_max_allowed; // TLS: to ensure quantum gravity constraints because I, Prof. Tristan L. Smith, really care about quantum gravity
   double phi_scf_c; // Added for debugging. Trying to see whether the value of phi at z_c is really 7/8 phi_ini
   double n_axion;
   double w_scf;

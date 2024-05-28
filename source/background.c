@@ -1044,6 +1044,7 @@ int background_init(
         }
         else if(pba->scf_potential == axion){
 
+
             if(pba->f_axion > 0 && pba->m_scf > 0){
               cos_initial = cos(pba->phi_ini_scf);
               sin_initial = sin(pba->phi_ini_scf);
@@ -1159,6 +1160,9 @@ int background_init(
             // printf("%e %e\n", pba->scf_parameters[0],  pba->scf_parameters[0]/pba->f_axion);
 
 
+            class_test(pba->f_axion > pba->f_axion_max_allowed,
+                  pba->error_message,
+                  "The value of pba->f_axion %e > %e, the model likely violates basic ideas of quantum gravity so we reject it.",pba->f_axion,pba->f_axion_max_allowed);
 
         }
         else{
@@ -1169,6 +1173,7 @@ int background_init(
         pba->f_ede=0.0;
         pba->log10_z_c=1;
         // printf("m_scf is %e pba->w_scf %e pba->f_axion %e\n", pba->m_scf,pba->w_scf,pba->f_axion);
+
      }
 
   /** - check that input parameters make sense and write additional information about them */
