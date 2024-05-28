@@ -1737,8 +1737,8 @@ int input_get_guess(double *xguess,
                 // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
         }
         else if (ba.scf_tuning_index == 2 && (ba.scf_potential == axion) ){
-                xguess[index_guess] = 3*ba.Omega0_scf/(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)); //set f_a^2 based on Om_scf, m_scf^2 and theta_i
-                dxdy[index_guess] = 3 /(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion));
+                xguess[index_guess] = 3*ba.Omega0_scf/(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)*(1-2*ba.beta_scf)); //set f_a^2 based on Om_scf, m_scf^2 and theta_i
+                dxdy[index_guess] = 3 /(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)*(1-2*ba.beta_scf));
                 // printf("index 0, x = %g, dxdy = %g\n",xguess[index_guess],dxdy[index_guess]);
         }
 
