@@ -4177,20 +4177,6 @@ int input_read_parameters_species(struct file_content * pfc,
             }
 
 
-           class_call(parser_read_string(pfc,"use_new_fld_IC",&string1,&flag1,errmsg),
-                     errmsg,
-                     errmsg);
-           if (flag1 == _TRUE_){
-             if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
-               ppt->use_new_fld_IC = _TRUE_;
-             }
-             else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
-               ppt->use_new_fld_IC = _FALSE_;
-             }
-             else {
-               class_stop(errmsg,"incomprehensible input '%s' for the field 'use_new_fld_IC'",string1);
-             }
-           }
 
 
 
@@ -4240,6 +4226,22 @@ int input_read_parameters_species(struct file_content * pfc,
 
       // This bracket ends reading in of EDE params
       }
+
+      class_call(parser_read_string(pfc,"use_new_fld_IC",&string1,&flag1,errmsg),
+                errmsg,
+                errmsg);
+      if (flag1 == _TRUE_){
+        if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
+          ppt->use_new_fld_IC = _TRUE_;
+        }
+        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
+          ppt->use_new_fld_IC = _FALSE_;
+        }
+        else {
+          class_stop(errmsg,"incomprehensible input '%s' for the field 'use_new_fld_IC'",string1);
+        }
+      }
+
 
 
 
