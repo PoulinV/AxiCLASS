@@ -198,6 +198,9 @@ struct background
 
   double n_axion_security;
   short axion_is_chebishev;
+  double del_rel_coeff1;
+  double del_rel_coeff2;
+  double del_rel_coeff3;
   short scf_kg_eq;    /**< evolve scalar field with KG equations */
   short kg_fld_switch;    /**< evolve scalar field with KG equations */
   short scf_fluid_eq;    /**< evolve scalar field with KG equations */

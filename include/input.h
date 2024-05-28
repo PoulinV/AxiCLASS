@@ -250,6 +250,10 @@ struct fzerofun_workspace {
   double f_axion;
   double Omega0_axion;
   double log10_axion_ac;
+  short axion_is_chebishev;
+  double del_rel_coeff1;
+  double del_rel_coeff2;
+  double del_rel_coeff3;
   int n_axion;
   double theta_axion;
   double w_scf;

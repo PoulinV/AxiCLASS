@@ -662,9 +662,13 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
               if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
                 //if axionquad_mass_is_log10 is true it means we are running on log10_m_axion so we update it.
-                pba->axion_is_chebishev = _TRUE_;
+                fzw.axion_is_chebishev = _TRUE_;
+                class_read_double("del_rel_coeff1",fzw.del_rel_coeff1);
+                class_read_double("del_rel_coeff2",fzw.del_rel_coeff2);
+                class_read_double("del_rel_coeff3",fzw.del_rel_coeff3);
+
               }else{
-                pba->axion_is_chebishev = _FALSE_;
+                fzw.axion_is_chebishev = _FALSE_;
               }
            }
            if (strcmp(string1,"phi_2n") == 0) {
@@ -4612,6 +4616,10 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
          if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
            //if axionquad_mass_is_log10 is true it means we are running on log10_m_axion so we update it.
            pba->axion_is_chebishev = _TRUE_;
+           class_read_double("del_rel_coeff1",pba->del_rel_coeff1);
+           class_read_double("del_rel_coeff2",pba->del_rel_coeff2);
+           class_read_double("del_rel_coeff3",pba->del_rel_coeff3);
+
          }else{
            pba->axion_is_chebishev = _FALSE_;
          }
@@ -7640,6 +7648,9 @@ int input_default_params(struct background *pba,
   pba->n_axion_security = -2.5;//set to a negative number so it is never used by default.
   ppt->use_big_theta_fld = _FALSE_;
   pba->axion_is_chebishev = _FALSE_;
+  pba->del_rel_coeff1 =1;
+  pba->del_rel_coeff2 =1;
+  pba->del_rel_coeff3 =1;
   ppt->use_big_theta_scf = _FALSE_;
   ppt->use_delta_fld_over_1plusw = _FALSE_;
   ppt->use_delta_scf_over_1plusw = _FALSE_;

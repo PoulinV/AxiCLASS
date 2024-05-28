@@ -3663,9 +3663,9 @@ double V_axion_scf(
     double fa = pba->f_axion;
     double m = pba->m_scf*pba->H0;
     double result;
-    double coeff1 = 3.75;
-    double coeff2= 1.5;
-    double coeff3= 0.25;
+    double coeff1=3.75*pba->del_rel_coeff1;
+    double coeff2=1.5*pba->del_rel_coeff2;
+    double coeff3=0.25*pba->del_rel_coeff3;
 
     if(pba->axion_is_chebishev == _TRUE_){
       result = pow(m,2)*pow(fa,2)*(2.5-(coeff1*cos(phi/fa)) +  (coeff2*cos(2*phi/fa)) - (coeff3*cos(3*phi/fa)));
@@ -3675,6 +3675,7 @@ double V_axion_scf(
     }
     // printf("n %d fa %e V %e phi/fa %e \n",n,fa,m*m/pow(2,n),phi/fa);
     // printf("result %e phi %e m^2 %e\n",result,phi,m*m);
+    // if(result < 0) result = 0;
     return result;
 
 }
@@ -3688,15 +3689,17 @@ double dV_axion_scf(
     double fa = pba->f_axion;
     double m = pba->m_scf*pba->H0;
     double result;
-    double coeff1 = 3.75;
-    double coeff2= 1.5;
-    double coeff3= 0.25;
+    double coeff1=3.75*pba->del_rel_coeff1;
+    double coeff2=1.5*pba->del_rel_coeff2;
+    double coeff3=0.25*pba->del_rel_coeff3;
     if(pba->axion_is_chebishev == _TRUE_){
-      result = pow(m,2)*pow(fa,1)*((coeff1*sin(phi/fa)) -  (2*coeff2*cos(2*phi/fa)) + (3*coeff3*cos(3*phi/fa)));
+      result = pow(m,2)*fa*((coeff1*sin(phi/fa)) -  (2*coeff2*sin(2*phi/fa)) + (3*coeff3*sin(3*phi/fa)));
     }else{
     if(n>1)result = n*pow(m,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa);
     else result = pow(m,2)*fa*sin(phi/fa);
     }
+    // if(result < 0) result = 0;
+
     return result;
 
 }
@@ -3711,9 +3714,9 @@ double ddV_axion_scf(
      double fa = pba->f_axion;
      double m = pba->m_scf*pba->H0;
      double result;
-     double coeff1 = 3.75;
-     double coeff2= 1.5;
-     double coeff3= 0.25;
+     double coeff1=3.75*pba->del_rel_coeff1;
+     double coeff2=1.5*pba->del_rel_coeff2;
+     double coeff3=0.25*pba->del_rel_coeff3;
      if(pba->axion_is_chebishev == _TRUE_){
        result = pow(m,2)*((coeff1*cos(phi/fa)) -  (4*coeff2*cos(2*phi/fa)) + (9*coeff3*cos(3*phi/fa)));
      }else{
@@ -3721,6 +3724,8 @@ double ddV_axion_scf(
      else if (n==2) result =  n*pow(m,2)*(pow(sin(phi/fa),2)+(1-cos(phi/fa))*cos(phi/fa));
      else result = n*pow(m,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)); //this formula bugs sometimes for n=1
       }
+      // if(result < 0) result = 0;
+
      return result;
 }
 /** parameters and functions for the phi^2n potential
