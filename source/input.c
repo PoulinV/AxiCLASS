@@ -656,6 +656,16 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
            if (strcmp(string1,"axion") == 0) {
               fzw.scf_potential = axion;
               flag2 =_TRUE_;
+              class_call(parser_read_string(pfc,"axion_is_chebishev",&string1,&flag1,errmsg),
+                           errmsg,
+                           errmsg);
+
+              if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+                //if axionquad_mass_is_log10 is true it means we are running on log10_m_axion so we update it.
+                pba->axion_is_chebishev = _TRUE_;
+              }else{
+                pba->axion_is_chebishev = _FALSE_;
+              }
            }
            if (strcmp(string1,"phi_2n") == 0) {
               fzw.scf_potential = phi_2n;
@@ -4595,6 +4605,16 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
          ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
          flag1=_FALSE_;
          pba->scf_potential = axion;
+         class_call(parser_read_string(pfc,"axion_is_chebishev",&string1,&flag1,errmsg),
+                      errmsg,
+                      errmsg);
+
+         if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+           //if axionquad_mass_is_log10 is true it means we are running on log10_m_axion so we update it.
+           pba->axion_is_chebishev = _TRUE_;
+         }else{
+           pba->axion_is_chebishev = _FALSE_;
+         }
          class_call(parser_read_double(pfc,"n_axion",&param1,&flag1,errmsg),
                     errmsg,
                     errmsg);
@@ -7619,7 +7639,7 @@ int input_default_params(struct background *pba,
   pba->security_small_Omega_scf = -10;//set to a negative number so it is never used by default.
   pba->n_axion_security = -2.5;//set to a negative number so it is never used by default.
   ppt->use_big_theta_fld = _FALSE_;
-
+  pba->axion_is_chebishev = _FALSE_;
   ppt->use_big_theta_scf = _FALSE_;
   ppt->use_delta_fld_over_1plusw = _FALSE_;
   ppt->use_delta_scf_over_1plusw = _FALSE_;
