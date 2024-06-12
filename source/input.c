@@ -4830,7 +4830,8 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
         class_test(pba->scf_parameters_size<2,
                errmsg,
                "Since you are not using attractor initial conditions, you must specify phi and its derivative phi' as the last two entries in scf_parameters. See explanatory.ini for more details.");
-        if(pba->scf_potential == phi_2n){
+        if(pba->scf_potential == phi_2n || pba->scf_potential == axionquad){
+          pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2];//dummy: will be set later
           pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];//dummy: will be set later
         }else{
           // pba->phi_ini_scf = 0;//dummy: will be set later
