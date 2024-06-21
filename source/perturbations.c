@@ -9747,7 +9747,8 @@ int perturbations_derivs(double tau,
                   if(ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]*(pvecback[pba->index_bg_rho_idm]/((1+w_fld)*pvecback[pba->index_bg_rho_fld]))/a_prime_over_a > ppt->DMEDE_TCA_threshold)
                   {
                     tight_coupling_DMEDE = _TRUE_;
-                    y[pv->index_pt_theta_fld]=(1-1/ppt->DMEDE_TCA_threshold)*y[pv->index_pt_theta_idm];
+                    // y[pv->index_pt_theta_fld]=(1-1/ppt->DMEDE_TCA_threshold)*y[pv->index_pt_theta_idm];
+                    y[pv->index_pt_theta_fld]=y[pv->index_pt_theta_idm];
                   }else{
                     tight_coupling_DMEDE = _FALSE_;
                   }
@@ -10400,6 +10401,7 @@ int perturbations_derivs(double tau,
           // if(ppt->has_idm_fld==_TRUE_&& fabs(1+w_fld)>1e-5){
           if(ppt->has_idm_fld==_TRUE_){
             if(tight_coupling_DMEDE != _TRUE_)dy[pv->index_pt_theta_fld] -= ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]*(pvecback[pba->index_bg_rho_idm]/((1+w_fld)*pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_idm]); /* cdm velocity */
+            else dy[pv->index_pt_theta_fld] = dy[pv->index_pt_theta_idm];
 //            if(pba->has_cdm==_TRUE_ && ppt->DMDE_interaction > 0)dy[pv->index_pt_theta_fld] -= ppt->DMDE_interaction*a/ppw->pvecback[pba->index_bg_rho_cdm]*(ppw->pvecback[pba->index_bg_rho_cdm]/((1+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]))*(y[pv->index_pt_theta_fld]-y[pv->index_pt_theta_cdm]); /* cdm velocity */
           }
           // printf("a %e Gamma over H %e\n",a,ppt->DMDE_interaction*f_norm/pvecback[pba->index_bg_rho_idm]*(pvecback[pba->index_bg_rho_idm]/((1+w_fld)*pvecback[pba->index_bg_rho_fld]))/a_prime_over_a);
