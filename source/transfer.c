@@ -3803,11 +3803,16 @@ int transfer_radial_function(
   double rescale_argument;
   double rescale_amplitude;
   double * rescale_function;
-  int (*interpolate_Phi)();
-  int (*interpolate_dPhi)();
-  int (*interpolate_Phid2Phi)();
-  int (*interpolate_PhidPhi)();
-  int (*interpolate_PhidPhid2Phi)();
+  // int (*interpolate_Phi)();
+  // int (*interpolate_dPhi)();
+  // int (*interpolate_Phid2Phi)();
+  // int (*interpolate_PhidPhi)();
+  // int (*interpolate_PhidPhid2Phi)();
+  int (*interpolate_Phi)(HyperInterpStruct*, int, int, double*, double*, char*);
+  int (*interpolate_dPhi)(HyperInterpStruct*, int, int, double*, double*, char*);
+  int (*interpolate_Phid2Phi)(HyperInterpStruct*, int, int, double*, double*, double*, char*);
+  int (*interpolate_PhidPhi)(HyperInterpStruct*, int, int, double*, double*, double*, char*);
+  int (*interpolate_PhidPhid2Phi)(HyperInterpStruct*, int, int, double*, double*, double*, double*, char*);
   enum Hermite_Interpolation_Order HIorder;
 
   K = ptw->K;
