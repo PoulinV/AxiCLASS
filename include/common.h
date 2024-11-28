@@ -328,6 +328,17 @@ int string_begins_with(char* thestring, char beginchar);
 #define class_print_species(name,type) \
 printf("-> %-30s Omega = %-15g , omega = %-15g\n",name,pba->Omega0_##type,pba->Omega0_##type*pba->h*pba->h);
 
+//Generic evolver prototype
+#define EVOLVER_PROTOTYPE \
+    int (*)(double, double *, double *, void *, ErrorMsg), \
+    double, double, double *, int *, \
+    int, void *, double, double, \
+    int (*)(double, void *, double *, ErrorMsg), \
+    double, double *, int, \
+    int (*)(double, double *, double *, int, void *, ErrorMsg), \
+    int (*)(double, double *, double *, void *, ErrorMsg), \
+    ErrorMsg
+
 /* Forward-Declare the structs of CLASS */
 struct background;
 struct thermodynamics;

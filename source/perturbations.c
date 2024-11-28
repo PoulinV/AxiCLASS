@@ -3128,11 +3128,15 @@ int perturbations_solve(
 
   /* function pointer to ODE evolver and names of possible evolvers */
 
-  extern int evolver_rk();
-  extern int evolver_ndf15();
-  int (*generic_evolver)();
+  // extern int evolver_rk();
+  // extern int evolver_ndf15();
+  // int (*generic_evolver)();
+  // auto generic_evolver = &(evolver_ndf15);
 
-
+  extern int evolver_rk(EVOLVER_PROTOTYPE);
+  extern int evolver_ndf15(EVOLVER_PROTOTYPE);
+  int (*generic_evolver)(EVOLVER_PROTOTYPE) = evolver_ndf15;
+  
   /* Related to the perturbation output */
   int (*perhaps_print_variables)();
   int index_ikout;
