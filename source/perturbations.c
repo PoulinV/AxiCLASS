@@ -6717,7 +6717,7 @@ int perturbations_timescale(
   double * pvecthermo;
 
   /** - extract the fields of the parameter_and_workspace input structure */
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
   pba = pppaw->pba;
   pth = pppaw->pth;
   ppt = pppaw->ppt;
@@ -7967,7 +7967,7 @@ int perturbations_sources(
   double dmu_idm_g = 0., ddmu_idm_g = 0., exp_mu_idm_g = 0.;
   /** - rename structure fields (just to avoid heavy notations) */
 
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
   ppr = pppaw->ppr;
   pba = pppaw->pba;
   pth = pppaw->pth;
@@ -8762,7 +8762,7 @@ int perturbations_print_variables(double tau,
   double phase_shift_A, phase_shift_B, phase_shift_total,d_gamma,R,c_gamma_squared,amplitude_total;
   /** - rename structure fields (just to avoid heavy notations) */
 
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
   k = pppaw->k;
   k2=k*k;
   index_md = pppaw->index_md;
@@ -9535,7 +9535,7 @@ int perturbations_derivs(double tau,
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
 
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
 
   k = pppaw->k;
   k2=k*k;
@@ -11117,7 +11117,7 @@ int perturbations_tca_slip_and_shear(double * y,
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
 
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
 
   k = pppaw->k;
   k2=k*k;
