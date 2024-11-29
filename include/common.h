@@ -81,9 +81,23 @@ typedef char FileName[_FILENAMESIZE_];
 
 /* needed because of weird openmp bug on macosx lion... */
 
-void class_protect_sprintf(char* dest, char* tpl,...);
-void class_protect_fprintf(FILE* dest, char* tpl,...);
-void* class_protect_memcpy(void* dest, void* from, size_t sz);
+#ifdef __cplusplus
+extern "C" {
+#endif
+    /* needed because of weird openmp bug on macosx lion... */
+    void class_protect_sprintf(char* dest, char* tpl, ...);
+    void class_protect_fprintf(FILE* dest, char* tpl, ...);
+    void* class_protect_memcpy(void* dest, void* from, size_t sz);
+
+    /* some general functions */
+    int get_number_of_titles(char * titlestring);
+    int file_exists(const char *fname);
+    int compare_doubles(const void * a,
+                        const void * b);
+    int string_begins_with(char* thestring, char beginchar);
+#ifdef __cplusplus
+}
+#endif
 
 /* some general functions */
 
