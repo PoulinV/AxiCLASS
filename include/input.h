@@ -251,10 +251,14 @@ struct fzerofun_workspace {
   double Omega0_axion;
   double log10_axion_ac;
   short axion_is_chebishev;
+  double del_rel_coeff0;
   double del_rel_coeff1;
   double del_rel_coeff2;
   double del_rel_coeff3;
-  int n_axion;
+  double del_rel_coeff4;
+  double del_rel_coeff5;
+  double offset;
+    int n_axion;
   double theta_axion;
   double w_scf;
   double threshold_scf_fluid_m_over_H;

@@ -946,7 +946,9 @@ int background_init(
     printf("Computing background\n");
   }
 
+
   // printf("pba->Omega0_ncdm_tot %e %e\n",pba->Omega0_ncdm_tot, pba->max_fraction_ncdm);
+
 
   /** - if shooting failed during input, catch the error here */
   class_test(pba->shooting_failed == _TRUE_,
@@ -958,6 +960,39 @@ int background_init(
   class_call(background_indices(pba),
              pba->error_message,
              pba->error_message);
+
+
+   if (pba->has_scf == _TRUE_){
+      if (pba->scf_potential == axion){
+         if (pba->axion_is_chebishev == _TRUE_){
+            double phi_max=2.0;
+            //printf("phi_max=%e\n", phi_max);
+            double phi_min=0.0;
+            double num_points=1000;
+            double phi_step = (phi_max - phi_min) / (num_points - 1);
+            double min_value = 0.0;
+            double coeff0=pba->del_rel_coeff0;
+            double coeff1=pba->del_rel_coeff1;
+            double coeff2=pba->del_rel_coeff2;
+            double coeff3=pba->del_rel_coeff3;
+            double coeff4=pba->del_rel_coeff4;
+            for (int i = 0; i < num_points; ++i) {
+                double phi = phi_min + i * phi_step;
+                double V = (coeff0 - (coeff1*cos(phi)) + (coeff2*cos(2*phi)) - (coeff3*cos(3*phi)) - (coeff4*cos(4*phi)));
+                if (V < min_value) {
+                   min_value = V;
+                  }
+               }
+            if (min_value < 0.0) {
+               pba->offset= -min_value;
+               // printf("offset=%e\n", pba->offset);
+               //printf("In background_init: Address of pba=%p\n", pba);
+               //coeff0= coeff0 + offset;
+               //printf("C_0=%e\n", coeff0);
+              }
+            }
+          }
+       }
 
    /** - //VP: to test whether the fraction of ncdm over cdm is too large. default is never too large. */
    if(pba->has_ncdm == _TRUE_ && pba->has_cdm == _TRUE_){
@@ -1044,6 +1079,7 @@ int background_init(
           pba->m_scf = pba->scf_parameters[0]*_eV_over_Mpc_/pba->H0; //from eV to Mpc^-1 to unit of H0
           pba->w_scf = 0;
         }
+
         else if(pba->scf_potential == axion){
             if(pba->f_axion > 0 && pba->m_scf > 0){
               cos_initial = cos(pba->phi_ini_scf);
@@ -3663,12 +3699,21 @@ double V_axion_scf(
     double fa = pba->f_axion;
     double m = pba->m_scf*pba->H0;
     double result;
-    double coeff1=3.75*pba->del_rel_coeff1;
-    double coeff2=1.5*pba->del_rel_coeff2;
-    double coeff3=0.25*pba->del_rel_coeff3;
+    double coeff0=pba->del_rel_coeff0;
+    double coeff1=pba->del_rel_coeff1;
+    double coeff2=pba->del_rel_coeff2;
+    double coeff3=pba->del_rel_coeff3;
+    double coeff4=pba->del_rel_coeff4;
+    //printf("C_0_check=%e\n", coeff0);
+    //printf("offset=%e\n", pba->offset);
 
     if(pba->axion_is_chebishev == _TRUE_){
-      result = pow(m,2)*pow(fa,2)*(2.5-(coeff1*cos(phi/fa)) +  (coeff2*cos(2*phi/fa)) - (coeff3*cos(3*phi/fa)));
+      //printf("n-axion=%e", n);
+      // printf("in potential: offset=%e\n", pba->offset);
+      // printf("In V_axion_scf: Address of pba=%p\n", pba);
+      //result = pow(m,2)*pow(fa,2)*pow(1 - cos(phi/fa),n) + pow(m,2)*pow(fa,2)*(coeff0 + (coeff1*cos(phi/fa)) +  (coeff2*cos(2*phi/fa)) + (coeff3*cos(3*phi/fa))); //- (coeff4*cos(4*phi/fa)));
+      //result = pow(m,2)*pow(fa,2)*pow(1 - cos(phi/fa),n) + pow(m,2)*pow(fa,2)*(coeff0 + (coeff1*(phi/fa)) +  (coeff2*pow(phi/fa, 2)) + (coeff3*pow(phi/fa,3)));
+      result= pow(m,2)*pow(fa,2)*(coeff0 + pba->offset - (coeff1*cos(phi/fa)) + (coeff2*cos(2*phi/fa)) - (coeff3*cos(3*phi/fa)) - (coeff4*cos(4*phi/fa)));
     }else{
       if(n>1)result = pow(m,2)*pow(fa,2)*pow(1 - cos(phi/fa),n);
       else result = pow(m,2)*pow(fa,2)*(1 - cos(phi/fa));
@@ -3689,11 +3734,15 @@ double dV_axion_scf(
     double fa = pba->f_axion;
     double m = pba->m_scf*pba->H0;
     double result;
-    double coeff1=3.75*pba->del_rel_coeff1;
-    double coeff2=1.5*pba->del_rel_coeff2;
-    double coeff3=0.25*pba->del_rel_coeff3;
+    double coeff0=pba->del_rel_coeff0;
+    double coeff1=pba->del_rel_coeff1;
+    double coeff2=pba->del_rel_coeff2;
+    double coeff3=pba->del_rel_coeff3;
+    double coeff4=pba->del_rel_coeff4;
     if(pba->axion_is_chebishev == _TRUE_){
-      result = pow(m,2)*fa*((coeff1*sin(phi/fa)) -  (2*coeff2*sin(2*phi/fa)) + (3*coeff3*sin(3*phi/fa)));
+      //result = n*pow(m,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa) + pow(m,2)*fa*(-(coeff1*sin(phi/fa)) -  (2*coeff2*sin(2*phi/fa)) - (3*coeff3*sin(3*phi/fa))); //+ (4*coeff4*sin(4*phi/fa)));
+      //result = n*pow(m,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa) + pow(m,2)*pow(fa,2)*((coeff1/fa) +  (2*coeff2*phi/pow(fa,2)) + (3*coeff3*pow(phi/fa,2)/fa));
+      result = pow(m,2)*fa*( (coeff1*sin(phi/fa)) - (2*coeff2*sin(2*phi/fa)) + (3*coeff3*sin(3*phi/fa)) + (4*coeff4*sin(4*phi/fa)));
     }else{
     if(n>1)result = n*pow(m,2)*fa*pow(1-cos(phi/fa),n-1)*sin(phi/fa);
     else result = pow(m,2)*fa*sin(phi/fa);
@@ -3714,11 +3763,15 @@ double ddV_axion_scf(
      double fa = pba->f_axion;
      double m = pba->m_scf*pba->H0;
      double result;
-     double coeff1=3.75*pba->del_rel_coeff1;
-     double coeff2=1.5*pba->del_rel_coeff2;
-     double coeff3=0.25*pba->del_rel_coeff3;
+     double coeff0=pba->del_rel_coeff0;
+     double coeff1=pba->del_rel_coeff1;
+     double coeff2=pba->del_rel_coeff2;
+     double coeff3=pba->del_rel_coeff3;
+     double coeff4=pba->del_rel_coeff4;
      if(pba->axion_is_chebishev == _TRUE_){
-       result = pow(m,2)*((coeff1*cos(phi/fa)) -  (4*coeff2*cos(2*phi/fa)) + (9*coeff3*cos(3*phi/fa)));
+       //result = n*pow(m,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)) + pow(m,2)*(-(coeff1*cos(phi/fa)) -  (4*coeff2*cos(2*phi/fa)) - (9*coeff3*cos(3*phi/fa))); //+ (16*coeff4*cos(4*phi/fa)));
+       //result = n*pow(m,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)) + pow(m,2)*pow(fa,2)*((2*coeff2/pow(fa,2)) + (6*coeff3*phi/pow(fa,3)));
+       result = pow(m,2)*( (coeff1*cos(phi/fa)) - (4*coeff2*cos(2*phi/fa)) + (9*coeff3*cos(3*phi/fa)) + (16*coeff4*cos(4*phi/fa)));
      }else{
      if(n==1) result = n*pow(m,2)*cos(phi/fa);
      else if (n==2) result =  n*pow(m,2)*(pow(sin(phi/fa),2)+(1-cos(phi/fa))*cos(phi/fa));
