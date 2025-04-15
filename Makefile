@@ -19,10 +19,10 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc-12
+CC       = gcc
 #CC       = icc
 #CC       = pgcc
-CPP      = g++-12 --std=c++11 -fpermissive -Wno-write-strings
+CPP      = g++ --std=c++11 -fpermissive -Wno-write-strings
 
 # your tool for creating static libraries:
 AR        = ar rv
