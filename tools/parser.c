@@ -635,15 +635,15 @@ int parser_cat(struct file_content * pfc1,
 
   if (pfc1->size == 0) {
     class_alloc(pfc3->filename,(strlen(pfc2->filename)+1)*sizeof(char),errmsg);
-    sprintf(pfc3->filename,"%s",pfc2->filename);
+    class_sprintf(pfc3->filename,"%s",pfc2->filename);
   }
   if (pfc2->size == 0) {
     class_alloc(pfc3->filename,(strlen(pfc1->filename)+1)*sizeof(char),errmsg);
-    sprintf(pfc3->filename,"%s",pfc1->filename);
+    class_sprintf(pfc3->filename,"%s",pfc1->filename);
   }
   if ((pfc1->size !=0) && (pfc2->size != 0)) {
     class_alloc(pfc3->filename,(strlen(pfc1->filename)+strlen(pfc2->filename)+5)*sizeof(char),errmsg);
-    sprintf(pfc3->filename,"%s or %s",pfc1->filename,pfc2->filename);
+    class_sprintf(pfc3->filename,"%s or %s",pfc1->filename,pfc2->filename);
   }
 
   pfc3->size = pfc1->size + pfc2->size;
@@ -739,5 +739,37 @@ int parser_check_options(char * strinput, char ** options, int N_options, int* v
     }
   }
 
+  return _SUCCESS_;
+}
+
+int parser_extend(struct file_content * pfc, int N_extend, ErrorMsg errmsg) {
+  // Append N_extend empty entries in the vectors of pfc
+  pfc->size += N_extend;
+  class_realloc(pfc->name,  pfc->size*sizeof(FileArg), errmsg);
+  class_realloc(pfc->value, pfc->size*sizeof(FileArg), errmsg);
+  class_realloc(pfc->read,  pfc->size*sizeof(short),   errmsg);
+  for (int index = pfc->size - N_extend; index < pfc->size; index++) {
+    pfc->name[index][0] = '\0';
+    pfc->value[index][0] = '\0';
+    pfc->read[index] = _FALSE_;
+  }
+  return _SUCCESS_;
+}
+
+int parser_copy(struct file_content * pfc_source, struct file_content * pfc_destination, int index_start, int index_end) {
+  // Copy the entries from index_start to index_end from pfc_source to pfc_destination
+  memcpy(pfc_destination->name  + index_start, pfc_source->name  + index_start, (index_end - index_start)*sizeof(FileArg));
+  memcpy(pfc_destination->value + index_start, pfc_source->value + index_start, (index_end - index_start)*sizeof(FileArg));
+  memcpy(pfc_destination->read  + index_start, pfc_source->read  + index_start, (index_end - index_start)*sizeof(short));
+  return _SUCCESS_;
+}
+
+int parser_init_from_pfc(struct file_content * pfc_source, struct file_content * pfc_destination, ErrorMsg errmsg) {
+  class_call(parser_init(pfc_destination,
+                         pfc_source->size,
+                         pfc_source->filename,
+                         errmsg),
+             errmsg,errmsg);
+  parser_copy(pfc_source, pfc_destination, 0, pfc_source->size);
   return _SUCCESS_;
 }

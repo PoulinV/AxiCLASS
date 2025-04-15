@@ -211,15 +211,15 @@
  * For shooting method: definition of the possible targets
  */
 
-enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr,
+enum target_names {theta_s, theta_s_100, Neff,Omega_dcdmdr, omega_dcdmdr,
                   Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,
                   fraction_axion_ac, log10_axion_ac, Omega_scf_shoot_fa, log10_fraction_axion_ac_phi2n,
-                  log10_axion_ac_phi2n, a_peak_eq, sigma8};
+                  log10_axion_ac_phi2n, a_peak_eq, sigma8, S8};
 /* Important: add one for each new target_names */
 enum computation_stage {cs_background, cs_thermodynamics, cs_perturbations,
                         cs_primordial, cs_nonlinear, cs_transfer, cs_spectra};
 /* Important: Keep this number equal to the number of target_names (except sigma8), and keep sigma8 at the very end */
-#define _NUM_TARGETS_ 13 //Keep this number as number of target_names
+#define _NUM_TARGETS_ 16 //Keep this number as number of target_names
 enum scf_pot_inp{
   pol_times_exp_inp, /** scf_potential set to pol_times_exp:V equals ((\phi-B)^\alpha + A)exp(-lambda*phi), see http://arxiv.org/abs/astro-ph/9908085.*/
   double_exp_inp, /* scf_potential set to double_exp: V equals \Lambda_1^4e^{-\lambda\phi}+\Lambda_2^4e^{-\mu\phi} */
@@ -408,6 +408,7 @@ extern "C" {
                                     struct background * pba,
                                     struct thermodynamics * pth,
                                     struct perturbations * ppt,
+                                    struct fourier * pfo,
                                     struct distortions * psd,
                                     ErrorMsg errmsg);
 

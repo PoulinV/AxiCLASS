@@ -426,6 +426,8 @@ int thermodynamics_init(
 
   free(pvecback);
 
+  pth->is_allocated = _TRUE_;
+
   return _SUCCESS_;
 }
 
@@ -453,9 +455,56 @@ int thermodynamics_free(
   free(pth->thermodynamics_table);
   free(pth->d2thermodynamics_dz2_table);
 
+  class_call(thermodynamics_free_input(pth),
+             pth->error_message,
+             pth->error_message);
+
+  pth->is_allocated = _FALSE_;
+
   return _SUCCESS_;
 }
+/**
+ * Free all memory space allocated by input.c for the thermodynamics module.
+ *
+ * @param pth Input/Output: pointer to thermodynamics structure (to be freed)
+ * @return the error status
+ */
+int thermodynamics_free_input(
+                        struct thermodynamics * pth
+                        ) {
 
+  switch(pth->reio_parametrization){
+
+  case reio_none:
+  case reio_camb:
+  case reio_half_tanh:
+  default:
+    /* nothing to be read*/
+    break;
+
+  case reio_bins_tanh:
+    /* Read */
+    free(pth->binned_reio_z);
+    free(pth->binned_reio_xe);
+    break;
+
+  case reio_many_tanh:
+    /* Read */
+    free(pth->many_tanh_z);
+    free(pth->many_tanh_xe);
+    break;
+
+    /** 8.d) reionization parameters if reio_parametrization=reio_many_tanh */
+  case reio_inter:
+    /* Read */
+    free(pth->reio_inter_z);
+    free(pth->reio_inter_xe);
+    break;
+
+  }
+
+  return _SUCCESS_;
+}
 /**
  * Infer the primordial helium mass fraction from standard BBN
  * calculations, as a function of the baryon density and expansion
@@ -520,7 +569,6 @@ int thermodynamics_helium_from_bbn(
               -pvecback[pba->index_bg_rho_g])
     /(7./8.*pow(4./11.,4./3.)*pvecback[pba->index_bg_rho_g]);
 
-  free(pvecback);
 
   //  printf("Neff early = %g, Neff at bbn: %g\n",pba->Neff,Neff_bbn);
 
@@ -675,6 +723,7 @@ int thermodynamics_helium_from_bbn(
   free(ddYHe);
   free(YHe_at_deltaN);
   free(ddYHe_at_deltaN);
+  free(pvecback);
 
   return _SUCCESS_;
 }
@@ -1459,6 +1508,11 @@ int thermodynamics_set_parameters_reionization(
     break;
   }
 
+  /* infer conf_time_reio from z_reio */
+  class_call(background_tau_of_z(pba,pth->z_reio,&(pth->conf_time_reio)),
+             pba->error_message,
+             pth->error_message);
+
   return _SUCCESS_;
 
 }
@@ -1508,9 +1562,9 @@ int thermodynamics_solve(
   struct thermodynamics_parameters_and_workspace tpaw;
 
   /* function pointer to ODE evolver and names of possible evolvers. */
-  extern int evolver_rk();
-  extern int evolver_ndf15();
-  int (*generic_evolver)() = evolver_ndf15;
+  extern int evolver_rk(EVOLVER_PROTOTYPE);
+  extern int evolver_ndf15(EVOLVER_PROTOTYPE);
+  int (*generic_evolver)(EVOLVER_PROTOTYPE) = evolver_ndf15;
 
   /** - choose evolver */
   switch (ppr->thermo_evolver) {
@@ -1780,10 +1834,7 @@ int thermodynamics_output_summary(
       printf(" -> reionization with optical depth = %f\n",pth->tau_reio);
       break;
     }
-    class_call(background_tau_of_z(pba,pth->z_reio,&tau_reio),
-               pba->error_message,
-               pth->error_message);
-    printf("    corresponding to conformal time = %f Mpc\n",tau_reio);
+    printf("    corresponding to conformal time = %f Mpc\n",pth->conf_time_reio);
     break;
 
   case reio_bins_tanh:
@@ -2145,9 +2196,9 @@ int thermodynamics_reionization_evolve_with_tau(
   struct thermo_workspace * ptw;
 
   /* function pointer to ODE evolver and names of possible evolvers */
-  extern int evolver_rk();
-  extern int evolver_ndf15();
-  int (*generic_evolver)() = evolver_ndf15;
+  extern int evolver_rk(EVOLVER_PROTOTYPE);
+  extern int evolver_ndf15(EVOLVER_PROTOTYPE);
+  int (*generic_evolver)(EVOLVER_PROTOTYPE) = evolver_ndf15;
 
   /* pointers towards two thermo vector stuctures (see below) */
 
@@ -4602,7 +4653,7 @@ int thermodynamics_obtain_z_ini(
       if (pth->thermodynamics_verbose > 3)
         printf("The decoupling redshift for idm_dr is z_idm_dec = %.5e\n", z_idm_dec);
       /* we need to be careful if idm is coupled to photons and idr at the same time */
-      class_test(z_idm_dec_min != _HUGE_ && abs(pba->T_idr - pba->T_cmb) > 1e-2,
+      class_test(z_idm_dec_min != _HUGE_ && fabs(pba->T_idr - pba->T_cmb) > 1e-2,
                  pth->error_message,
                  "It seems that at early times idm is thermally coupled to both idr and photons (possibly through baryons).\nPlease set the initial temperatures equal or disable this error.");
 

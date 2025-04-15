@@ -305,6 +305,7 @@ struct primordial {
   double A_s_pk;  /**< only useful if different primordial spectrum */ //VP
   double ns_pk;  /**< only useful if different primordial spectrum */ //VP
   double running_pk;  /**< only useful if different primordial spectrum */ //VP
+  short is_allocated; /**< flag is set to true if allocated */
 
 };
 

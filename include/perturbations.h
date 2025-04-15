@@ -158,6 +158,8 @@ struct perturbations
   int l_lss_max; /**< maximum l value for LSS \f$ C_l \f$'s (density and lensing potential in  bins) */
   double k_max_for_pk; /**< maximum value of k in 1/Mpc required for the output of P(k,z) and T(k,z) */
 
+  short want_lcmb_full_limber; /**< In general, do we want to use the full Limber scheme introduced in v3.2.2? With this full Limber scheme, the calculation of the CMB lensing potential spectrum C_l^phiphi for l > ppr->l_switch_limber is based on a new integration scheme. Compared to the previous scheme, which can be recovered by switching this parameter to _FALSE_, the new scheme uses a larger k_max and a coarser k-grid (or q-grid) than the CMB transfer function. The new scheme is used by default, because the old one is inaccurate at large l due to the too small k_max. */
+
   int selection_num;                            /**< number of selection functions
                                                    (i.e. bins) for matter density \f$ C_l \f$'s */
   enum selection_type selection;                /**< type of selection functions */
@@ -215,6 +217,10 @@ struct perturbations
 
   enum possible_gauges gauge; /**< gauge in which to perform this calculation */
   enum possible_gauges_output gauge_output; /**< gauge in which to output perturbation variables in this calculation */
+
+  short has_matter_source_in_current_gauge; /**< whether to keep matter and baryon+CDM sources in current gauge, instead of automatic conversion to gauge-invariant variables */
+
+  short get_perturbations_in_current_gauge; /**< whether to keep the output table of perturbations (controlled by 'store_perturbations' and 'k_output_values') in current gauge, instead of automatic conversion to Newtonian gauge */
 
   //@}
 
@@ -433,7 +439,6 @@ struct perturbations
                                final time range required for the output of
                                Fourier transfer functions (used for interpolations) */
   int ln_tau_size;         /**< total number of values in this array */
-  int index_ln_tau_pk;     /**< first index relevant for output of P(k,z) and T(k,z) */
 
   double *** late_sources; /**< Pointer towards the source interpolation table
                               late_sources[index_md]
@@ -481,6 +486,8 @@ struct perturbations
   short perturbations_verbose; /**< flag regulating the amount of information sent to standard output (none if set to zero) */
 
   ErrorMsg error_message; /**< zone for writing error messages */
+
+  short is_allocated; /**< flag is set to true if allocated */
 
   //@}
 

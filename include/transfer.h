@@ -5,8 +5,6 @@
 
 #include "fourier.h"
 #include "hyperspherical.h"
-#include <sys/shm.h>
-#include <sys/stat.h>
 #include "errno.h"
 
 /* macro: test if index_tt is in the range between index and index+num, while the flag is true */
@@ -171,13 +169,21 @@ struct transfer {
 
   //@{
 
-  size_t q_size; /**< number of wavenumber values */
+  size_t q_size; /**< number of wavenumber values corresponding to k up to k_max_cl */
 
   double * q;  /**< list of wavenumber values, q[index_q] */
 
   double ** k; /**< list of wavenumber values for each requested mode, k[index_md][index_q]. In flat universes k=q. In non-flat universes q and k differ through q2 = k2 + K(1+m), where m=0,1,2 for scalar, vector, tensor. q should be used throughout the transfer module, excepted when interpolating or manipulating the source functions S(k,tau): for a given value of q this should be done in k(q). */
 
   int index_q_flat_approximation; /**< index of the first q value using the flat rescaling approximation */
+
+  short do_lcmb_full_limber; /**< in this particular run, will we use the full Limber scheme? */
+
+  size_t q_size_limber; /**< number of wavenumber values corresponding to k up to k_max */
+
+  double * q_limber;  /**< list of wavenumber values used in full limber scheme, q_limber[index_q] */
+
+  double ** k_limber; /**< list of wavenumber values used in full limber scheme */
 
   //@}
 
@@ -186,6 +192,8 @@ struct transfer {
   //@{
 
   double ** transfer; /**< table of transfer functions for each mode, initial condition, type, multipole and wavenumber, with argument transfer[index_md][((index_ic * ptr->tt_size[index_md] + index_tt) * ptr->l_size[index_md] + index_l) * ptr->q_size + index_q] */
+
+  double ** transfer_limber; /**< table of transfer functions used in full limber scheme */
 
   //@}
 
@@ -196,6 +204,8 @@ struct transfer {
   short transfer_verbose; /**< flag regulating the amount of information sent to standard output (none if set to zero) */
 
   ErrorMsg error_message; /**< zone for writing error messages */
+
+  short is_allocated; /**< flag is set to true if allocated */
 
   //@}
 };
@@ -367,14 +377,13 @@ extern "C" {
                           int sgnK
                           );
 
-  int transfer_get_q_list_v1(
-                             struct precision * ppr,
-                             struct perturbations * ppt,
-                             struct transfer * ptr,
-                             double q_period,
-                             double K,
-                             int sgnK
-                             );
+  int transfer_get_q_limber_list(
+                                 struct precision * ppr,
+                                 struct perturbations * ppt,
+                                 struct transfer * ptr,
+                                 double K,
+                                 int sgnK
+                                 );
 
   int transfer_get_k_list(
                           struct perturbations * ppt,
@@ -427,7 +436,8 @@ extern "C" {
                                   double *** sources,
                                   double *** sources_spline,
                                   double * window,
-                                  struct transfer_workspace * ptw
+                                  struct transfer_workspace * ptw,
+                                  short use_full_limber
                                   );
 
   int transfer_radial_coordinates(
@@ -440,7 +450,7 @@ extern "C" {
   int transfer_interpolate_sources(
                                    struct perturbations * ppt,
                                    struct transfer * ptr,
-                                   int index_q,
+                                   double k,
                                    int index_md,
                                    int index_ic,
                                    int index_type,
@@ -456,7 +466,7 @@ extern "C" {
                        struct transfer * ptr,
                        double * interpolated_sources,
                        double tau_rec,
-                       int index_q,
+                       double k,
                        int index_md,
                        int index_tt,
                        double * sources,
@@ -548,7 +558,8 @@ extern "C" {
                                   int index_l,
                                   double l,
                                   double q_max_bessel,
-                                  radial_function_type radial_type
+                                  radial_function_type radial_type,
+                                  short use_full_limber
                                   );
 
   int transfer_use_limber(
@@ -664,7 +675,7 @@ extern "C" {
   int transfer_workspace_init(
                               struct transfer * ptr,
                               struct precision * ppr,
-                              struct transfer_workspace **ptw,
+                              struct transfer_workspace *ptw,
                               int perturbations_tau_size,
                               int tau_size_max,
                               double K,
