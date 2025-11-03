@@ -457,6 +457,16 @@ int background_functions(
     rho_m += pvecback[pba->index_bg_rho_idm];
   }
 
+
+  /* interacting dark matter ede */
+  if (pba->has_idm_ede == _TRUE_) {
+    pvecback[pba->index_bg_rho_idm_ede] = pba->Omega0_idm_ede * pow(pba->H0,2) / pow(a,3);
+    rho_tot += pvecback[pba->index_bg_rho_idm_ede];
+    p_tot += 0.;
+    rho_m += pvecback[pba->index_bg_rho_idm_ede];
+  }
+
+
   /* dcdm */
   if (pba->has_dcdm == _TRUE_) {
     /* Pass value of rho_dcdm to output */
@@ -638,14 +648,6 @@ int background_functions(
     rho_r += pvecback[pba->index_bg_rho_ur];
   }
 
-
-  /* interacting dark matter ede */
-  if (pba->has_idm_ede == _TRUE_) {
-    pvecback[pba->index_bg_rho_idm_ede] = pba->Omega0_idm_ede * pow(pba->H0,2) / pow(a,3);
-    rho_tot += pvecback[pba->index_bg_rho_idm_ede];
-    p_tot += 0.;
-    rho_m += pvecback[pba->index_bg_rho_idm_ede];
-  }
 
   /* interacting dark radiation */
   if (pba->has_idr == _TRUE_) {
@@ -1073,6 +1075,7 @@ int background_init(
           Omega_m = pba->Omega0_b;
           if(pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
           if(pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
+          if(pba->has_idm_ede == _TRUE_) Omega_m += pba->Omega0_idm_ede;
           if(pba->has_dcdm == _TRUE_) Omega_m += pba->Omega0_dcdm;
 
           a_eq = Omega_r /Omega_m;
@@ -1133,6 +1136,7 @@ int background_init(
             Omega_m = pba->Omega0_b;
             if(pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
             if(pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
+            if(pba->has_idm_ede == _TRUE_) Omega_m += pba->Omega0_idm_ede;
             if(pba->has_dcdm == _TRUE_) Omega_m += pba->Omega0_dcdm;
 
             a_eq = Omega_r /Omega_m;
@@ -2632,6 +2636,8 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
     pba->Omega0_nfsm += pba->Omega0_cdm;
   if (pba->has_idm == _TRUE_)
     pba->Omega0_nfsm += pba->Omega0_idm;
+  if (pba->has_idm_ede == _TRUE_)
+    pba->Omega0_nfsm += pba->Omega0_idm_ede;
   if (pba->has_dcdm == _TRUE_)
     pba->Omega0_nfsm += pba->Omega0_dcdm;
   for (n_ncdm=0;n_ncdm<pba->N_ncdm; n_ncdm++) {
@@ -3219,8 +3225,6 @@ int background_derivs(
    }
 
 
-   if (pba->has_idm_ede)
-     rho_M += pvecback[pba->index_bg_rho_idm_ede];
 
   /** - calculate detivative of sound horizon \f$ drs/dloga = drs/dtau * dtau/dloga = c_s/aH \f$*/
   dy[pba->index_bi_rs] = 1./a/H/sqrt(3.*(1.+3.*pvecback[pba->index_bg_rho_b]/4./pvecback[pba->index_bg_rho_g]))*sqrt(1.-pba->K*y[pba->index_bi_rs]*y[pba->index_bi_rs]); // TBC: curvature correction
@@ -3233,6 +3237,9 @@ int background_derivs(
   }
   if (pba->has_idm == _TRUE_){
     rho_M += pvecback[pba->index_bg_rho_idm];
+  }
+  if (pba->has_idm_ede == _TRUE_){
+    rho_M += pvecback[pba->index_bg_rho_idm_ede];
   }
   if (pba->has_scf == _TRUE_ && pba->include_scf_in_growth_factor == _TRUE_) {
     /*VP: add the scf contribution if the user wants to, e.g., for axion-like dark matter */
@@ -3451,6 +3458,10 @@ int background_output_budget(
     if (pba->has_idm == _TRUE_){
       class_print_species("Interacting DM - idr,b,g",idm);
       budget_matter+=pba->Omega0_idm;
+    }
+    if (pba->has_idm_ede == _TRUE_){
+      class_print_species("Interacting DM - idr,b,g,ede",idm_ede);
+      budget_matter+=pba->Omega0_idm_ede;
     }
     if (pba->has_dcdm == _TRUE_) {
       class_print_species("Decaying Cold Dark Matter",dcdm);
