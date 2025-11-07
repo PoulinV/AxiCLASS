@@ -7770,7 +7770,7 @@ int input_default_params(struct background *pba,
   pba->fluid_equation_of_state = CLP;
   pba->w0_fld = -1.;
   pba->cs2_fld = 1.;
-  ppt->use_new_fld_IC = _TRUE_;
+  ppt->use_new_fld_IC = _FALSE_;
   /** 9.a.2.1) 'CLP' case */
   pba->wa_fld = 0.;
   /** 9.a.2.2) 'EDE' case */
