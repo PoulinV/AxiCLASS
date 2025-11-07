@@ -2774,8 +2774,6 @@ int background_initial_conditions(
 
     /* rho_fld at initial time */
     pvecback_integration[pba->index_bi_rho_fld] = rho_fld_today * exp(integral_fld);
-    printf("pba->Omega0_fld %e  exp(integral_fld) %e\n", pba->Omega0_fld,exp(integral_fld));
-    printf("pba->Omega0_ur %e  exp(integral_fld) %e\n", pba->Omega0_ur);
 
   }
 
