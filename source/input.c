@@ -1611,6 +1611,7 @@ int input_get_guess(double *xguess,
           Omega_m = ba.Omega0_b;
           if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
           if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+          if(ba.Omega0_idm_ede > 0) Omega_m += ba.Omega0_idm_ede;
           if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
           a_eq = Omega_r /Omega_m;
@@ -3735,12 +3736,54 @@ int input_read_parameters_species(struct file_content * pfc,
     if (flag2 == _TRUE_)
       pba->Omega0_idm_ede = param2/pba->h/pba->h;
 
-    if(pba->Omega0_idm_ede>0){
-      class_read_double("beta_scf",pba->beta_scf);
-      class_read_double("adjust_beta_scf",pba->adjust_beta_scf);
-    }else{
-      pba->beta_scf=0;
+
+
+
+    class_call(parser_read_double(pfc,"Omega_ini_idm_ede",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+    class_call(parser_read_double(pfc,"omega_ini_idm_ede",&param2,&flag2,errmsg),
+               errmsg,
+               errmsg);
+
+    class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+               errmsg,
+               "You can only enter one of 'Omega_ini_idm_ede' or 'omega_ini_idm_ede'.");
+
+    if (flag1 == _TRUE_)
+      pba->Omega_ini_idm_ede = param1;
+    if (flag2 == _TRUE_)
+      pba->Omega_ini_idm_ede = param2/pba->h/pba->h;
+
+      printf("here!! %e\n" , pba->Omega_ini_idm_ede);
+
+    class_test(pba->Omega_ini_idm_ede < 0.,
+               errmsg,
+               "You cannot set the initial IDM–EDE density to negative values.");
+
+
+
+
+    if(pba->Omega0_idm_ede>0 || pba->Omega_ini_idm_ede > 0){
+      class_read_int("coupling_type",pba->coupling_type);
+
+
+      /* ---- case 3: SCF-type coupling ---- */
+      if (pba->coupling_type == 3) {
+
+        class_read_double("beta_scf",pba->beta_scf);
+        class_read_double("adjust_beta_scf",pba->adjust_beta_scf);
+      }
+      else if (pba->coupling_type == 1) {
+
+            /* Coupling strength (g_idm_ede) */
+            class_read_double("g_idm_ede",pba->g_idm_ede);
+            printf("pba->Omega_ini_idm_ede %e pba->g_idm_ede %e \n", pba->Omega_ini_idm_ede,pba->g_idm_ede);
+      }
     }
+
+
+
 
     /* Checks on budget equation */
     if (has_m_budget == _TRUE_) {
@@ -7417,6 +7460,7 @@ int input_default_params(struct background *pba,
   /** 7.2.1.a) Current factional density of idm */
   pba->Omega0_idm = 0;
   pba->Omega0_idm_ede = 0;
+  pba->Omega_ini_idm_ede = 0;
   /** 7.2.1.a) Mass of idm in eV*/
   pth->m_idm = 1.e9;
   /** 7.2.2) Current fractional density of idr */
@@ -7455,6 +7499,8 @@ int input_default_params(struct background *pba,
   pba->log10_m_axion= -30.;
   pba->beta_scf = 0;//set to 0 so it is never used by default.
   pba->adjust_beta_scf = 1;//set to 1 so it is never used by default.
+  pba->g_idm_ede = 0;
+  pba->coupling_type = 3;
   pba->scf_potential = pol_times_exp;
   pba->V0_phi2n = 0.0;
   pba->f_axion = 0.0;

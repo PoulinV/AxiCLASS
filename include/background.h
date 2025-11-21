@@ -154,6 +154,13 @@ struct background
   double T_idr;      /**< \f$ T_{idr} \f$: current temperature of interacting dark radiation in Kelvins */
 
   double Omega0_idm_ede; /**< \f$ \Omega_{0 idm_ede} \f$: dark matter interacting with ede */
+  double Omega_ini_idm_ede;    /**< \f$ \Omega_{ini,dcdm} \f$: rescaled initial value for dcdm density (see 1407.2418 for definitions) */
+
+
+  /* idm_ede mass function and coupling */
+  double m0_idm_ede;      /* bare mass*/
+  double g_idm_ede;    /* coupling constant */
+
 
   double Omega0_dcdmdr; /**< \f$ \Omega_{0 dcdm}+\Omega_{0 dr} \f$: decaying cold dark matter (dcdm) decaying to dark radiation (dr) */
 
@@ -174,8 +181,9 @@ struct background
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
+  int coupling_type;
   double beta_scf;
-  double adjust_beta_scf;
+    double adjust_beta_scf;
   double m_scf;
   double f_axion;
   double alpha_squared;
@@ -302,6 +310,7 @@ struct background
   int index_bg_phi_scf;       /**< scalar field value */
   int index_bg_phi_prime_scf; /**< scalar field derivative wrt conformal time */
   int index_bg_phi_prime_prime_scf; /**< scalar field second derivative wrt conformal time */
+  int index_bg_dlnm_idm_ede_dphi; /**< coupling term */
   int index_bg_V_scf;         /**< scalar field potential V */
   int index_bg_dV_scf;        /**< scalar field potential derivative V' */
   int index_bg_ddV_scf;       /**< scalar field potential second derivative V'' */
@@ -381,7 +390,7 @@ struct background
    */
 
   //@{
-
+  int index_bi_rho_idm_ede;/**< {B} idmede density */
   int index_bi_rho_dcdm;/**< {B} dcdm density */
   int index_bi_rho_dr;  /**< {B} dr density */
   int index_bi_rho_fld; /**< {B} fluid density */
@@ -699,7 +708,16 @@ extern "C" {
                double phi,
                double phi_prime
                );
+   /** idm_ede mass, coupling between scalar field and cdm **/
+   double m_idm_ede(
+                struct background *pba,
+                double phi
+                );
 
+   double dlnm_idm_ede_dphi(
+               struct background *pba,
+               double phi
+                );
 #ifdef __cplusplus
 }
 #endif

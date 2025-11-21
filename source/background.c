@@ -459,13 +459,21 @@ int background_functions(
 
 
   /* interacting dark matter ede */
-  if (pba->has_idm_ede == _TRUE_) {
+  /*by default coupling_type =3, i.e. only perturbations are affected*/
+  if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 3) {
     pvecback[pba->index_bg_rho_idm_ede] = pba->Omega0_idm_ede * pow(pba->H0,2) / pow(a,3);
     rho_tot += pvecback[pba->index_bg_rho_idm_ede];
     p_tot += 0.;
     rho_m += pvecback[pba->index_bg_rho_idm_ede];
   }
 
+  /* interacting dark matter ede + coupling*/
+  if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
+    pvecback[pba->index_bg_rho_idm_ede] = pvecback_B[pba->index_bi_rho_idm_ede];
+    rho_tot += pvecback[pba->index_bg_rho_idm_ede];
+    p_tot += 0.;
+    rho_m += pvecback[pba->index_bg_rho_idm_ede];
+  }
 
   /* dcdm */
   if (pba->has_dcdm == _TRUE_) {
@@ -508,7 +516,9 @@ int background_functions(
     // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
     pvecback_B[pba->index_bi_rho_scf] = pvecback[pba->index_bg_rho_scf];
-
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_dlnm_idm_ede_dphi] = dlnm_idm_ede_dphi(pba,phi); //dlnm_idm_ede_dphi(pba,phi); //write here coupling term as function of phi
+    }
     rho_tot += pvecback[pba->index_bg_rho_scf];
     p_tot += pvecback[pba->index_bg_p_scf];
     dp_dloga += 0.0; /** <-- This depends on a_prime_over_a, so we cannot add it now! */
@@ -537,7 +547,9 @@ int background_functions(
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
 
-
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_dlnm_idm_ede_dphi] = dlnm_idm_ede_dphi(pba,phi); //dlnm_idm_ede_dphi(pba,phi); //write here coupling term as function of phi
+    }
     /****THE REAL QUANTITIES ARE ASSIGNED HERE****/
     //pvecback[pba->index_bg_rho_scf] = pba->Omega0_scf * pow(pba->H0,2) / pow(a_rel,3);
 
@@ -1382,7 +1394,7 @@ int background_indices(
     pba->has_idr = _TRUE_;
 
 
-  if (pba->Omega0_idm_ede != 0.)
+  if (pba->Omega0_idm_ede != 0. || pba->Omega_ini_idm_ede != 0.)
     pba->has_idm_ede = _TRUE_;
 
   if (pba->sgnK != 0)
@@ -1434,6 +1446,7 @@ int background_indices(
   class_define_index(pba->index_bg_phi_prime_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_phi_prime_prime_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_V_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_dlnm_idm_ede_dphi,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_dV_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_ddV_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_rho_scf,pba->has_scf,index_bg,1);
@@ -1536,6 +1549,9 @@ int background_indices(
 
   /* -> energy density in DR */
   class_define_index(pba->index_bi_rho_dr,pba->has_dr,index_bi,1);
+
+  /* -> energy density in idm_ede */
+  class_define_index(pba->index_bi_rho_idm_ede,pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1,index_bi,1);
 
   /* -> energy density in fluid */
   class_define_index(pba->index_bi_rho_fld,pba->has_fld,index_bi,1);
@@ -2439,7 +2455,9 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
   }
 
 
-
+  if (pba->has_idm_ede == _TRUE_ && pba->coupling_type ==1) {
+    pba->Omega0_idm_ede = pvecback_integration[pba->index_bi_rho_idm_ede]/pba->H0/pba->H0;
+  }
 
   if (pba->has_dr == _TRUE_){
     pba->Omega0_dr = pvecback_integration[pba->index_bi_rho_dr]/pba->H0/pba->H0;
@@ -2758,6 +2776,16 @@ int background_initial_conditions(
       printf("Density is %g. Omega_ini=%g\n",pvecback_integration[pba->index_bi_rho_dcdm],pba->Omega_ini_dcdm);
   }
 
+  if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
+    printf("pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3); %e\n", pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3));
+   /* Remember that the critical density today in CLASS conventions is H0^2 */
+  pvecback_integration[pba->index_bi_rho_idm_ede] =
+     pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3);
+  if (pba->background_verbose > 3)
+     printf("Density is %g. Omega_ini=%g\n",pvecback_integration[pba->index_bi_rho_idm_ede],pba->Omega_ini_idm_ede);
+ }
+
+
   if (pba->has_dr == _TRUE_) {
     if (pba->has_dcdm == _TRUE_) {
       /**  - f is the critical density fraction of DR. The exact solution is:
@@ -3044,6 +3072,7 @@ int background_output_titles(
   class_store_columntitle(titles,"V_scf",pba->has_scf);
   class_store_columntitle(titles,"V'_scf",pba->has_scf);
   class_store_columntitle(titles,"V''_scf",pba->has_scf);
+  class_store_columntitle(titles,"dlnm_idm_ede_dphi",pba->has_idm_ede && pba->coupling_type == 1);
 
   class_store_columntitle(titles,"(.)rho_tot",_TRUE_);
   class_store_columntitle(titles,"(.)p_tot",_TRUE_);
@@ -3124,6 +3153,7 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_V_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dV_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_ddV_scf],pba->has_scf,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_dlnm_idm_ede_dphi],pba->has_idm_ede && pba->coupling_type == 1,storeidx);
 
     class_store_double(dataptr,pvecback[pba->index_bg_rho_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot],_TRUE_,storeidx);
@@ -3264,7 +3294,13 @@ int background_derivs(
     /** - Compute dr density \f$ d\rho/dloga = -4\rho - \Gamma/H \rho \f$ */
     dy[pba->index_bi_rho_dr] = -4.*y[pba->index_bi_rho_dr]+pba->Gamma_dcdm/H*y[pba->index_bi_rho_dcdm];
   }
-
+  if (pba->has_idm_ede == _TRUE_ && pba->has_scf == _TRUE_ && pba->coupling_type == 1) {
+  /* see arxiv:2212.08098*/
+  /** d rho_idm_ede / d ln a = -3 rho_idm_ede - coupling */
+  dy[pba->index_bi_rho_idm_ede] =
+    -3. * y[pba->index_bi_rho_idm_ede]
+    - y[pba->index_bi_phi_prime_scf] * dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])*y[pba->index_bi_rho_idm_ede];
+  }
   if (pba->has_fld == _TRUE_) {
     /** - Compute fld density \f$ d\rho/dloga = -3 (1+w_{fld}(a)) \rho \f$ */
     dy[pba->index_bi_rho_fld] = -3.*(1.+pvecback[pba->index_bg_w_fld])*y[pba->index_bi_rho_fld];
@@ -3285,9 +3321,15 @@ int background_derivs(
     /* VP: NEW AXICLASS: derivative with respect to log(a) */
     /** - Scalar field equation: \f$ \phi'' + 2 a H \phi' + a^2 dV = 0 \f$  (note H is wrt cosmological time)
         written as \f$ d\phi/dlna = phi' / (aH) \f$ and \f$ d\phi'/dlna = -2*phi' - (a/H) dV \f$ */
-    dy[pba->index_bi_phi_scf] = y[pba->index_bi_phi_prime_scf]/a/H;
-    dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H*(1/(1-2*pba->beta_scf)) ;
-
+        dy[pba->index_bi_phi_scf] = y[pba->index_bi_phi_prime_scf]/a/H;
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 3){
+      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H*(1/(1-2*pba->beta_scf)) ;
+    }
+    else if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*y[pba->index_bi_phi_prime_scf]*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede];
+    }else{
+      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
+    }
        // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])) ;
        // printf("pba->beta_scf %e\n", pba->beta_scf);
        // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])/(pow(pba->scf_parameters[1],2))) ;
@@ -3836,7 +3878,11 @@ double V_scf(
     result = V_double_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axion){
-    result = V_axion_scf(pba,phi)*(1-2*pba->beta_scf);
+    if(pba->coupling_type == 3 && pba->has_idm_ede == _TRUE_){
+      result = V_axion_scf(pba,phi)*(1-2*pba->beta_scf);
+    }else{
+       result = V_axion_scf(pba,phi);
+    }
   }
   else if(pba->scf_potential == phi_2n){
     result = V_phi_2n_scf(pba,phi);
@@ -3864,7 +3910,12 @@ double dV_scf(
     result =  dV_double_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axion){
+    if(pba->coupling_type == 3 && pba->has_idm_ede == _TRUE_){
     result = dV_axion_scf(pba,phi)*(1-2*pba->beta_scf);
+  }
+    else{
+      result = dV_axion_scf(pba,phi);
+    }
   }
   else if(pba->scf_potential == phi_2n){
     result = dV_phi_2n_scf(pba,phi);
@@ -3895,7 +3946,12 @@ double ddV_scf(
     result =  ddV_double_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axion){
-    result = ddV_axion_scf(pba,phi)*(1-2*pba->beta_scf);
+    if(pba->coupling_type == 3 && pba->has_idm_ede == _TRUE_){
+      result = ddV_axion_scf(pba,phi)*(1-2*pba->beta_scf);
+  }
+    else{
+      result = ddV_axion_scf(pba,phi);
+    }
   }
   else if(pba->scf_potential == phi_2n){
     result = ddV_phi_2n_scf(pba,phi);
@@ -3910,4 +3966,16 @@ double ddV_scf(
   // printf("result ddVf %e\n", result);
   return result;
 
+}
+
+double m_idm_ede(
+              struct background *pba,
+              double phi ){
+              return pba->m0_idm_ede * (1 + pba->g_idm_ede * pow(phi, 2));
+}
+
+double dlnm_idm_ede_dphi(
+              struct background *pba,
+              double phi){
+              return 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2));
 }
