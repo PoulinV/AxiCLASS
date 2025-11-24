@@ -469,7 +469,8 @@ int background_functions(
 
   /* interacting dark matter ede + coupling*/
   if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
-    pvecback[pba->index_bg_rho_idm_ede] = pvecback_B[pba->index_bi_rho_idm_ede];
+    // pvecback[pba->index_bg_rho_idm_ede] = pvecback_B[pba->index_bi_rho_idm_ede];
+    pvecback[pba->index_bg_rho_idm_ede] =  pba->Omega0_idm_ede * pow(pba->H0,2) / pow(a,3);
     rho_tot += pvecback[pba->index_bg_rho_idm_ede];
     p_tot += 0.;
     rho_m += pvecback[pba->index_bg_rho_idm_ede];
@@ -2777,7 +2778,7 @@ int background_initial_conditions(
   }
 
   if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
-    printf("pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3); %e\n", pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3));
+    // printf("pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3); %e\n", pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3));
    /* Remember that the critical density today in CLASS conventions is H0^2 */
   pvecback_integration[pba->index_bi_rho_idm_ede] =
      pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3);
@@ -3297,9 +3298,10 @@ int background_derivs(
   if (pba->has_idm_ede == _TRUE_ && pba->has_scf == _TRUE_ && pba->coupling_type == 1) {
   /* see arxiv:2212.08098*/
   /** d rho_idm_ede / d ln a = -3 rho_idm_ede - coupling */
+// printf("here!! %e %e %e\n", a,- y[pba->index_bi_phi_prime_scf], dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf]));
   dy[pba->index_bi_rho_idm_ede] =
-    -3. * y[pba->index_bi_rho_idm_ede]
-    - y[pba->index_bi_phi_prime_scf] * dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])*y[pba->index_bi_rho_idm_ede];
+    -3 * y[pba->index_bi_rho_idm_ede]
+    - y[pba->index_bi_phi_prime_scf] * dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])*y[pba->index_bi_rho_idm_ede]/a/H;
   }
   if (pba->has_fld == _TRUE_) {
     /** - Compute fld density \f$ d\rho/dloga = -3 (1+w_{fld}(a)) \rho \f$ */
@@ -3326,7 +3328,8 @@ int background_derivs(
       dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H*(1/(1-2*pba->beta_scf)) ;
     }
     else if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
-      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*y[pba->index_bi_phi_prime_scf]*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede];
+      // dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*y[pba->index_bi_phi_prime_scf]*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede];
+      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede]/H;
     }else{
       dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
     }
@@ -3977,5 +3980,9 @@ double m_idm_ede(
 double dlnm_idm_ede_dphi(
               struct background *pba,
               double phi){
-              return 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2));
+                // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
+                if(phi !=0.0) return 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2));
+                else{
+                  return 0;
+                }
 }

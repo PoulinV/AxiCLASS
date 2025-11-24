@@ -528,18 +528,19 @@ int input_shooting(struct file_content * pfc,
 
   /* array of parameters passed by the user for which we need shooting (= target parameters) */
   char * const target_namestrings[] = {"100*theta_s","Omega_dcdmdr","omega_dcdmdr",
-                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm",
+                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","Omega_ini_idm_ede","omega_ini_idm_ede",
                                        "fraction_axion_ac","log10_axion_ac","log10_fraction_axion_ac_phi2n",
                                        "log10_axion_ac_phi2n","a_peak_eq","sigma8"};
   /* array of corresponding parameters that must be adjusted in order to meet the target (= unknown parameters) */
   char * const unknown_namestrings[] = {"h","Omega_ini_dcdm","Omega_ini_dcdm",
-                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr",
+                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","Omega_idm_ede","Omega_idm_ede",
                                         "alpha_squared","power_of_mu","phi_ini_scf",
                                         "V0_phi2n","ac_from_aeq","A_s"};
   /* for each target, module up to which we need to run CLASS in order
      to compute the targetted quantities (not running the whole code
      each time to saves a lot of time) */
      enum computation_stage target_cs[] = {cs_thermodynamics, cs_background, cs_background,
+                                           cs_background, cs_background,
                                            cs_background, cs_background, cs_background,
                                            cs_background, cs_background, cs_background,
                                            cs_background, cs_background, cs_nonlinear};
@@ -885,6 +886,8 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     /* We need to remember that we shot so we can clean up properly */
     *has_shooting=_TRUE_;
 
+    // printf("unknown_parameters_size %d\n", unknown_parameters_size);
+
     /* Create file content structure with additional entries */
     class_call(parser_init(&(fzw.fc),
                            pfc->size+unknown_parameters_size,
@@ -1179,7 +1182,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
  * @param pfc             Input: pointer to local structure
  * @param target_name     Input: list of possible target names
  * @param target_value    Input: list of possible target values
- * @param needs_shooting  Output: needs shooting?
+ * @param needs_shooting  [Output]: needs shooting?
  * @param errmsg          Input/Output: Error message
  * @return the error status
  */
@@ -1199,6 +1202,8 @@ int input_needs_shooting_for_target(struct file_content * pfc,
   case log10_axion_ac:
   case Omega_ini_dcdm:
   case omega_ini_dcdm:
+  case Omega_ini_idm_ede:
+  case omega_ini_idm_ede:
     /* Check that Omega's or omega's are nonzero: */
     if (target_value == 0.)
       *needs_shooting = _FALSE_;
@@ -1659,6 +1664,7 @@ int input_get_guess(double *xguess,
               Omega_m = ba.Omega0_b;
               if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
               if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+              if(ba.Omega0_idm_ede > 0) Omega_m += ba.Omega0_idm_ede;
               if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
               a_eq = Omega_r /Omega_m;
@@ -1787,6 +1793,15 @@ int input_get_guess(double *xguess,
 
         //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
         break;
+      case Omega_ini_idm_ede:
+        xguess[index_guess] = pfzw->target_value[index_guess];
+        dxdy[index_guess] = 1;
+        break;
+
+      case omega_ini_idm_ede:
+        xguess[index_guess] = pfzw->target_value[index_guess]/ba.h/ba.h;
+        dxdy[index_guess] = 1;
+        break;
       case a_peak_eq:
         Omega_M = ba.Omega0_cdm+ba.Omega0_b;
         Omega_rad = ba.Omega0_g+ba.Omega0_ur;
@@ -1852,7 +1867,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
   struct output op;           /* for output files */
 
   int i;
-  double rho_dcdm_today, rho_dr_today;
+  double rho_dcdm_today,rho_idm_ede_today, rho_dr_today;
   struct fzerofun_workspace * pfzw;
   int input_verbose;
   int flag;
@@ -2044,6 +2059,11 @@ int input_try_unknown_parameters(double * unknown_parameter,
         else
           rho_dr_today = 0.;
         output[i] = -(rho_dcdm_today+rho_dr_today)/(ba.H0*ba.H0)+ba.Omega0_dcdmdr;
+        break;
+      case Omega_ini_idm_ede:
+      case omega_ini_idm_ede:
+        rho_idm_ede_today = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_idm_ede];
+        output[i] = ba.Omega0_idm_ede-(rho_idm_ede_today)/(ba.H0*ba.H0);
         break;
       case a_peak_eq:
         output[i] = ba.a_peak-ba.a_eq;
@@ -3755,7 +3775,7 @@ int input_read_parameters_species(struct file_content * pfc,
     if (flag2 == _TRUE_)
       pba->Omega_ini_idm_ede = param2/pba->h/pba->h;
 
-      printf("here!! %e\n" , pba->Omega_ini_idm_ede);
+      // printf("here!! %e\n" , pba->Omega_ini_idm_ede);
 
     class_test(pba->Omega_ini_idm_ede < 0.,
                errmsg,
@@ -3778,7 +3798,7 @@ int input_read_parameters_species(struct file_content * pfc,
 
             /* Coupling strength (g_idm_ede) */
             class_read_double("g_idm_ede",pba->g_idm_ede);
-            printf("pba->Omega_ini_idm_ede %e pba->g_idm_ede %e \n", pba->Omega_ini_idm_ede,pba->g_idm_ede);
+            // printf("pba->Omega_ini_idm_ede %e pba->g_idm_ede %e \n", pba->Omega_ini_idm_ede,pba->g_idm_ede);
       }
     }
 
@@ -4819,6 +4839,7 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
   Omega_tot += pba->Omega0_ur;
   Omega_tot += pba->Omega0_cdm;
   Omega_tot += pba->Omega0_idm;
+  printf("Omega_tot %e pba->Omega0_idm_ede %e\n",Omega_tot, pba->Omega0_idm_ede);
   Omega_tot += pba->Omega0_idm_ede;
   Omega_tot += pba->Omega0_dcdmdr;
   Omega_tot += pba->Omega0_idr;
