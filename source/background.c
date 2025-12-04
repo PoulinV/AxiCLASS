@@ -469,8 +469,8 @@ int background_functions(
 
   /* interacting dark matter ede + coupling*/
   if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
-    // pvecback[pba->index_bg_rho_idm_ede] = pvecback_B[pba->index_bi_rho_idm_ede];
-    pvecback[pba->index_bg_rho_idm_ede] =  pba->Omega0_idm_ede * pow(pba->H0,2) / pow(a,3);
+    pvecback[pba->index_bg_rho_idm_ede] = pvecback_B[pba->index_bi_rho_idm_ede];
+    // pvecback[pba->index_bg_rho_idm_ede] =  pba->Omega0_idm_ede * pow(pba->H0,2) / pow(a,3);
     rho_tot += pvecback[pba->index_bg_rho_idm_ede];
     p_tot += 0.;
     rho_m += pvecback[pba->index_bg_rho_idm_ede];
@@ -2456,10 +2456,6 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
   }
 
 
-  if (pba->has_idm_ede == _TRUE_ && pba->coupling_type ==1) {
-    pba->Omega0_idm_ede = pvecback_integration[pba->index_bi_rho_idm_ede]/pba->H0/pba->H0;
-  }
-
   if (pba->has_dr == _TRUE_){
     pba->Omega0_dr = pvecback_integration[pba->index_bi_rho_dr]/pba->H0/pba->H0;
   }
@@ -2612,7 +2608,8 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
       }
       if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
-      printf("n = %e m_a = %e eV, f_a/mpl = %e and theta_i = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion,pba->scf_parameters[0]);
+      // printf("n = %e m_a = %e eV, f_a/mpl = %e and theta_i = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion,pba->scf_parameters[0]);
+      printf("n = %e m_a = %e \times H_0  = %e eV, f_a/mpl = %e and theta_i = %e\n",pba->n_axion,(pba->m_scf*pba->H0),(pba->m_scf*pba->H0/1.5638e29),pba->f_axion,pba->scf_parameters[0]);
       printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
       if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e pba->log10_axion_ac %e\n", log10(1/pow(10,pba->log10_axion_ac)-1),pba->log10_axion_ac);
       printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
@@ -3154,7 +3151,7 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_V_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dV_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_ddV_scf],pba->has_scf,storeidx);
-    class_store_double(dataptr,pvecback[pba->index_bg_dlnm_idm_ede_dphi],pba->has_idm_ede && pba->coupling_type == 1,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede],pba->has_idm_ede && pba->coupling_type == 1,storeidx);
 
     class_store_double(dataptr,pvecback[pba->index_bg_rho_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot],_TRUE_,storeidx);
@@ -3330,6 +3327,7 @@ int background_derivs(
     else if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
       // dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*y[pba->index_bi_phi_prime_scf]*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede];
       dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede]/H;
+      // dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
     }else{
       dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
     }

@@ -533,7 +533,7 @@ int input_shooting(struct file_content * pfc,
                                        "log10_axion_ac_phi2n","a_peak_eq","sigma8"};
   /* array of corresponding parameters that must be adjusted in order to meet the target (= unknown parameters) */
   char * const unknown_namestrings[] = {"h","Omega_ini_dcdm","Omega_ini_dcdm",
-                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","Omega_idm_ede","Omega_idm_ede",
+                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","Omega_idm_ede","omega_idm_ede",
                                         "alpha_squared","power_of_mu","phi_ini_scf",
                                         "V0_phi2n","ac_from_aeq","A_s"};
   /* for each target, module up to which we need to run CLASS in order
@@ -1259,7 +1259,7 @@ int input_find_root(double *xzero,
 
   /** Then we do a linear hunt for the boundaries */
   /* Try fifteen times to go above and below the root (i.e. where shooting succeeds) */
-  for (iter=1; iter<=150; iter++){ //vp:default iter max is 15. We increase it to a large number to make sure shooting does not fail for axion.
+  for (iter=1; iter<=15; iter++){ //vp:default iter max is 15. We increase it to a large number to make sure shooting does not fail for axion.
     x2 = x1 - dx;
     /* Try three times to get a 'reasonable' value, i.e. no CLASS error */
     for (iter2=1; iter2 <= 3; iter2++) {
@@ -1383,7 +1383,7 @@ int input_fzero_ridder(int (*func)(double x,
 
     *fevals = (*fevals)+2;
   }
-  if ((fl > 0.0 && fh < 0.0) || (fl < 0.0 && fh > 0.0)) {
+  if ((fl > 0.0 && fh < 0.0) || (fl < 0.0 && fh > 0.0) ) {
     xl=x1;
     xh=x2;
     ans=-1.11e11;
@@ -1436,11 +1436,15 @@ int input_fzero_ridder(int (*func)(double x,
     }
     class_stop(error_message,"zriddr exceed maximum iterations");
   }
-
-  else {
+  // else if (fl < xtol && fh < xtol){
+  //   // printf("f1 %e xtol %e\n",fl, xtol);
+  //   // if (fl < fh)return x1;
+  //   // if (fl>fh)return x2;
+  // }
+  else{
     if (fl == 0.0) return x1;
     if (fh == 0.0) return x2;
-    class_stop(error_message,"root must be bracketed in zriddr.");
+        class_stop(error_message,"root must be bracketed in zriddr.");
   }
   class_stop(error_message,"Failure in int.");
 }
@@ -1799,8 +1803,10 @@ int input_get_guess(double *xguess,
         break;
 
       case omega_ini_idm_ede:
-        xguess[index_guess] = pfzw->target_value[index_guess]/ba.h/ba.h;
+        xguess[index_guess] = pfzw->target_value[index_guess];
         dxdy[index_guess] = 1;
+        if(pfzw->input_verbose>10)printf("get guess: omega_ini_idm_ede %e omega_idm_ede %e dxdy[index_guess] %e\n",pfzw->target_value[index_guess],xguess[index_guess],dxdy[index_guess]);
+
         break;
       case a_peak_eq:
         Omega_M = ba.Omega0_cdm+ba.Omega0_b;
@@ -2064,6 +2070,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
       case omega_ini_idm_ede:
         rho_idm_ede_today = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_idm_ede];
         output[i] = ba.Omega0_idm_ede-(rho_idm_ede_today)/(ba.H0*ba.H0);
+        if(input_verbose>10) printf("target %e reached %e how far? %e \n", ba.Omega0_idm_ede,(rho_idm_ede_today)/(ba.H0*ba.H0),output[i]);
         break;
       case a_peak_eq:
         output[i] = ba.a_peak-ba.a_eq;
@@ -3755,7 +3762,7 @@ int input_read_parameters_species(struct file_content * pfc,
       pba->Omega0_idm_ede = param1;
     if (flag2 == _TRUE_)
       pba->Omega0_idm_ede = param2/pba->h/pba->h;
-
+      // printf("param1 %e flag1 %d param2 %e flag2 %d h %e pba->Omega0_idm_ede %e\n",param1,flag1,param2,flag2,pba->h,pba->Omega0_idm_ede);
 
 
 
@@ -3775,7 +3782,6 @@ int input_read_parameters_species(struct file_content * pfc,
     if (flag2 == _TRUE_)
       pba->Omega_ini_idm_ede = param2/pba->h/pba->h;
 
-      // printf("here!! %e\n" , pba->Omega_ini_idm_ede);
 
     class_test(pba->Omega_ini_idm_ede < 0.,
                errmsg,
@@ -4839,7 +4845,6 @@ class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
   Omega_tot += pba->Omega0_ur;
   Omega_tot += pba->Omega0_cdm;
   Omega_tot += pba->Omega0_idm;
-  printf("Omega_tot %e pba->Omega0_idm_ede %e\n",Omega_tot, pba->Omega0_idm_ede);
   Omega_tot += pba->Omega0_idm_ede;
   Omega_tot += pba->Omega0_dcdmdr;
   Omega_tot += pba->Omega0_idr;
