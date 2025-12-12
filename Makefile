@@ -18,7 +18,7 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc-12
+CC       = gcc
 #CC       = icc
 #CC       = pgcc
 
@@ -30,7 +30,7 @@ AR        = ar rv
 # substitute python3 to python in the line below, or you can simply
 # add a compilation option on the terminal command line:
 # "PYTHON=python3 make all" (Thanks to Marius Millea for python3 compatibility)
-PYTHON ?= python
+PYTHON ?= python3
 
 # your optimization flag
 OPTFLAG = -O3
@@ -163,7 +163,7 @@ libclass.a: $(TOOLS) $(SOURCE) $(EXTERNAL)
 	$(AR)  $@ $(addprefix build/, $(TOOLS) $(SOURCE) $(EXTERNAL))
 
 class: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(CLASS)
-	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(GSLFLAG) -o class $(addprefix build/,$(notdir $^))
+	$(CC) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(GSLFLAG) -o class $(addprefix build/,$(notdir $^)) -lm
 #-lgsl -lgslcblas -lm
 
 test_loops: $(TOOLS) $(SOURCE) $(EXTERNAL) $(OUTPUT) $(TEST_LOOPS)

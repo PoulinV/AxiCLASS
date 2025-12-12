@@ -311,8 +311,10 @@ struct background
   int index_bg_phi_prime_scf; /**< scalar field derivative wrt conformal time */
   int index_bg_phi_prime_prime_scf; /**< scalar field second derivative wrt conformal time */
   int index_bg_dlnm_idm_ede_dphi; /**< coupling term */
+  int index_bg_dlnm2_idm_ede_dphi; /**< coupling term */
   int index_bg_V_scf;         /**< scalar field potential V */
   int index_bg_dV_scf;        /**< scalar field potential derivative V' */
+  int index_bg_dVadd_contribution; /**< coupling term */
   int index_bg_ddV_scf;       /**< scalar field potential second derivative V'' */
   int index_bg_rho_scf;       /**< scalar field energy density */
   int index_bg_Omega_scf;       /**< scalar field fractional energy density */
@@ -715,6 +717,11 @@ extern "C" {
                 );
 
    double dlnm_idm_ede_dphi(
+               struct background *pba,
+               double phi
+                );
+                
+  double dlnm2_idm_ede_dphi(
                struct background *pba,
                double phi
                 );

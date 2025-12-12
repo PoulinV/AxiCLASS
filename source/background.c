@@ -520,6 +520,12 @@ int background_functions(
     if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
       pvecback[pba->index_bg_dlnm_idm_ede_dphi] = dlnm_idm_ede_dphi(pba,phi); //dlnm_idm_ede_dphi(pba,phi); //write here coupling term as function of phi
     }
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_dVadd_contribution] = dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]; // term to check DM-triggered decay, condition 2 arxiv:2212.08098
+    }
+    
+    
+    
     rho_tot += pvecback[pba->index_bg_rho_scf];
     p_tot += pvecback[pba->index_bg_p_scf];
     dp_dloga += 0.0; /** <-- This depends on a_prime_over_a, so we cannot add it now! */
@@ -551,6 +557,11 @@ int background_functions(
     if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
       pvecback[pba->index_bg_dlnm_idm_ede_dphi] = dlnm_idm_ede_dphi(pba,phi); //dlnm_idm_ede_dphi(pba,phi); //write here coupling term as function of phi
     }
+    
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_dVadd_contribution] = dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]; // term to check DM-triggered decay, condition 2 arxiv:2212.08098
+    }
+    
     /****THE REAL QUANTITIES ARE ASSIGNED HERE****/
     //pvecback[pba->index_bg_rho_scf] = pba->Omega0_scf * pow(pba->H0,2) / pow(a_rel,3);
 
@@ -1449,6 +1460,7 @@ int background_indices(
   class_define_index(pba->index_bg_V_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_dlnm_idm_ede_dphi,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_dV_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_dVadd_contribution,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_ddV_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_rho_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_Omega_scf,pba->has_scf,index_bg,1);
@@ -3071,6 +3083,7 @@ int background_output_titles(
   class_store_columntitle(titles,"V'_scf",pba->has_scf);
   class_store_columntitle(titles,"V''_scf",pba->has_scf);
   class_store_columntitle(titles,"dlnm_idm_ede_dphi",pba->has_idm_ede && pba->coupling_type == 1);
+  class_store_columntitle(titles,"dVadd_contribution",pba->has_idm_ede && pba->coupling_type == 1);
 
   class_store_columntitle(titles,"(.)rho_tot",_TRUE_);
   class_store_columntitle(titles,"(.)p_tot",_TRUE_);
@@ -3151,8 +3164,8 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_V_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dV_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_ddV_scf],pba->has_scf,storeidx);
-    class_store_double(dataptr,pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede],pba->has_idm_ede && pba->coupling_type == 1,storeidx);
-
+    /*class_store_double(dataptr,pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede],pba->has_idm_ede && pba->coupling_type == 1,storeidx);*/
+    class_store_double(dataptr,pvecback[pba->index_bg_dVadd_contribution],pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot_prime],_TRUE_,storeidx);
@@ -3984,3 +3997,14 @@ double dlnm_idm_ede_dphi(
                   return 0;
                 }
 }
+
+double dlnm2_idm_ede_dphi(
+              struct background *pba,
+              double phi){
+                // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
+                if(phi !=0.0) return -2*pba->g_idm_ede * phi * (pba->g_idm_ede * phi -1)/(pow(1 + pba->g_idm_ede * pow(phi, 2),2));
+                else{
+                  return 0;
+                }
+}
+
