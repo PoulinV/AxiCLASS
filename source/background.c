@@ -1178,6 +1178,14 @@ int background_init(
         pba->log10_z_c=1;
         // printf("m_scf is %e pba->w_scf %e pba->f_axion %e\n", pba->m_scf,pba->w_scf,pba->f_axion);
 
+
+
+            class_test(pba->beta_scf >= 1./2.,
+                       pba->error_message,
+                       "Your choice for beta_scf=%g is suspicious, since it is bigger than 1./2 the KG equation is ill-behaved\n",
+                       pba->beta_scf);
+
+
      }
 
   /** - check that input parameters make sense and write additional information about them */
