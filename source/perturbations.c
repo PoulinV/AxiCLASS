@@ -7460,7 +7460,7 @@ int perturbations_total_stress_energy(
           delta_rho_scf =  1./3.*
           (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf)
            + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
-           
+
           delta_p_scf = 1./3.*
           (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf)
            - ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
@@ -7471,19 +7471,15 @@ int perturbations_total_stress_energy(
              delta_rho_scf=0;
              delta_p_scf=0;
            }
-           if(pba->scf_evolve_as_fluid == _TRUE_){
-             // printf("here!\n");
 
-             y[ppw->pv->index_pt_delta_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf];
+
            }
-           
-           }
-           
-        if (pba->coupling_type==1) {
+
+        else{//valid for type1 and without coupling
           delta_rho_scf =  1./3.*
           (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
            + ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
-           
+
           delta_p_scf = 1./3.*
           (1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
            - ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
@@ -7494,16 +7490,16 @@ int perturbations_total_stress_energy(
              delta_rho_scf=0;
              delta_p_scf=0;
            }
+
+
+           }
+
+
            if(pba->scf_evolve_as_fluid == _TRUE_){
              // printf("here!\n");
 
              y[ppw->pv->index_pt_delta_scf] = delta_rho_scf/ppw->pvecback[pba->index_bg_rho_scf];
            }
-           
-           }
-
-
-
 
         }
         else {
@@ -7525,9 +7521,9 @@ int perturbations_total_stress_energy(
         // }
       }
     }
-    
 
-    
+
+
       else{ //if newtonian gauge, equation for psi */
         if (ppt->scf_kg_eq[index_md][index_k] == 1){ //evolving via KG
           psi = y[ppw->pv->index_pt_phi] - 4.5 * (a2/k/k) * ppw->rho_plus_p_shear;
@@ -7605,7 +7601,7 @@ int perturbations_total_stress_energy(
         }
         }
         }
-        
+
         if(pba->scf_evolve_as_fluid == _TRUE_){
           if(ppt->use_big_theta_scf == _TRUE_){
             y[ppw->pv->index_pt_big_theta_scf] = (1./3.*k*k/a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_scf])/ppw->pvecback[pba->index_bg_rho_scf];
@@ -8532,10 +8528,10 @@ int perturbations_sources(
           delta_rho_scf =  1./3.*
             (ppw->pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf])
              + 3.*a_prime_over_a*(1.+pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf])*theta_over_k2; // N-body gauge correction
-          if (pba->coupling_type==3){ 
+          if (pba->coupling_type==3){
           delta_rho_scf+=1./3.*(1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf));// beta_factor
         }
-         if (pba->coupling_type==1){ 
+         if (pba->coupling_type==1){
           delta_rho_scf+=1./3.*(1./a2*ppw->pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]);//no beta_factor
         }
         }
@@ -8694,7 +8690,7 @@ int perturbations_sources(
         (pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]) + theta_shift; // N-body gauge correction;
       // if(pba->scf_potential == axionquad)y[ppw->pv->index_pt_theta_scf] = rho_plus_p_theta_scf/
       //   (pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
-      
+
       }
        if(pba->coupling_type==1){
       rho_plus_p_theta_scf +=  -1./3.*
@@ -9193,16 +9189,14 @@ int perturbations_print_variables(double tau,
               (pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
              delta_p_scf = 1./3.*
              (- pvecback[pba->index_bg_dV_scf]*y[ppw->pv->index_pt_phi_scf]);
-              
+
             if (pba->coupling_type==3){
             delta_rho_scf+= 1./3.*
               (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf));
             delta_p_scf +=1./3.*
              (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]*(1-2*pba->beta_scf));
             }
-            
-              
-           if (pba->coupling_type==1){
+           else{//valid for type1 and without coupling
             delta_rho_scf +=  1./3.*
               (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]);
              delta_p_scf += 1./3.*
@@ -9210,7 +9204,7 @@ int perturbations_print_variables(double tau,
 
           }
           }
-          
+
           else{
             delta_rho_scf =  1./3.*
               (1./a2*pvecback[pba->index_bg_phi_prime_scf]*y[ppw->pv->index_pt_phi_prime_scf]
@@ -9226,14 +9220,14 @@ int perturbations_print_variables(double tau,
 
           delta_scf = delta_rho_scf/pvecback[pba->index_bg_rho_scf];
           theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
-          
+
           if(pba->beta_scf!=0&&pba->has_idm_ede==_TRUE_){
             term_delta_rho = 2*k2*pba->beta_scf*delta_rho_scf/(-1+2*pba->beta_scf);
             term_theta = theta_scf*4*pba->beta_scf*ppw->pvecback[pba->index_bg_dV_scf]*ppw->pvecback[pba->index_bg_phi_prime_scf];
             // printf("term_delta_rho %e term_theta %e\n",term_delta_rho,term_theta);
           }
           }
-          if(pba->coupling_type==1){
+          else{//valid for type1 and without coupling
           rho_plus_p_theta_scf += -1./3.*
             pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_phi_prime_scf]/a2*(y[ppw->pv->index_pt_theta_idm_ede]);
 
@@ -9242,7 +9236,7 @@ int perturbations_print_variables(double tau,
 
          }
          }
-         
+
       if(pba->has_idm_ede){
         if (pba->coupling_type==3){
           delta_phi_scf = y[ppw->pv->index_pt_phi_scf];
@@ -9263,17 +9257,18 @@ int perturbations_print_variables(double tau,
           /a/(3*pvecback[pba->index_bg_rho_idm_ede]-2*pba->beta_scf*Z_scf*Z_scf);
 
       }
-      
-      
-      if(pba->coupling_type==1){
+
+
+      else{//valid for type1 and without coupling
           delta_phi_scf = y[ppw->pv->index_pt_phi_scf];
           delta_phi_over_phi_scf = y[ppw->pv->index_pt_phi_scf]/pvecback[pba->index_bg_phi_scf];
           delta_phi_prime_scf = y[ppw->pv->index_pt_phi_prime_scf];
-        
+          if (pba->coupling_type==1){
           interaction_idm_ede_vEuler= k2*pvecback[pba->index_bg_dlnm_idm_ede_dphi]*y[ppw->pv->index_pt_phi_scf]-y[ppw->pv->index_pt_phi_scf]*pvecback[pba->index_bg_phi_scf]*y[ppw->pv->index_pt_theta_idm_ede];
+          }
       }
-      
-      
+
+
       }
       }
 
@@ -10364,14 +10359,14 @@ int perturbations_derivs(double tau,
     /** - ---> idm ede */
 
     if (pba->has_idm_ede == _TRUE_) {
-    
+      dy[pv->index_pt_delta_idm_ede] = -(y[pv->index_pt_theta_idm_ede]+metric_continuity); /* cdm density */
+
+      dy[pv->index_pt_theta_idm_ede] = - a_prime_over_a*y[pv->index_pt_theta_idm_ede] + metric_euler; /* cdm velocity */
     if (pba->coupling_type==3){
 
       //follow 1604.04222 notations
       // if (ppt->gauge == newtonian) {
-        dy[pv->index_pt_delta_idm_ede] = -(y[pv->index_pt_theta_idm_ede]+metric_continuity); /* cdm density */
 
-        dy[pv->index_pt_theta_idm_ede] = - a_prime_over_a*y[pv->index_pt_theta_idm_ede] + metric_euler; /* cdm velocity */
         if(pba->beta_scf != 0){
           Z_scf = - pvecback[pba->index_bg_phi_prime_scf] / a;
           Z_prime_scf = a_prime_over_a*pvecback[pba->index_bg_phi_prime_scf]/a-pvecback[pba->index_bg_phi_prime_prime_scf]/a;
@@ -10404,16 +10399,14 @@ int perturbations_derivs(double tau,
       //   dy[pv->index_pt_theta_idm_ede] = - a_prime_over_a*y[pv->index_pt_theta_idm_ede] + metric_euler; /* idm_ede velocity */
       // }
     }
-    
-  if (pba->coupling_type==1) {
+
+     if (pba->coupling_type==1) {
 
       //follow 1604.04222 notations
       // if (ppt->gauge == newtonian) {
-        dy[pv->index_pt_delta_idm_ede] = -(y[pv->index_pt_theta_idm_ede]+metric_continuity); /* cdm density */
 
-        dy[pv->index_pt_theta_idm_ede] = - a_prime_over_a*y[pv->index_pt_theta_idm_ede] + metric_euler; /* cdm velocity */
         if(pba->g_idm_ede != 0){
-          
+
           dy[pv->index_pt_delta_idm_ede] += pvecback[pba->index_bg_dlnm_idm_ede_dphi]*y[pv->index_pt_phi_prime_scf]+ pvecback[pba->index_bg_dlnm2_idm_ede_dphi]*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_phi_scf];
 
           dy[pv->index_pt_theta_idm_ede] += k2*pvecback[pba->index_bg_dlnm_idm_ede_dphi]*y[pv->index_pt_phi_scf]
@@ -10441,7 +10434,7 @@ int perturbations_derivs(double tau,
       //   dy[pv->index_pt_theta_idm_ede] = - a_prime_over_a*y[pv->index_pt_theta_idm_ede] + metric_euler; /* idm_ede velocity */
       // }
     }
-    
+
     }
 
     /** - ---> interacting dark radiation */
@@ -10694,17 +10687,18 @@ int perturbations_derivs(double tau,
         // - 2*a2/k2*metric_euler*pvecback[pba->index_bg_dV_scf] //VP: This term was missing in newtonian gauge, but we do not follow psi' so we cannot yet solve the perturbed KG equation in newtonian gauge.
         ;
         if(pba->has_idm_ede == _TRUE_){
-        if (pba->coupling_type==3){
-        dy[pv->index_pt_phi_prime_scf] += - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]/(1-2*pba->beta_scf)+ 2*pba->beta_scf*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_theta_idm_ede]/(1-2*pba->beta_scf); //checked
-        // printf("pba->beta_scf %e\n", pba->beta_scf);
+          if (pba->coupling_type==3){
+          dy[pv->index_pt_phi_prime_scf] += - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]/(1-2*pba->beta_scf)+ 2*pba->beta_scf*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_theta_idm_ede]/(1-2*pba->beta_scf); //checked
+          // printf("pba->beta_scf %e\n", pba->beta_scf);
+          }
+          else if(pba->coupling_type==1){
+          dy[pv->index_pt_phi_prime_scf] += - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]-a2*(pvecback[pba->index_bg_dlnm_idm_ede_dphi]*3*pvecback[pba->index_bg_rho_idm_ede]*y[pv->index_pt_delta_idm_ede]+pvecback[pba->index_bg_dlnm2_idm_ede_dphi]*3*pvecback[pba->index_bg_rho_idm_ede]*y[pv->index_pt_phi_scf] );//see arxiv:2212.08098
+          }
+        }else{
+          dy[pv->index_pt_phi_prime_scf] += - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf];
         }
-        
-         if(pba->coupling_type==1){
-        dy[pv->index_pt_phi_prime_scf] += - (k2 + a2*pvecback[pba->index_bg_ddV_scf])*y[pv->index_pt_phi_scf]-a2*(pvecback[pba->index_bg_dlnm_idm_ede_dphi]*3*pvecback[pba->index_bg_rho_idm_ede]*y[pv->index_pt_delta_idm_ede]+pvecback[pba->index_bg_dlnm2_idm_ede_dphi]*3*pvecback[pba->index_bg_rho_idm_ede]*y[pv->index_pt_phi_scf] );//see arxiv:2212.08098
-        }
-}
-        
-        
+
+
         if(ppt->perturbations_verbose>11){
         printf("k %e a %e delta_phi %e delta_phi' %e d_delta_phi' %e metric_continuity %e\n",k,a, dy[pv->index_pt_phi_scf],y[pv->index_pt_phi_prime_scf],dy[pv->index_pt_phi_prime_scf],metric_continuity);
         printf("phi' %e ddV %e\n",pvecback[pba->index_bg_phi_prime_scf],pvecback[pba->index_bg_ddV_scf]);
