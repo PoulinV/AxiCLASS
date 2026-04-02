@@ -521,7 +521,14 @@ int background_functions(
       pvecback[pba->index_bg_dlnm_idm_ede_dphi] = dlnm_idm_ede_dphi(pba,phi); //dlnm_idm_ede_dphi(pba,phi); //write here coupling term as function of phi
     }
     if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
-      pvecback[pba->index_bg_dVadd_contribution] = dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]; // term to check DM-triggered decay, condition 2 arxiv:2212.08098
+      pvecback[pba->index_bg_dVadd_contribution] = 3*pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]; // term to check DM-triggered decay, condition 2 arxiv:2212.08098
+    }
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_first] =(dV_scf(pba,phi) +3*pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede])/(pow(pvecback[pba->index_bg_H],2.)*phi); // term to check DM-triggered decay, condition 2 arxiv:2212.08098
+    }
+    
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_second] = 3*pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]/(pow(pvecback[pba->index_bg_H],2.)*phi); // term to check DM-triggered decay, condition 2 arxiv:2212.08098
     }
     
     
@@ -559,8 +566,17 @@ int background_functions(
     }
     
     if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
-      pvecback[pba->index_bg_dVadd_contribution] = dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]; // term to check DM-triggered decay, condition 2 arxiv:2212.08098
+      pvecback[pba->index_bg_dVadd_contribution] = 3*pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]; // term to check DM-triggered decay, condition 2 arxiv:2212.08098
     }
+    
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_first] =(dV_scf(pba,phi) + 3* pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede])/(pow(pvecback[pba->index_bg_H],2.)*phi); // term to check DM-triggered decay, condition 2 arxiv:2212.08098
+    }
+    
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_second] = 3* pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]/(pow(pvecback[pba->index_bg_H],2.)*phi); // term to check DM-triggered decay, condition 2 arxiv:2212.08098
+    }
+    
     
     /****THE REAL QUANTITIES ARE ASSIGNED HERE****/
     //pvecback[pba->index_bg_rho_scf] = pba->Omega0_scf * pow(pba->H0,2) / pow(a_rel,3);
@@ -1461,6 +1477,8 @@ int background_indices(
   class_define_index(pba->index_bg_dlnm_idm_ede_dphi,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_dV_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_dVadd_contribution,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
+  class_define_index(pba->index_bg_first,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
+  class_define_index(pba->index_bg_second,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_ddV_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_rho_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_Omega_scf,pba->has_scf,index_bg,1);
@@ -3084,6 +3102,9 @@ int background_output_titles(
   class_store_columntitle(titles,"V''_scf",pba->has_scf);
   class_store_columntitle(titles,"dlnm_idm_ede_dphi",pba->has_idm_ede && pba->coupling_type == 1);
   class_store_columntitle(titles,"dVadd_contribution",pba->has_idm_ede && pba->coupling_type == 1);
+  class_store_columntitle(titles,"first",pba->has_idm_ede && pba->coupling_type == 1)
+  class_store_columntitle(titles,"second",pba->has_idm_ede && pba->coupling_type == 1)
+  
 
   class_store_columntitle(titles,"(.)rho_tot",_TRUE_);
   class_store_columntitle(titles,"(.)p_tot",_TRUE_);
@@ -3166,6 +3187,8 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_ddV_scf],pba->has_scf,storeidx);
     /*class_store_double(dataptr,pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede],pba->has_idm_ede && pba->coupling_type == 1,storeidx);*/
     class_store_double(dataptr,pvecback[pba->index_bg_dVadd_contribution],pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,storeidx);
+     class_store_double(dataptr,pvecback[pba->index_bg_first],pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,storeidx);
+      class_store_double(dataptr,pvecback[pba->index_bg_second],pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot_prime],_TRUE_,storeidx);
@@ -3311,7 +3334,7 @@ int background_derivs(
 // printf("here!! %e %e %e\n", a,- y[pba->index_bi_phi_prime_scf], dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf]));
   dy[pba->index_bi_rho_idm_ede] =
     -3 * y[pba->index_bi_rho_idm_ede]
-    - y[pba->index_bi_phi_prime_scf] * dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])*y[pba->index_bi_rho_idm_ede]/a/H;
+    + y[pba->index_bi_phi_prime_scf] * dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])*y[pba->index_bi_rho_idm_ede]/(a*H);
   }
   if (pba->has_fld == _TRUE_) {
     /** - Compute fld density \f$ d\rho/dloga = -3 (1+w_{fld}(a)) \rho \f$ */
@@ -3337,9 +3360,10 @@ int background_derivs(
     if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 3){
       dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H*(1/(1-2*pba->beta_scf)) ;
     }
+    /*here I multiplied the rho_class by 3mpl^2*/
     else if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
       // dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*y[pba->index_bi_phi_prime_scf]*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede];
-      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede]/H;
+      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -3*pow(8*_PI_*_G_,-1)*a*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede]/H;
       // dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
     }else{
       dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
@@ -3988,11 +4012,13 @@ double m_idm_ede(
               return pba->m0_idm_ede * (1 + pba->g_idm_ede * pow(phi, 2));
 }
 
+/*following arXiv 2212.08098 I divided phi by mpl with mpl^2=1/(8 pi G)*/
+
 double dlnm_idm_ede_dphi(
               struct background *pba,
               double phi){
-                // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
-                if(phi !=0.0) return 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2));
+                // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/1.5638e29/(1 + pba->g_idm_ede * pow(phi, 2)));
+                if(phi !=0.0) return 2*pba->g_idm_ede * phi * pow(8*_PI_*_G_,1.)/(1 + pba->g_idm_ede * pow(phi, 2)*(8*_PI_*_G_));
                 else{
                   return 0;
                 }
@@ -4002,7 +4028,7 @@ double dlnm2_idm_ede_dphi(
               struct background *pba,
               double phi){
                 // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
-                if(phi !=0.0) return -2*pba->g_idm_ede * phi * (pba->g_idm_ede * phi -1)/(pow(1 + pba->g_idm_ede * pow(phi, 2),2));
+                if(phi !=0.0) return -2*pba->g_idm_ede * (pba->g_idm_ede * pow(phi, 2.0) -1)/(pow(1 + pba->g_idm_ede * pow(phi, 2),2));
                 else{
                   return 0;
                 }

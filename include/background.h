@@ -315,6 +315,8 @@ struct background
   int index_bg_V_scf;         /**< scalar field potential V */
   int index_bg_dV_scf;        /**< scalar field potential derivative V' */
   int index_bg_dVadd_contribution; /**< coupling term */
+  int index_bg_first; /**< coupling term */
+  int index_bg_second; /**< coupling term */
   int index_bg_ddV_scf;       /**< scalar field potential second derivative V'' */
   int index_bg_rho_scf;       /**< scalar field energy density */
   int index_bg_Omega_scf;       /**< scalar field fractional energy density */

@@ -10370,12 +10370,17 @@ int perturbations_derivs(double tau,
         if(pba->beta_scf != 0){
           Z_scf = - pvecback[pba->index_bg_phi_prime_scf] / a;
           Z_prime_scf = a_prime_over_a*pvecback[pba->index_bg_phi_prime_scf]/a-pvecback[pba->index_bg_phi_prime_prime_scf]/a;
+          
 
-
+           /*arXiv 1604.04222*/
           dy[pv->index_pt_theta_idm_ede] += k2*
           ((6*a_prime_over_a*pba->beta_scf*Z_scf+2*pba->beta_scf*Z_prime_scf)*y[pv->index_pt_phi_scf]
           +2*pba->beta_scf*Z_scf*y[pv->index_pt_phi_prime_scf])
-          /a/(3*pvecback[pba->index_bg_rho_idm_ede]-2*pba->beta_scf*Z_scf*Z_scf);//factor of 3 because rho is in 1/3*planck mass unit while phi_scf is in planck mass units.
+          /a/(3*pvecback[pba->index_bg_rho_idm_ede]-2*pba->beta_scf*Z_scf*Z_scf);//factor of 3 because rho is in 1/3*planck mass unit while phi_scf is in planck mass units.*/
+          
+          /*arXiv 2312.01410*/
+          /*dy[pv->index_pt_theta_idm_ede] +=((2*pba->beta_scf*a_prime_over_a*pvecback[pba->index_bg_phi_prime_scf])/(3*pow(a,2)*pvecback[pba->index_bg_rho_idm_ede]))*(y[pv->index_pt_theta_idm_ede]*pvecback[pba->index_bg_phi_prime_scf]-k2*y[pv->index_pt_phi_scf]);
+    //factor of 3 because rho is in 1/3*planck mass unit while phi_scf is in planck mass units.*/
 
 
           // printf("a %e theta_idm %e \n",y[pv->index_pt_theta_idm_ede]);
