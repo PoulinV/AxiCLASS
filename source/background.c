@@ -519,20 +519,8 @@ int background_functions(
     pvecback_B[pba->index_bi_rho_scf] = pvecback[pba->index_bg_rho_scf];
     if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
       pvecback[pba->index_bg_dlnm_idm_ede_dphi] = dlnm_idm_ede_dphi(pba,phi); //dlnm_idm_ede_dphi(pba,phi); //write here coupling term as function of phi
+      pvecback[pba->index_bg_dlnm2_idm_ede_dphi] = dlnm2_idm_ede_dphi(pba,phi);
     }
-    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
-      pvecback[pba->index_bg_dVadd_contribution] = 3*pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]; // term to check DM-triggered decay, condition 2 arxiv:2212.08098
-    }
-    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
-      pvecback[pba->index_bg_first] =(dV_scf(pba,phi) +3*pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede])/(pow(pvecback[pba->index_bg_H],2.)*phi); // term to check DM-triggered decay, condition 2 arxiv:2212.08098
-    }
-    
-    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
-      pvecback[pba->index_bg_second] = 3*pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]/(pow(pvecback[pba->index_bg_H],2.)*phi); // term to check DM-triggered decay, condition 2 arxiv:2212.08098
-    }
-    
-    
-    
     rho_tot += pvecback[pba->index_bg_rho_scf];
     p_tot += pvecback[pba->index_bg_p_scf];
     dp_dloga += 0.0; /** <-- This depends on a_prime_over_a, so we cannot add it now! */
@@ -563,21 +551,8 @@ int background_functions(
 
     if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
       pvecback[pba->index_bg_dlnm_idm_ede_dphi] = dlnm_idm_ede_dphi(pba,phi); //dlnm_idm_ede_dphi(pba,phi); //write here coupling term as function of phi
+      pvecback[pba->index_bg_dlnm2_idm_ede_dphi] = dlnm2_idm_ede_dphi(pba,phi);
     }
-    
-    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
-      pvecback[pba->index_bg_dVadd_contribution] = 3*pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]; // term to check DM-triggered decay, condition 2 arxiv:2212.08098
-    }
-    
-    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
-      pvecback[pba->index_bg_first] =(dV_scf(pba,phi) + 3* pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede])/(pow(pvecback[pba->index_bg_H],2.)*phi); // term to check DM-triggered decay, condition 2 arxiv:2212.08098
-    }
-    
-    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
-      pvecback[pba->index_bg_second] = 3* pow(8*_PI_*_G_,-1)*dlnm_idm_ede_dphi(pba,phi)*pvecback[pba->index_bg_rho_idm_ede]/(pow(pvecback[pba->index_bg_H],2.)*phi); // term to check DM-triggered decay, condition 2 arxiv:2212.08098
-    }
-    
-    
     /****THE REAL QUANTITIES ARE ASSIGNED HERE****/
     //pvecback[pba->index_bg_rho_scf] = pba->Omega0_scf * pow(pba->H0,2) / pow(a_rel,3);
 
@@ -706,6 +681,19 @@ int background_functions(
   /** - compute derivative of H with respect to conformal time */
   pvecback[pba->index_bg_H_prime] = - (3./2.) * (rho_tot + p_tot) * a + pba->K/a;
 
+  if (pba->has_scf == _TRUE_) {
+    double scf_force = pvecback[pba->index_bg_dV_scf];
+
+    if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
+      scf_force += 3.0*pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede];
+    }
+    else if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 3) {
+      scf_force *= 1./(1.-2.*pba->beta_scf);
+    }
+
+    pvecback[pba->index_bg_phi_prime_prime_scf] = -a*(2.*pvecback[pba->index_bg_H]*phi_prime + a*scf_force);
+  }
+
   if(pba->has_scf == _TRUE_){
     pvecback[pba->index_bg_Omega_scf] = pvecback[pba->index_bg_rho_scf] / rho_tot;
   }
@@ -723,6 +711,18 @@ int background_functions(
     pvecback[pba->index_bg_p_prime_scf] = pvecback[pba->index_bg_phi_prime_scf]*
       (-(1.-2*pba->beta_scf)*pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_H]/a-2./3.*pvecback[pba->index_bg_dV_scf]);
     pvecback[pba->index_bg_p_tot_prime] += pvecback[pba->index_bg_p_prime_scf];
+  }
+
+  if (pba->has_scf == _TRUE_ && pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
+    if (phi != 0.) {
+      pvecback[pba->index_bg_dVadd_contribution] =
+        (pvecback[pba->index_bg_dV_scf]
+         + 3.0*pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede])
+        /pvecback[pba->index_bg_H]/pvecback[pba->index_bg_H]/phi;
+    }
+    else {
+      pvecback[pba->index_bg_dVadd_contribution] = 0.;
+    }
   }
 
   /** - compute critical density */
@@ -1475,11 +1475,10 @@ int background_indices(
   class_define_index(pba->index_bg_phi_prime_prime_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_V_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_dlnm_idm_ede_dphi,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
+  class_define_index(pba->index_bg_dlnm2_idm_ede_dphi,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_dV_scf,pba->has_scf,index_bg,1);
-  class_define_index(pba->index_bg_dVadd_contribution,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
-  class_define_index(pba->index_bg_first,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
-  class_define_index(pba->index_bg_second,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_ddV_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_dVadd_contribution,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_rho_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_Omega_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_p_scf,pba->has_scf,index_bg,1);
@@ -2639,7 +2638,7 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
       if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
       // printf("n = %e m_a = %e eV, f_a/mpl = %e and theta_i = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion,pba->scf_parameters[0]);
-      printf("n = %e m_a = %e \times H_0  = %e eV, f_a/mpl = %e and theta_i = %e\n",pba->n_axion,(pba->m_scf*pba->H0),(pba->m_scf*pba->H0/1.5638e29),pba->f_axion,pba->scf_parameters[0]);
+      printf("n = %e m_a = %e \times H_0  = %e eV, f_a/mpl = %e and theta_i = %e\n",pba->n_axion,(pba->m_scf),(pba->m_scf*pba->H0/1.5638e29),pba->f_axion,pba->scf_parameters[0]);
       printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
       if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e pba->log10_axion_ac %e\n", log10(1/pow(10,pba->log10_axion_ac)-1),pba->log10_axion_ac);
       printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
@@ -3100,11 +3099,8 @@ int background_output_titles(
   class_store_columntitle(titles,"V_scf",pba->has_scf);
   class_store_columntitle(titles,"V'_scf",pba->has_scf);
   class_store_columntitle(titles,"V''_scf",pba->has_scf);
-  class_store_columntitle(titles,"dlnm_idm_ede_dphi",pba->has_idm_ede && pba->coupling_type == 1);
+  // class_store_columntitle(titles,"dlnm_idm_ede_dphi",pba->has_idm_ede && pba->coupling_type == 1);
   class_store_columntitle(titles,"dVadd_contribution",pba->has_idm_ede && pba->coupling_type == 1);
-  class_store_columntitle(titles,"first",pba->has_idm_ede && pba->coupling_type == 1)
-  class_store_columntitle(titles,"second",pba->has_idm_ede && pba->coupling_type == 1)
-  
 
   class_store_columntitle(titles,"(.)rho_tot",_TRUE_);
   class_store_columntitle(titles,"(.)p_tot",_TRUE_);
@@ -3187,8 +3183,6 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_ddV_scf],pba->has_scf,storeidx);
     /*class_store_double(dataptr,pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede],pba->has_idm_ede && pba->coupling_type == 1,storeidx);*/
     class_store_double(dataptr,pvecback[pba->index_bg_dVadd_contribution],pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,storeidx);
-     class_store_double(dataptr,pvecback[pba->index_bg_first],pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,storeidx);
-      class_store_double(dataptr,pvecback[pba->index_bg_second],pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot_prime],_TRUE_,storeidx);
@@ -3330,7 +3324,7 @@ int background_derivs(
   }
   if (pba->has_idm_ede == _TRUE_ && pba->has_scf == _TRUE_ && pba->coupling_type == 1) {
   /* see arxiv:2212.08098*/
-  /** d rho_idm_ede / d ln a = -3 rho_idm_ede - coupling */
+  /** d rho_idm_ede / d ln a = -3 rho_idm_ede + coupling */
 // printf("here!! %e %e %e\n", a,- y[pba->index_bi_phi_prime_scf], dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf]));
   dy[pba->index_bi_rho_idm_ede] =
     -3 * y[pba->index_bi_rho_idm_ede]
@@ -3363,7 +3357,7 @@ int background_derivs(
     /*here I multiplied the rho_class by 3mpl^2*/
     else if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
       // dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*y[pba->index_bi_phi_prime_scf]*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede];
-      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -3*pow(8*_PI_*_G_,-1)*a*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede]/H;
+      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*(dV_scf(pba,y[pba->index_bi_phi_scf]) + 3.0*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede])/H;
       // dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
     }else{
       dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
@@ -4012,13 +4006,11 @@ double m_idm_ede(
               return pba->m0_idm_ede * (1 + pba->g_idm_ede * pow(phi, 2));
 }
 
-/*following arXiv 2212.08098 I divided phi by mpl with mpl^2=1/(8 pi G)*/
-
 double dlnm_idm_ede_dphi(
               struct background *pba,
               double phi){
-                // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/1.5638e29/(1 + pba->g_idm_ede * pow(phi, 2)));
-                if(phi !=0.0) return 2*pba->g_idm_ede * phi * pow(8*_PI_*_G_,1.)/(1 + pba->g_idm_ede * pow(phi, 2)*(8*_PI_*_G_));
+                // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
+                if(phi !=0.0) return 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2));
                 else{
                   return 0;
                 }
@@ -4028,9 +4020,5 @@ double dlnm2_idm_ede_dphi(
               struct background *pba,
               double phi){
                 // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
-                if(phi !=0.0) return -2*pba->g_idm_ede * (pba->g_idm_ede * pow(phi, 2.0) -1)/(pow(1 + pba->g_idm_ede * pow(phi, 2),2));
-                else{
-                  return 0;
-                }
+                return 2*pba->g_idm_ede * (1 - pba->g_idm_ede * pow(phi, 2))/(pow(1 + pba->g_idm_ede * pow(phi, 2),2));
 }
-
