@@ -951,7 +951,6 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                      pba->shooting_error,
                      shooting_failed=_TRUE_);
 
-      printf("xwero %e\n", xzero);
       /* Store xzero */
       // This needs to be done with enough accuracy. A standard double has a relative
       // precision of around 1e-16, so 1e-20 should be good enough for the shooting
