@@ -10380,7 +10380,7 @@ int perturbations_derivs(double tau,
       //follow 1604.04222 notations
       // if (ppt->gauge == newtonian) {
 
-        if(pba->g_idm_ede != 0){
+        if(pvecback[pba->index_bg_dlnm_idm_ede_dphi] != 0.0 || pvecback[pba->index_bg_dlnm2_idm_ede_dphi] != 0.0){
 
           dy[pv->index_pt_delta_idm_ede] += pvecback[pba->index_bg_dlnm_idm_ede_dphi]*y[pv->index_pt_phi_prime_scf]+ pvecback[pba->index_bg_dlnm2_idm_ede_dphi]*pvecback[pba->index_bg_phi_prime_scf]*y[pv->index_pt_phi_scf];
 

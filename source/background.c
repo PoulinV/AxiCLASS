@@ -4003,22 +4003,37 @@ double ddV_scf(
 double m_idm_ede(
               struct background *pba,
               double phi ){
-              return pba->m0_idm_ede * (1 + pba->g_idm_ede * pow(phi, 2));
+              if (pba->idm_ede_mass_form == 1) {
+                return pba->m0_idm_ede * exp(pba->c_idm_ede * phi);
+              }
+              else if (pba->idm_ede_mass_form == 0) {
+                return pba->m0_idm_ede * (1 + pba->g_idm_ede * pow(phi, 2));
+              }
+              return pba->m0_idm_ede;
 }
 
 double dlnm_idm_ede_dphi(
               struct background *pba,
               double phi){
-                // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
-                if(phi !=0.0) return 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2));
-                else{
-                  return 0;
+                if (pba->idm_ede_mass_form == 1) {
+                  return pba->c_idm_ede;
                 }
+                else if (pba->idm_ede_mass_form == 0) {
+                  // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
+                  if(phi !=0.0) return 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2));
+                }
+                return 0.0;
 }
 
 double dlnm2_idm_ede_dphi(
               struct background *pba,
               double phi){
-                // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
-                return 2*pba->g_idm_ede * (1 - pba->g_idm_ede * pow(phi, 2))/(pow(1 + pba->g_idm_ede * pow(phi, 2),2));
+                if (pba->idm_ede_mass_form == 1) {
+                  return 0.0;
+                }
+                else if (pba->idm_ede_mass_form == 0) {
+                  // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
+                  return 2*pba->g_idm_ede * (1 - pba->g_idm_ede * pow(phi, 2))/(pow(1 + pba->g_idm_ede * pow(phi, 2),2));
+                }
+                return 0.0;
 }

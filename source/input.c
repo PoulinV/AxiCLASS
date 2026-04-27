@@ -3801,10 +3801,28 @@ int input_read_parameters_species(struct file_content * pfc,
         class_read_double("adjust_beta_scf",pba->adjust_beta_scf);
       }
       else if (pba->coupling_type == 1) {
+            class_call(parser_read_string(pfc,"idm_ede_mass_form",&string1,&flag1,errmsg),
+                       errmsg,
+                       errmsg);
 
-            /* Coupling strength (g_idm_ede) */
-            class_read_double("g_idm_ede",pba->g_idm_ede);
-            // printf("pba->Omega_ini_idm_ede %e pba->g_idm_ede %e \n", pba->Omega_ini_idm_ede,pba->g_idm_ede);
+            if (flag1 == _FALSE_) {
+              pba->idm_ede_mass_form = 0;
+            }
+            else if (strcmp(string1,"exp") == 0 || strcmp(string1,"exponential") == 0) {
+              pba->idm_ede_mass_form = 1;
+            }
+            else if (strcmp(string1,"quad") == 0 || strcmp(string1,"quadratic") == 0 || strcmp(string1,"poly") == 0 || strcmp(string1,"polynomial") == 0) {
+              pba->idm_ede_mass_form = 0;
+            }
+            else class_stop(errmsg,"incomprehensible input '%s' for the field 'idm_ede_mass_form'",string1);
+
+
+            if (pba->idm_ede_mass_form == 1) {
+              class_read_double("c_idm_ede",pba->c_idm_ede);
+            }
+            else if (pba->idm_ede_mass_form == 0) {
+              class_read_double("g_idm_ede",pba->g_idm_ede);
+            }
       }
     }
 
@@ -7526,6 +7544,8 @@ int input_default_params(struct background *pba,
   pba->beta_scf = 0;//set to 0 so it is never used by default.
   pba->adjust_beta_scf = 1;//set to 1 so it is never used by default.
   pba->g_idm_ede = 0;
+  pba->c_idm_ede = 0;
+  pba->idm_ede_mass_form = 0;
   pba->coupling_type = 3;
   pba->scf_potential = pol_times_exp;
   pba->V0_phi2n = 0.0;

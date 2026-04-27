@@ -160,6 +160,8 @@ struct background
   /* idm_ede mass function and coupling */
   double m0_idm_ede;      /* bare mass*/
   double g_idm_ede;    /* coupling constant */
+  double c_idm_ede;    /* exponential coupling constant */
+  int idm_ede_mass_form; /* 0: polynomial, 1: exponential */
 
 
   double Omega0_dcdmdr; /**< \f$ \Omega_{0 dcdm}+\Omega_{0 dr} \f$: decaying cold dark matter (dcdm) decaying to dark radiation (dr) */
