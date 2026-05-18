@@ -1,4 +1,5 @@
 output/
+analysis/
 *~
 build/
 class
@@ -6,7 +7,12 @@ class
 *.ini
 libclass.a
 *out
-python/classy.cpp
+python/classy.c
+python/*.pyc
+python/build/
+
+
+
 *.pyc
 python/build/
 *.dSYM

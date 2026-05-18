@@ -399,7 +399,7 @@ int background_functions(
   int n_ncdm;
   /* fluid's time-dependent equation of state parameter */
   double w_fld, dw_over_da, integral_fld;
-  // short kg_fld_switch;
+
   /* scalar field quantities */
   double phi = 0, phi_prime = 0;
   //printf("Inside background_functions.\n");//print_trigger
@@ -457,6 +457,25 @@ int background_functions(
     rho_m += pvecback[pba->index_bg_rho_idm];
   }
 
+
+  /* interacting dark matter ede */
+  /*by default coupling_type =3, i.e. only perturbations are affected*/
+  if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 3) {
+    pvecback[pba->index_bg_rho_idm_ede] = pba->Omega0_idm_ede * pow(pba->H0,2) / pow(a,3);
+    rho_tot += pvecback[pba->index_bg_rho_idm_ede];
+    p_tot += 0.;
+    rho_m += pvecback[pba->index_bg_rho_idm_ede];
+  }
+
+  /* interacting dark matter ede + coupling*/
+  if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
+    pvecback[pba->index_bg_rho_idm_ede] = pvecback_B[pba->index_bi_rho_idm_ede];
+    // pvecback[pba->index_bg_rho_idm_ede] =  pba->Omega0_idm_ede * pow(pba->H0,2) / pow(a,3);
+    rho_tot += pvecback[pba->index_bg_rho_idm_ede];
+    p_tot += 0.;
+    rho_m += pvecback[pba->index_bg_rho_idm_ede];
+  }
+
   /* dcdm */
   if (pba->has_dcdm == _TRUE_) {
     /* Pass value of rho_dcdm to output */
@@ -478,8 +497,6 @@ int background_functions(
     //printf("Scalar field? %f \n", pba->has_scf);//print_trigger
     /* Scalar field */
     if (pba->has_scf == _TRUE_ && pba->scf_kg_eq == _TRUE_) {
-
-    pba->kg_fld_switch = _FALSE_;
     //printf("Inside scf table update\n"); //print_trigger
     phi = pvecback_B[pba->index_bi_phi_scf];
     phi_prime = pvecback_B[pba->index_bi_phi_prime_scf];
@@ -487,21 +504,33 @@ int background_functions(
     //The next few lines then calculate the new values for the density etc... from the new values of phi and phi prime
     pvecback[pba->index_bg_phi_scf] = phi; // value of the scalar field phi
     pvecback[pba->index_bg_phi_prime_scf] = phi_prime; // value of the scalar field phi derivative wrt conformal time
+    pvecback[pba->index_bg_phi_prime_prime_scf] = - a*
+      (2*pvecback[pba->index_bg_H]*phi_prime
+       + a*dV_scf(pba,phi)*(1/(1-2*pba->beta_scf))) ; // value of the scalar field phi second derivative wrt conformal time
+
     pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
-    pvecback[pba->index_bg_rho_scf] = (phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
-    pvecback[pba->index_bg_p_scf] = (phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
-
+    pvecback[pba->index_bg_rho_scf] = ((1./2-pba->beta_scf)*(phi_prime*phi_prime/(a*a)) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
+    pvecback[pba->index_bg_p_scf] = ((1./2-pba->beta_scf)*(phi_prime*phi_prime/(a*a)) - V_scf(pba,phi))/3.; // pressure of the scalar field
+    // pvecback[pba->index_bg_rho_scf] = (pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.; // energy of the scalar field. The field units are set automatically by setting the initial conditions
+    // pvecback[pba->index_bg_p_scf] =(pow(pba->scf_parameters[1],2)*phi_prime*phi_prime/(2*a*a) - V_scf(pba,phi))/3.; // pressure of the scalar field
     pvecback[pba->index_bg_w_scf] =pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]; // e.o.s of the scalar field, only used for outputs
     pvecback_B[pba->index_bi_rho_scf] = pvecback[pba->index_bg_rho_scf];
-
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_dlnm_idm_ede_dphi] = dlnm_idm_ede_dphi(pba,phi); //dlnm_idm_ede_dphi(pba,phi); //write here coupling term as function of phi
+      pvecback[pba->index_bg_dlnm2_idm_ede_dphi] = dlnm2_idm_ede_dphi(pba,phi);
+    }
     rho_tot += pvecback[pba->index_bg_rho_scf];
     p_tot += pvecback[pba->index_bg_p_scf];
     dp_dloga += 0.0; /** <-- This depends on a_prime_over_a, so we cannot add it now! */
 
-    rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
-    rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+    if(pvecback[pba->index_bg_w_scf]<0){
+      //do not add anything, the scf is behaving like a component with negative e.o.s. i.e., likely a DE candidate.
+    }else{
+      rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
+      rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+    }
 
     if(pba->background_verbose>11) printf("here KG equation, a %e phi: %e, phi': %e rho_scf: %e \n", a, pvecback_B[pba->index_bi_phi_scf], pvecback_B[pba->index_bi_phi_prime_scf], pvecback[pba->index_bg_rho_scf]);
 
@@ -513,14 +542,16 @@ int background_functions(
     /*** WE STORE THESE DUMMY QUANTITIES ANYWAY ***/
     pvecback[pba->index_bg_phi_scf] = phi; // value of the scalar field phi
     pvecback[pba->index_bg_phi_prime_scf] = phi_prime; // value of the scalar field phi derivative wrt conformal time
+    pvecback[pba->index_bg_phi_prime_prime_scf] = - a*
+      (2*pvecback[pba->index_bg_H]*phi_prime
+       + a*dV_scf(pba,phi)*(1/(1-2*pba->beta_scf))); // value of the scalar field phi second derivative wrt conformal time
     pvecback[pba->index_bg_V_scf] = V_scf(pba,phi); //V_scf(pba,phi); //write here potential as function of phi
     pvecback[pba->index_bg_dV_scf] = dV_scf(pba,phi); // dV_scf(pba,phi); //potential' as function of phi
     pvecback[pba->index_bg_ddV_scf] = ddV_scf(pba,phi); // ddV_scf(pba,phi); //potential'' as function of phi
 
-    if(pba->kg_fld_switch == _FALSE_){
-      pba->kg_fld_switch = _TRUE_;
-      //if we just switched from KG to fluid, we need to correctly initialize the density.
-      pvecback_B[pba->index_bi_rho_scf] = (phi_prime*phi_prime/(2*a*a) + V_scf(pba,phi))/3.;
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      pvecback[pba->index_bg_dlnm_idm_ede_dphi] = dlnm_idm_ede_dphi(pba,phi); //dlnm_idm_ede_dphi(pba,phi); //write here coupling term as function of phi
+      pvecback[pba->index_bg_dlnm2_idm_ede_dphi] = dlnm2_idm_ede_dphi(pba,phi);
     }
     /****THE REAL QUANTITIES ARE ASSIGNED HERE****/
     //pvecback[pba->index_bg_rho_scf] = pba->Omega0_scf * pow(pba->H0,2) / pow(a_rel,3);
@@ -538,9 +569,12 @@ int background_functions(
 
       rho_tot += pvecback[pba->index_bg_rho_scf];
       p_tot += pvecback[pba->index_bg_p_scf];
-      rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
-      rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
-
+      if(pvecback[pba->index_bg_w_scf]<0){
+        //do not add anything, the scf is behaving like a component with negative e.o.s. i.e., likely a DE candidate.
+      }else{
+        rho_r += 3.*pvecback[pba->index_bg_p_scf]; //field pressure contributes radiation
+        rho_m += pvecback[pba->index_bg_rho_scf] - 3.* pvecback[pba->index_bg_p_scf]; //the rest contributes matter
+      }
     if(pba->background_verbose>11) printf("now fluid equation H %e p %e rho %e \n",3*pvecback[pba->index_bg_H],pvecback[pba->index_bg_p_scf],pvecback[pba->index_bg_rho_scf]);
 
   }
@@ -613,10 +647,9 @@ int background_functions(
     p_tot += w_fld * pvecback[pba->index_bg_rho_fld];
     dp_dloga += (a*dw_over_da-3*(1+w_fld)*w_fld)*pvecback[pba->index_bg_rho_fld];
 
-    // printf("w_fld %e\n", w_fld);
-    if(w_fld>0){
+    if(w_fld>=0.0){
+      rho_r += 3.* w_fld * pvecback[pba->index_bg_rho_fld];
       rho_m += pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]; //the rest contributes matter
-      rho_r += 3.* w_fld * pvecback[pba->index_bg_rho_fld]; //the rest contributes matter
       // printf("w_fld %e pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld] %e\n", w_fld,pvecback[pba->index_bg_rho_fld] - 3.* w_fld * pvecback[pba->index_bg_rho_fld]);
     }
   }
@@ -629,6 +662,7 @@ int background_functions(
     dp_dloga += -(4./3.) * pvecback[pba->index_bg_rho_ur];
     rho_r += pvecback[pba->index_bg_rho_ur];
   }
+
 
   /* interacting dark radiation */
   if (pba->has_idr == _TRUE_) {
@@ -647,6 +681,19 @@ int background_functions(
   /** - compute derivative of H with respect to conformal time */
   pvecback[pba->index_bg_H_prime] = - (3./2.) * (rho_tot + p_tot) * a + pba->K/a;
 
+  if (pba->has_scf == _TRUE_) {
+    double scf_force = pvecback[pba->index_bg_dV_scf];
+
+    if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
+      scf_force += 3.0*pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede];
+    }
+    else if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 3) {
+      scf_force *= 1./(1.-2.*pba->beta_scf);
+    }
+
+    pvecback[pba->index_bg_phi_prime_prime_scf] = -a*(2.*pvecback[pba->index_bg_H]*phi_prime + a*scf_force);
+  }
+
   if(pba->has_scf == _TRUE_){
     pvecback[pba->index_bg_Omega_scf] = pvecback[pba->index_bg_rho_scf] / rho_tot;
   }
@@ -662,8 +709,20 @@ int background_functions(
   if (pba->has_scf == _TRUE_) {
     /** The contribution of scf was not added to dp_dloga, add p_scf_prime here: */
     pvecback[pba->index_bg_p_prime_scf] = pvecback[pba->index_bg_phi_prime_scf]*
-      (-pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_H]/a-2./3.*pvecback[pba->index_bg_dV_scf]);
+      (-(1.-2*pba->beta_scf)*pvecback[pba->index_bg_phi_prime_scf]*pvecback[pba->index_bg_H]/a-2./3.*pvecback[pba->index_bg_dV_scf]);
     pvecback[pba->index_bg_p_tot_prime] += pvecback[pba->index_bg_p_prime_scf];
+  }
+
+  if (pba->has_scf == _TRUE_ && pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
+    if (phi != 0.) {
+      pvecback[pba->index_bg_dVadd_contribution] =
+        (pvecback[pba->index_bg_dV_scf]
+         + 3.0*pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede])
+        /pvecback[pba->index_bg_H]/pvecback[pba->index_bg_H]/phi;
+    }
+    else {
+      pvecback[pba->index_bg_dVadd_contribution] = 0.;
+    }
   }
 
   /** - compute critical density */
@@ -754,8 +813,8 @@ int background_w_fld(
   double dOmega_ede_over_da = 0.;
   double d2Omega_ede_over_da2 = 0.;
   double a_eq, Omega_r, Omega_m;
-  double w,w_f,w_i,dw,intw;
-  double powac,powa;
+  double w,dw,intw;
+
   /** - first, define the function w(a) */
   switch (pba->fluid_equation_of_state) {
   case CLP:
@@ -764,13 +823,8 @@ int background_w_fld(
   case EDE:
     if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
       // w_ede(a) defined from a mash-up of 1811.04083 and 1905.12618
-      w_f = pba->w_fld_f; //e.o.s. once the field starts oscillating
-      w_i = pba->w_fld_i; //e.o.s. once the field starts oscillating
-      // *w_fld = (1+w_f)/(1+pow(pba->a_c/a,3*(1+w_f)/pba->nu_fld))-1;
-      *w_fld = (w_f-w_i)/(1+pow(pba->a_c/a,3*(w_f-w_i)/pba->nu_fld))+w_i;
-    }
-    else if(pba->ede_parametrization == EDE_is_DR){
-      *w_fld = 1./3;
+      w = pba->w_fld_f; //e.o.s. once the field starts oscillating
+      *w_fld = (1+w)/(1+pow(pba->a_c/a,3*(1+w)/pba->nu_fld))-1;
     }
     else {
       // Omega_ede(a) taken from eq. (10) in 1706.00730
@@ -787,6 +841,7 @@ int background_w_fld(
       Omega_r = pba->Omega0_g * (1. + 3.046 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
       Omega_m = pba->Omega0_b;
       if (pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
+      if (pba->has_idm_ede == _TRUE_) Omega_m += pba->Omega0_idm_ede;
       if (pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
       if (pba->has_dcdm == _TRUE_)
         class_stop(pba->error_message,"Early Dark Energy not compatible with decaying Dark Matter because we omitted to code the calculation of a_eq in that case, but it would not be difficult to add it if necessary, should be a matter of 5 minutes");
@@ -810,12 +865,7 @@ int background_w_fld(
     break;
   case EDE:
   if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
-      *dw_over_da_fld =    (3*pba->a_c*pow(pba->a_c/a,-1+3*(1+w_f)/pba->nu_fld)*(1+w_f)*(w_f-w_i))
-      /(a*a*pba->nu_fld*pow(1 + (pba->a_c/a,3*(1+w_f)/pba->nu_fld),2));
-
-    }
-    else if(pba->ede_parametrization == EDE_is_DR){
-      *dw_over_da_fld = 0;
+      *dw_over_da_fld = 0; // calculated directly in perturbations to avoid zeroes in the denominator
     }
     else {
       d2Omega_ede_over_da2 = 0.;
@@ -844,19 +894,9 @@ int background_w_fld(
     break;
   case EDE:
   if (pba->ede_parametrization == pheno_axion || pba->ede_parametrization == pheno_ADE){
-    powac=pow(pba->a_c,3*(1+w_f)/pba->nu_fld);
-    powa=pow(a,3*(1+w_f));
       *integral_fld = //-3*(1+w)*log(a/pba->a_today) - pba->nu_fld*log(1+ pow(pba->a_c[n]/a,3*(1+w)/pba->nu_fld));
-        // 3*(w_f-w_i)*( log(1/a)
-        // + pba->nu_fld/3/(w_f-w_i)*log( (1 + pow((pba->a_c),3*(w_f-w_i)/pba->nu_fld) ) / (1 + pow((pba->a_c/a),3*(w_f-w_i)/pba->nu_fld) ) ) )+3*a*(1+w_i);
-        -3*(1 + w_i)*log(a) + pba->nu_fld*(w_f-w_i)*(log(1+1/powac)-log(1/powac*(powa+powac)))/(1+w_f);
-
-      // *integral_fld = //-3*(1+w)*log(a/pba->a_today) - pba->nu_fld*log(1+ pow(pba->a_c[n]/a,3*(1+w)/pba->nu_fld));
-      //   3*(1+w)*( log(1/a)
-      //   + pba->nu_fld/3/(1+w)*log( (1 + pow((pba->a_c),3*(1+w)/pba->nu_fld) ) / (1 + pow((pba->a_c/a),3*(1+w)/pba->nu_fld) ) ) );
-    }
-    else if(pba->ede_parametrization == EDE_is_DR){
-      *integral_fld = -4*log(a);
+        3*(1+w)*( log(1/a)
+        + pba->nu_fld/3/(1+w)*log( (1 + pow((pba->a_c),3*(1+w)/pba->nu_fld) ) / (1 + pow((pba->a_c/a),3*(1+w)/pba->nu_fld) ) ) );
     }
     else{
       class_stop(pba->error_message,"EDE implementation not finished: to finish it, read the comments in background.c just before this line\n");
@@ -971,10 +1011,10 @@ int background_init(
 
     class_call(background_w_fld(pba,0.,&w_fld,&dw_over_da,&integral_fld), pba->error_message, pba->error_message);
 
-    // class_test(w_fld >= 1./3.,
-    //            pba->error_message,
-    //            "Your choice for w(a--->0)=%g is suspicious, since it is bigger than -1/3 there cannot be radiation domination at early times\n",
-    //            w_fld);
+    class_test(w_fld >= 1./3.,
+               pba->error_message,
+               "Your choice for w(a--->0)=%g is suspicious, since it is bigger than -1/3 there cannot be radiation domination at early times\n",
+               w_fld);
 
       //if we have a pheno axion model, we need to extract the axion mass (in unit of H0) and decay constant (in unit of reduced planck mass) from the pheno parameters.
       //We also extract the characteristic angular frequency of oscillations
@@ -1045,10 +1085,12 @@ int background_init(
           pba->w_scf = 0;
         }
         else if(pba->scf_potential == axion){
+
+
             if(pba->f_axion > 0 && pba->m_scf > 0){
               cos_initial = cos(pba->phi_ini_scf);
               sin_initial = sin(pba->phi_ini_scf);
-              // printf("%e %e %e \n",cos_initial,sin_initial,pba->f_axion);
+              // printf("%e %e %e \n",cos_initial,sin_initial,p);
 
               n = pba->n_axion;
 
@@ -1056,6 +1098,7 @@ int background_init(
               Gac =sqrt(_PI_)*gsl_sf_gamma((n+1.)/(2*n))/gsl_sf_gamma(1+1./(2*n))*pow(2,-(n*n+1)/(2*n))*pow(3,0.5*(1./n-1))
               *pow(pba->a_c,3-6./(1+n))*pow(pow(pba->a_c,6*n/(1+n))+1,0.5*(1./n-1));
               pba->omega_axion = pba->H0*pba->m_scf*pow(1-cos_initial,0.5*(n-1))*Gac;
+
             }
         else if(pba->log10_axion_ac > -30 && pba->log10_fraction_axion_ac > -30){
            /*-30 is the default value*/
@@ -1072,6 +1115,7 @@ int background_init(
           Omega_m = pba->Omega0_b;
           if(pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
           if(pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
+          if(pba->has_idm_ede == _TRUE_) Omega_m += pba->Omega0_idm_ede;
           if(pba->has_dcdm == _TRUE_) Omega_m += pba->Omega0_dcdm;
 
           a_eq = Omega_r /Omega_m;
@@ -1132,6 +1176,7 @@ int background_init(
             Omega_m = pba->Omega0_b;
             if(pba->has_cdm == _TRUE_) Omega_m += pba->Omega0_cdm;
             if(pba->has_idm == _TRUE_) Omega_m += pba->Omega0_idm;
+            if(pba->has_idm_ede == _TRUE_) Omega_m += pba->Omega0_idm_ede;
             if(pba->has_dcdm == _TRUE_) Omega_m += pba->Omega0_dcdm;
 
             a_eq = Omega_r /Omega_m;
@@ -1159,6 +1204,9 @@ int background_init(
             // printf("%e %e\n", pba->scf_parameters[0],  pba->scf_parameters[0]/pba->f_axion);
 
 
+            class_test(pba->f_axion > pba->f_axion_max_allowed,
+                  pba->error_message,
+                  "The value of pba->f_axion %e > %e, the model likely violates basic ideas of quantum gravity so we reject it.",pba->f_axion,pba->f_axion_max_allowed);
 
         }
         else{
@@ -1169,6 +1217,7 @@ int background_init(
         pba->f_ede=0.0;
         pba->log10_z_c=1;
         // printf("m_scf is %e pba->w_scf %e pba->f_axion %e\n", pba->m_scf,pba->w_scf,pba->f_axion);
+
      }
 
   /** - check that input parameters make sense and write additional information about them */
@@ -1190,8 +1239,6 @@ int background_init(
   class_call(background_output_budget(pba),
              pba->error_message,
              pba->error_message);
-
-  pba->is_allocated = _TRUE_;
 
   return _SUCCESS_;
 
@@ -1217,8 +1264,6 @@ int background_free(
   class_call(background_free_input(pba),
              pba->error_message,
              pba->error_message);
-
-  pba->is_allocated = _FALSE_;
 
   return _SUCCESS_;
 }
@@ -1332,6 +1377,7 @@ int background_indices(
   pba->has_fld = _FALSE_;
   pba->has_ur = _FALSE_;
   pba->has_idr = _FALSE_;
+  pba->has_idm_ede = _FALSE_;
   pba->has_curvature = _FALSE_;
   pba->has_varconst  = _FALSE_;
 
@@ -1374,6 +1420,10 @@ int background_indices(
 
   if (pba->Omega0_idr != 0.)
     pba->has_idr = _TRUE_;
+
+
+  if (pba->Omega0_idm_ede != 0. || pba->Omega_ini_idm_ede != 0.)
+    pba->has_idm_ede = _TRUE_;
 
   if (pba->sgnK != 0)
     pba->has_curvature = _TRUE_;
@@ -1422,9 +1472,13 @@ int background_indices(
   /* - indices for scalar field */
   class_define_index(pba->index_bg_phi_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_phi_prime_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_phi_prime_prime_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_V_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_dlnm_idm_ede_dphi,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
+  class_define_index(pba->index_bg_dlnm2_idm_ede_dphi,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_dV_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_ddV_scf,pba->has_scf,index_bg,1);
+  class_define_index(pba->index_bg_dVadd_contribution,pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,index_bg,1);
   class_define_index(pba->index_bg_rho_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_Omega_scf,pba->has_scf,index_bg,1);
   class_define_index(pba->index_bg_p_scf,pba->has_scf,index_bg,1);
@@ -1458,6 +1512,9 @@ int background_indices(
 
   /* - index interacting for dark radiation */
   class_define_index(pba->index_bg_rho_idr,pba->has_idr,index_bg,1);
+
+  /* - index for interacting dark matter ede */
+  class_define_index(pba->index_bg_rho_idm_ede,pba->has_idm_ede,index_bg,1);
 
   /* - put here additional ingredients that you want to appear in the
      normal vector */
@@ -1522,6 +1579,9 @@ int background_indices(
 
   /* -> energy density in DR */
   class_define_index(pba->index_bi_rho_dr,pba->has_dr,index_bi,1);
+
+  /* -> energy density in idm_ede */
+  class_define_index(pba->index_bi_rho_idm_ede,pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1,index_bi,1);
 
   /* -> energy density in fluid */
   class_define_index(pba->index_bi_rho_fld,pba->has_fld,index_bi,1);
@@ -1810,8 +1870,9 @@ int background_ncdm_init(
                                pba->error_message),
                  pba->error_message,
                  pba->error_message);
-      class_realloc(pba->q_ncdm[k],pba->q_size_ncdm[k]*sizeof(double), pba->error_message);
-      class_realloc(pba->w_ncdm[k],pba->q_size_ncdm[k]*sizeof(double), pba->error_message);
+      pba->q_ncdm[k]=realloc(pba->q_ncdm[k],pba->q_size_ncdm[k]*sizeof(double));
+      pba->w_ncdm[k]=realloc(pba->w_ncdm[k],pba->q_size_ncdm[k]*sizeof(double));
+
 
       if (pba->background_verbose > 0) {
         printf("ncdm species i=%d sampled with %d points for purpose of perturbation integration\n",
@@ -1837,8 +1898,8 @@ int background_ncdm_init(
                  pba->error_message,
                  pba->error_message);
 
-      class_realloc(pba->q_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double), pba->error_message);
-      class_realloc(pba->w_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double), pba->error_message);
+      pba->q_ncdm_bg[k]=realloc(pba->q_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double));
+      pba->w_ncdm_bg[k]=realloc(pba->w_ncdm_bg[k],pba->q_size_ncdm_bg[k]*sizeof(double));
 
       /** - in verbose mode, inform user of number of sampled momenta
           for background quantities */
@@ -2143,11 +2204,11 @@ int background_checks(
   if (pba->has_fld == _TRUE_) {
 
     class_call(background_w_fld(pba,0.,&w_fld,&dw_over_da,&integral_fld), pba->error_message, pba->error_message);
-    //
-    // class_test(w_fld >= 1./3.,
-    //            pba->error_message,
-    //            "Your choice for w(a--->0)=%g is suspicious, since it is bigger than 1/3 there cannot be radiation domination at early times\n",
-    //            w_fld);
+
+    class_test(w_fld >= 1./3.,
+               pba->error_message,
+               "Your choice for w(a--->0)=%g is suspicious, since it is bigger than 1/3 there cannot be radiation domination at early times\n",
+               w_fld);
   }
 
   /* Varying fundamental constants */
@@ -2265,9 +2326,9 @@ int background_solve(
   double conformal_distance;
 
   /* evolvers */
-  extern int evolver_rk(EVOLVER_PROTOTYPE);
-  extern int evolver_ndf15(EVOLVER_PROTOTYPE);
-  int (*generic_evolver)(EVOLVER_PROTOTYPE) = evolver_ndf15;
+  extern int evolver_rk();
+  extern int evolver_ndf15();
+  int (*generic_evolver)() = evolver_ndf15;
 
   /* initial and final loga values */
   double loga_ini, loga_final;
@@ -2404,6 +2465,37 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
              free(used_in_output);
             }
          }
+       }else if(pba->scf_potential == phantom_exp){
+         class_test(pba->Omega0_scf <= 0.0,
+                    pba->error_message,
+                    "Cannot tune phi_ini_scf for phantom_exp closure with Omega0_scf = %e <= 0. The requested H0 gives a negative scalar budget.",
+                    pba->Omega0_scf);
+         {
+           double rho_scf_actual = pba->background_table[(pba->bt_size-1)*pba->bg_size+pba->index_bg_rho_scf];
+           double rho_tot_actual = pba->background_table[(pba->bt_size-1)*pba->bg_size+pba->index_bg_rho_tot];
+           double rho_scf_target = pba->H0*pba->H0 - (rho_tot_actual-rho_scf_actual);
+           class_test(rho_scf_target <= 0.0,
+                      pba->error_message,
+                      "Cannot tune phi_ini_scf for closure: target final rho_scf = %e <= 0. The requested H0 is too small for the fixed physical non-scf densities.",
+                      rho_scf_target);
+           class_test(rho_scf_actual <= 0.0,
+                      pba->error_message,
+                      "Cannot tune phi_ini_scf for closure: final rho_scf = %e <= 0.",
+                      rho_scf_actual);
+           if(fabs(rho_scf_actual-rho_scf_target)/rho_scf_target < pba->precision_loop_over_background){
+             is_axion_converged = _TRUE_;
+           }
+           else{
+             double delta_phi = -0.5*log(rho_scf_target/rho_scf_actual)/pba->lambda_phantom;
+             if(delta_phi > 1.0) delta_phi = 1.0;
+             if(delta_phi < -1.0) delta_phi = -1.0;
+             pba->phi_ini_scf += delta_phi;
+             if(pba->background_verbose>0)printf(" adjusted phi_ini_scf for closure; new phi_ini_scf = %e  \n",pba->phi_ini_scf);
+             free(pvecback_integration);
+             free(pba->loga_table);
+             free(used_in_output);
+           }
+         }
        }else{
          //no axion or no loop required so we ignore the loop.
          is_axion_converged = _TRUE_;
@@ -2422,8 +2514,6 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
   if (pba->has_dcdm == _TRUE_) {
     pba->Omega0_dcdm = pvecback_integration[pba->index_bi_rho_dcdm]/pba->H0/pba->H0;
   }
-
-
 
 
   if (pba->has_dr == _TRUE_){
@@ -2449,7 +2539,7 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
     else if (pba->sgnK == -1) { comoving_radius = sinh(sqrt(-pba->K)*conformal_distance)/sqrt(-pba->K); }
 
 
-    if(pba->scf_potential == axion || pba->scf_potential == phi_2n){
+    if(pba->scf_potential == axion || pba->scf_potential == phi_2n || pba->scf_potential == teds){
      /* Scalar field critical redshift and fractional energy density at z_c calculations */
      z_c_new = pba->z_table[index_loga];
      f_ede_new = pba->background_table[index_loga*pba->bg_size+pba->index_bg_Omega_scf];
@@ -2497,6 +2587,10 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
     pba->background_table[index_loga*pba->bg_size+pba->index_bg_lum_distance] = comoving_radius*(1.+pba->z_table[index_loga]);
   }
 
+
+    class_test(pba->f_ede > pba->f_ede_max_allowed,
+               pba->error_message,
+               "The value of pba->f_ede %e > %e, the model is likely excluded and may crash montepython, we reject it.",pba->f_ede,pba->f_ede_max_allowed);
   /** - fill tables of second derivatives (in view of spline interpolation) */
   class_call(array_spline_table_lines(pba->z_table,
                                       pba->bt_size,
@@ -2574,13 +2668,8 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
       }
       if(pba->scf_potential == axion){
       printf("Additional scf parameters used: \n");
-      printf("n = %e m_a = %e eV, f_a/mpl = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion);
-      if (pba->theta_axion == 0.0)
-      {
-        pba->theta_axion = pba->phi_ini_scf/pba->f_axion;
-      }
-      
-      printf("     -> theta_ini = %e \t phi_ini = %e \n",pba->theta_axion , pba->phi_ini_scf);
+      // printf("n = %e m_a = %e eV, f_a/mpl = %e and theta_i = %e\n",pba->n_axion,(pba->m_scf*pba->H0/1.5638e29),pba->f_axion,pba->scf_parameters[0]);
+      printf("n = %e m_a = %e \times H_0  = %e eV, f_a/mpl = %e and theta_i = %e\n",pba->n_axion,(pba->m_scf),(pba->m_scf*pba->H0/1.5638e29),pba->f_axion,pba->scf_parameters[0]);
       printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
       if(pba->log10_axion_ac > -30)printf("     -> approx log10(z_c) = %e pba->log10_axion_ac %e\n", log10(1/pow(10,pba->log10_axion_ac)-1),pba->log10_axion_ac);
       printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
@@ -2589,6 +2678,16 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
         printf("     -> approximate log10(z_c) = %e \t f_ede = %e\n", log10(1/pow(10,pba->log10_axion_ac)-1), pow(10,pba->log10_fraction_axion_ac));
         printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
         printf("     -> V0 = %e \t phi_i = %e => m_fld = %e pba->H0 %e\n", pba->V0_phi2n, pba->phi_ini_scf,pow(pow(2,pba->n_axion)*pba->V0_phi2n,0.5)/pba->H0,pba->H0);
+      }
+      if(pba->scf_potential == teds){
+      printf("Additional scf parameters used: \n");
+      printf("V0_teds = %e, f_teds/mpl = %e, p_teds = %e, theta_i = %e\n",pba->V0_teds,pba->f_teds,pba->p_teds,pba->scf_parameters[0]);
+      printf("     -> Exact log10(z_c) = %e \t f_ede = %e log10 f_ede = %e\n", pba->log10_z_c, pba->f_ede, log10(pba->f_ede));
+      printf("     -> phi(z_c) = %e \n", pba->phi_scf_c);
+      }
+      if(pba->scf_potential == ax_cos_cubed){
+      printf("Additional scf parameters used: \n");
+      printf("m_a = %g eV, f_a/mpl = %g\n",(pba->scf_parameters[0]/1.5638e29),pba->scf_parameters[1]);
       }
 
       if (pba->has_lambda == _TRUE_) {
@@ -2619,6 +2718,8 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
     pba->Omega0_nfsm += pba->Omega0_cdm;
   if (pba->has_idm == _TRUE_)
     pba->Omega0_nfsm += pba->Omega0_idm;
+  if (pba->has_idm_ede == _TRUE_)
+    pba->Omega0_nfsm += pba->Omega0_idm_ede;
   if (pba->has_dcdm == _TRUE_)
     pba->Omega0_nfsm += pba->Omega0_dcdm;
   for (n_ncdm=0;n_ncdm<pba->N_ncdm; n_ncdm++) {
@@ -2739,6 +2840,20 @@ int background_initial_conditions(
       printf("Density is %g. Omega_ini=%g\n",pvecback_integration[pba->index_bi_rho_dcdm],pba->Omega_ini_dcdm);
   }
 
+  if (pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1) {
+    // printf("pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3); %e\n", pba->Omega_ini_idm_ede*pba->H0*pba->H0*pow(a,-3));
+   /* Remember that the critical density today in CLASS conventions is H0^2 */
+  double Omega_idm_ede_initial = pba->Omega_ini_idm_ede;
+  if (Omega_idm_ede_initial == 0.0) {
+    Omega_idm_ede_initial = pba->Omega0_idm_ede;
+  }
+  pvecback_integration[pba->index_bi_rho_idm_ede] =
+     Omega_idm_ede_initial*pba->H0*pba->H0*pow(a,-3);
+  if (pba->background_verbose > 3)
+     printf("Density is %g. Omega_ini=%g\n",pvecback_integration[pba->index_bi_rho_idm_ede],Omega_idm_ede_initial);
+ }
+
+
   if (pba->has_dr == _TRUE_) {
     if (pba->has_dcdm == _TRUE_) {
       /**  - f is the critical density fraction of DR. The exact solution is:
@@ -2847,6 +2962,22 @@ int background_initial_conditions(
   class_call(background_functions(pba, a, pvecback_integration, normal_info, pvecback),
              pba->error_message,
              pba->error_message);
+
+  if ((pba->has_scf == _TRUE_) &&
+      (pba->has_idm_ede == _TRUE_) &&
+      (pba->coupling_type == 1) &&
+      (pba->coupled_scf_slowroll_ic == _TRUE_)) {
+    double phi_ic = pvecback_integration[pba->index_bi_phi_scf];
+    double H_ic = pvecback[pba->index_bg_H];
+    double force_ic = dV_scf(pba,phi_ic)
+      + 3.0*dlnm_idm_ede_dphi(pba,phi_ic)*pvecback[pba->index_bg_rho_idm_ede];
+
+    pvecback_integration[pba->index_bi_phi_prime_scf] = -0.5*a*force_ic/H_ic;
+
+    class_call(background_functions(pba, a, pvecback_integration, normal_info, pvecback),
+               pba->error_message,
+               pba->error_message);
+  }
 
   /* Just checking that our initial time indeed is deep enough in the radiation
      dominated regime */
@@ -2995,19 +3126,19 @@ int background_output_titles(
   class_store_columntitle(titles,"(.)rho_idm",pba->has_idm);
   if (pba->has_ncdm == _TRUE_) {
     for (n=0; n<pba->N_ncdm; n++) {
-      class_sprintf(tmp,"(.)rho_ncdm[%d]",n);
+      sprintf(tmp,"(.)rho_ncdm[%d]",n);
       class_store_columntitle(titles,tmp,_TRUE_);
-      class_sprintf(tmp,"(.)p_ncdm[%d]",n);
+      sprintf(tmp,"(.)p_ncdm[%d]",n);
       class_store_columntitle(titles,tmp,_TRUE_);
     }
   }
   class_store_columntitle(titles,"(.)rho_lambda",pba->has_lambda);
   class_store_columntitle(titles,"(.)rho_fld",pba->has_fld);
-  class_store_columntitle(titles,"(.)Omega_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)w_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)rho_ur",pba->has_ur);
 
   class_store_columntitle(titles,"(.)rho_idr",pba->has_idr);
+  class_store_columntitle(titles,"(.)rho_idm_ede",pba->has_idm_ede);
   class_store_columntitle(titles,"(.)rho_crit",_TRUE_);
   class_store_columntitle(titles,"(.)rho_dcdm",pba->has_dcdm);
   class_store_columntitle(titles,"(.)rho_dr",pba->has_dr);
@@ -3021,9 +3152,12 @@ int background_output_titles(
   class_store_columntitle(titles,"(.)dw_scf",pba->has_scf);
   class_store_columntitle(titles,"phi_scf",pba->has_scf);
   class_store_columntitle(titles,"phi'_scf",pba->has_scf);
+  class_store_columntitle(titles,"phi''_scf",pba->has_scf);
   class_store_columntitle(titles,"V_scf",pba->has_scf);
   class_store_columntitle(titles,"V'_scf",pba->has_scf);
   class_store_columntitle(titles,"V''_scf",pba->has_scf);
+  // class_store_columntitle(titles,"dlnm_idm_ede_dphi",pba->has_idm_ede && pba->coupling_type == 1);
+  class_store_columntitle(titles,"dVadd_contribution",pba->has_idm_ede && pba->coupling_type == 1);
 
   class_store_columntitle(titles,"(.)rho_tot",_TRUE_);
   class_store_columntitle(titles,"(.)p_tot",_TRUE_);
@@ -3082,11 +3216,11 @@ int background_output_data(
     }
     class_store_double(dataptr,pvecback[pba->index_bg_rho_lambda],pba->has_lambda,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_fld],pba->has_fld,storeidx);
-    class_store_double(dataptr,pvecback[pba->index_bg_Omega_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_w_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_ur],pba->has_ur,storeidx);
 
     class_store_double(dataptr,pvecback[pba->index_bg_rho_idr],pba->has_idr,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_idm_ede],pba->has_idm_ede,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_crit],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dcdm],pba->has_dcdm,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_dr],pba->has_dr,storeidx);
@@ -3100,10 +3234,12 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_dw_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_phi_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_phi_prime_scf],pba->has_scf,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_phi_prime_prime_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_V_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dV_scf],pba->has_scf,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_ddV_scf],pba->has_scf,storeidx);
-
+    /*class_store_double(dataptr,pvecback[pba->index_bg_dlnm_idm_ede_dphi]*pvecback[pba->index_bg_rho_idm_ede],pba->has_idm_ede && pba->coupling_type == 1,storeidx);*/
+    class_store_double(dataptr,pvecback[pba->index_bg_dVadd_contribution],pba->has_scf && pba->has_idm_ede && pba->coupling_type == 1,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_p_tot_prime],_TRUE_,storeidx);
@@ -3165,7 +3301,7 @@ int background_derivs(
   pbpaw = parameters_and_workspace;
   pba =  pbpaw->pba;
   pvecback = pbpaw->pvecback;
-  double cos_initial,sin_initial,n,Gac;
+
   /** - scale factor a (in fact, given our normalisation conventions, this stands for a/a_0) */
   a = exp(loga);
 
@@ -3193,14 +3329,10 @@ int background_derivs(
    if(pba->has_scf == _TRUE_ && pba->scf_evolve_as_fluid == _TRUE_ ){
      if(pba->m_scf*pba->H0/H >= pba->threshold_scf_fluid_m_over_H){ //We switch for fluid equations at m > 3H by default.
        pba->scf_kg_eq = _FALSE_;
-       // if(pba->scf_potential==axionquad &&  pba->a_c==1.0 ){
-       if(pba->a_c==1.0 ){
-         pba->a_c = a; //we defined a_c as the time at which the transition occurs. this is necessary for the perts.
+       if(pba->scf_potential==axionquad &&  pba->a_c==1.0 ){
+         pba->a_c = a; //we defined a_c as the time at which the transiton occurs. this is necessary for the perts.
          //for other potentials, a_c was already defined.
        }
-
-       // printf("pba->a_c %e\n", pba->a_c);
-
      }
      else{
        pba->scf_kg_eq = _TRUE_;
@@ -3220,6 +3352,9 @@ int background_derivs(
   }
   if (pba->has_idm == _TRUE_){
     rho_M += pvecback[pba->index_bg_rho_idm];
+  }
+  if (pba->has_idm_ede == _TRUE_){
+    rho_M += pvecback[pba->index_bg_rho_idm_ede];
   }
   if (pba->has_scf == _TRUE_ && pba->include_scf_in_growth_factor == _TRUE_) {
     /*VP: add the scf contribution if the user wants to, e.g., for axion-like dark matter */
@@ -3244,7 +3379,14 @@ int background_derivs(
     /** - Compute dr density \f$ d\rho/dloga = -4\rho - \Gamma/H \rho \f$ */
     dy[pba->index_bi_rho_dr] = -4.*y[pba->index_bi_rho_dr]+pba->Gamma_dcdm/H*y[pba->index_bi_rho_dcdm];
   }
-
+  if (pba->has_idm_ede == _TRUE_ && pba->has_scf == _TRUE_ && pba->coupling_type == 1) {
+  /* see arxiv:2212.08098*/
+  /** d rho_idm_ede / d ln a = -3 rho_idm_ede + coupling */
+// printf("here!! %e %e %e\n", a,- y[pba->index_bi_phi_prime_scf], dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf]));
+  dy[pba->index_bi_rho_idm_ede] =
+    -3 * y[pba->index_bi_rho_idm_ede]
+    + y[pba->index_bi_phi_prime_scf] * dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])*y[pba->index_bi_rho_idm_ede]/(a*H);
+  }
   if (pba->has_fld == _TRUE_) {
     /** - Compute fld density \f$ d\rho/dloga = -3 (1+w_{fld}(a)) \rho \f$ */
     dy[pba->index_bi_rho_fld] = -3.*(1.+pvecback[pba->index_bg_w_fld])*y[pba->index_bi_rho_fld];
@@ -3265,15 +3407,28 @@ int background_derivs(
     /* VP: NEW AXICLASS: derivative with respect to log(a) */
     /** - Scalar field equation: \f$ \phi'' + 2 a H \phi' + a^2 dV = 0 \f$  (note H is wrt cosmological time)
         written as \f$ d\phi/dlna = phi' / (aH) \f$ and \f$ d\phi'/dlna = -2*phi' - (a/H) dV \f$ */
-    dy[pba->index_bi_phi_scf] = y[pba->index_bi_phi_prime_scf]/a/H;
-    dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H ;
-
+        dy[pba->index_bi_phi_scf] = y[pba->index_bi_phi_prime_scf]/a/H;
+    if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 3){
+      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H*(1/(1-2*pba->beta_scf)) ;
+    }
+    /*here I multiplied the rho_class by 3mpl^2*/
+    else if(pba->has_idm_ede == _TRUE_ && pba->coupling_type == 1){
+      // dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H -a*y[pba->index_bi_phi_prime_scf]*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede];
+      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*(dV_scf(pba,y[pba->index_bi_phi_scf]) + 3.0*dlnm_idm_ede_dphi(pba,y[pba->index_bi_phi_scf])* y[pba->index_bi_rho_idm_ede])/H;
+      // dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
+    }else{
+      dy[pba->index_bi_phi_prime_scf] = - 2*y[pba->index_bi_phi_prime_scf] - a*dV_scf(pba,y[pba->index_bi_phi_scf])/H;
+    }
+       // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])) ;
+       // printf("pba->beta_scf %e\n", pba->beta_scf);
+       // + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])/(pow(pba->scf_parameters[1],2))) ;
     dy[pba->index_bi_rho_scf] = 0; //Update the scf density until the fluid equation starts.
     // printf("aEvolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],y[pba->index_bi_phi_prime_scf]);
     // printf("dV %e \n", dV_scf(pba,y[pba->index_bi_phi_scf])  );
     // if(pba->background_verbose > 11) printf("Evolving scalar field using KG equation. phi %e phi prime %e \n", y[pba->index_bi_phi_scf],dy[pba->index_bi_phi_scf]  );
     }
     else if(pba->scf_kg_eq == _FALSE_) {
+
     dy[pba->index_bi_rho_scf] = -3.*y[pba->index_bi_rho_scf]*(1+pba->w_scf);
     dy[pba->index_bi_phi_scf] = 0;
     dy[pba->index_bi_phi_prime_scf] = 0;
@@ -3435,16 +3590,14 @@ int background_output_budget(
       class_print_species("Interacting DM - idr,b,g",idm);
       budget_matter+=pba->Omega0_idm;
     }
+    if (pba->has_idm_ede == _TRUE_){
+      class_print_species("Interacting DM - idr,b,g,ede",idm_ede);
+      budget_matter+=pba->Omega0_idm_ede;
+    }
     if (pba->has_dcdm == _TRUE_) {
       class_print_species("Decaying Cold Dark Matter",dcdm);
       budget_matter+=pba->Omega0_dcdm;
     }
-   if (pba->has_scf == _TRUE_ && (pba->scf_potential == axion && pba->n_axion == 1) ) {
-      class_print_species("Axion DM",scf);
-      budget_matter+=pba->Omega0_scf;
-    }
-
-
 
     if (pba->N_ncdm > 0) {
       printf(" ---> Non-Cold Dark Matter Species (incl. massive neutrinos)\n");
@@ -3484,7 +3637,7 @@ int background_output_budget(
       class_print_species("Dark Energy Fluid",fld);
       budget_other+=pba->Omega0_fld;
     }
-    if (pba->has_scf == _TRUE_ && !(pba->scf_potential == axion && pba->n_axion == 1) ) {
+    if (pba->has_scf == _TRUE_) {
       class_print_species("Scalar Field",scf);
       budget_other+=pba->Omega0_scf;
       // printf("pba->Omega0_axion %e\n", pba->Omega0_axion);
@@ -3565,7 +3718,7 @@ double dV_e_scf(struct background *pba,
   //  double scf_A      = pba->scf_parameters[2];
   //  double scf_B      = pba->scf_parameters[3];
 
-  return -scf_lambda*V_e_scf(pba,phi);
+  return -scf_lambda*V_scf(pba,phi);
 }
 
 double ddV_e_scf(struct background *pba,
@@ -3576,7 +3729,7 @@ double ddV_e_scf(struct background *pba,
   //  double scf_A      = pba->scf_parameters[2];
   //  double scf_B      = pba->scf_parameters[3];
 
-  return pow(-scf_lambda,2)*V_e_scf(pba,phi);
+  return pow(-scf_lambda,2)*V_scf(pba,phi);
 }
 
 
@@ -3652,6 +3805,31 @@ double ddV_double_exp_scf(
 
 }
 
+/** parameters and functions for the axion (1-cos^3) potential
+ * \f$ V_axion = m_a*m_a*f_a*f_a*(1 - cos(phi/f_a))^3
+ */
+double V_ax_cos_cubed_scf(
+                  struct background *pba,
+                  double phi){
+    return pow(pba->scf_parameters[0],2)*pow(pba->scf_parameters[1],2)*(pow((1 - cos((phi/pba->scf_parameters[1])*_PI_/180)),3));
+
+}
+
+double dV_ax_cos_cubed_scf(
+                  struct background *pba,
+                  double phi){
+
+    return 3*pow(pba->scf_parameters[0],2)*pow(pba->scf_parameters[1],2)*sin((phi/pba->scf_parameters[1])*_PI_/180)*(pow((1 - cos((phi/pba->scf_parameters[1])*_PI_/180)),2));
+
+}
+
+double ddV_ax_cos_cubed_scf(
+                  struct background *pba,
+                  double phi){
+
+    // printf("1 %e 2 %e \n", exp(-pba->scf_parameters[0]*phi),pow(pba->scf_parameters[0],4));
+    return 12*pow(pba->scf_parameters[0],2)*pow(pba->scf_parameters[1],2)*(2 + 3*cos((phi/pba->scf_parameters[1])*_PI_/180))*(pow((sin((phi/(2*pba->scf_parameters[1]))*_PI_/180)),4));
+}
 /** parameters and functions for the axion potential
  * \f$ V_axion = m_a*m_a*f_a*f_a*(1 - cos(phi/f_a))
  */
@@ -3703,6 +3881,66 @@ double ddV_axion_scf(
      else result = n*pow(m,2)*fa*((n-1)/fa*pow(1-cos(phi/fa),n-2)*pow(sin(phi/fa),2)+pow(1-cos(phi/fa),n-1)/fa*cos(phi/fa)); //this formula bugs sometimes for n=1
 
      return result;
+}
+
+/** Exponential potential from arXiv:2505.10410 Eq. (3.6):
+ *  V(phi) = V0 exp(-lambda phi).
+ */
+double V_phantom_exp_scf(
+                  struct background *pba,
+                  double phi){
+
+    return pba->V0_phantom*exp(-pba->lambda_phantom*phi);
+}
+
+double dV_phantom_exp_scf(
+                  struct background *pba,
+                  double phi){
+
+    return -pba->lambda_phantom*V_phantom_exp_scf(pba,phi);
+}
+
+double ddV_phantom_exp_scf(
+                  struct background *pba,
+                  double phi){
+
+    return pow(pba->lambda_phantom,2)*V_phantom_exp_scf(pba,phi);
+}
+
+/** parameters and functions for the tEDS plateau power-law potential
+ * \f$ V = V_0 \theta^6 / (1 + \theta^{6p})^{1/p} \f$ with \f$ \theta=\phi/f \f$
+ */
+double V_teds_scf(
+                  struct background *pba,
+                  double phi){
+
+    double theta = phi/pba->f_teds;
+    double theta6 = pow(theta,6);
+    double x = pow(theta6,pba->p_teds);
+
+    return pba->V0_teds*theta6*pow(1.0 + x,-1.0/pba->p_teds);
+}
+
+double dV_teds_scf(
+                  struct background *pba,
+                  double phi){
+
+    double theta = phi/pba->f_teds;
+    double x = pow(pow(theta,6),pba->p_teds);
+
+    return 6.0*pba->V0_teds*pow(theta,5)*pow(1.0 + x,-1.0 - 1.0/pba->p_teds)/pba->f_teds;
+}
+
+double ddV_teds_scf(
+                  struct background *pba,
+                  double phi){
+
+     double theta = phi/pba->f_teds;
+     double x = pow(pow(theta,6),pba->p_teds);
+     double one_plus_x = 1.0 + x;
+     double bracket = 5.0 - (6.0*pba->p_teds + 6.0)*x/one_plus_x;
+
+     return 6.0*pba->V0_teds*pow(theta,4)*pow(one_plus_x,-1.0 - 1.0/pba->p_teds)*bracket/pow(pba->f_teds,2);
 }
 /** parameters and functions for the phi^2n potential
  * \f$ V_axion = m_a*m_a*f_a*f_a*(1 - cos(phi/f_a))
@@ -3789,15 +4027,28 @@ double V_scf(
     result = V_double_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axion){
-    result = V_axion_scf(pba,phi);
+    if(pba->coupling_type == 3 && pba->has_idm_ede == _TRUE_){
+      result = V_axion_scf(pba,phi)*(1-2*pba->beta_scf);
+    }else{
+       result = V_axion_scf(pba,phi);
+    }
   }
   else if(pba->scf_potential == phi_2n){
     result = V_phi_2n_scf(pba,phi);
   }
+  else if(pba->scf_potential == teds){
+    result = V_teds_scf(pba,phi);
+  }
+  else if(pba->scf_potential == phantom_exp){
+    result = V_phantom_exp_scf(pba,phi);
+  }
   else if(pba->scf_potential == axionquad){
     result = V_axionquad_scf(pba,phi);
   }
-    // printf("result Vf %e\n", result);
+  else if(pba->scf_potential == ax_cos_cubed){
+    result = V_ax_cos_cubed_scf(pba,phi);
+  }
+  // printf("result Vf %e\n", result);
 
   return result;
 }
@@ -3814,15 +4065,28 @@ double dV_scf(
     result =  dV_double_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axion){
-    result = dV_axion_scf(pba,phi);
+    if(pba->coupling_type == 3 && pba->has_idm_ede == _TRUE_){
+    result = dV_axion_scf(pba,phi)*(1-2*pba->beta_scf);
+  }
+    else{
+      result = dV_axion_scf(pba,phi);
+    }
   }
   else if(pba->scf_potential == phi_2n){
     result = dV_phi_2n_scf(pba,phi);
   }
+  else if(pba->scf_potential == teds){
+    result = dV_teds_scf(pba,phi);
+  }
+  else if(pba->scf_potential == phantom_exp){
+    result = dV_phantom_exp_scf(pba,phi);
+  }
   else if(pba->scf_potential == axionquad){
     result = dV_axionquad_scf(pba,phi);
   }
-
+  else if(pba->scf_potential == ax_cos_cubed){
+    result = dV_ax_cos_cubed_scf(pba,phi);
+  }
   // printf("result dVf %e\n", result);
 
   return result;
@@ -3843,17 +4107,83 @@ double ddV_scf(
     result =  ddV_double_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axion){
-    result = ddV_axion_scf(pba,phi);
+    if(pba->coupling_type == 3 && pba->has_idm_ede == _TRUE_){
+      result = ddV_axion_scf(pba,phi)*(1-2*pba->beta_scf);
+  }
+    else{
+      result = ddV_axion_scf(pba,phi);
+    }
   }
   else if(pba->scf_potential == phi_2n){
     result = ddV_phi_2n_scf(pba,phi);
+  }
+  else if(pba->scf_potential == teds){
+    result = ddV_teds_scf(pba,phi);
+  }
+  else if(pba->scf_potential == phantom_exp){
+    result = ddV_phantom_exp_scf(pba,phi);
   }
   else if(pba->scf_potential == axionquad){
     result = ddV_axionquad_scf(pba,phi);
   }
 
-
+  else if(pba->scf_potential == ax_cos_cubed){
+    result = ddV_ax_cos_cubed_scf(pba,phi);
+  }
   // printf("result ddVf %e\n", result);
   return result;
 
+}
+
+double m_idm_ede(
+              struct background *pba,
+              double phi ){
+              if (pba->idm_ede_mass_form == 1) {
+                return pba->m0_idm_ede * exp(pba->c_idm_ede * phi);
+              }
+              else if (pba->idm_ede_mass_form == 2) {
+                return pba->m0_idm_ede * (1.0 + pba->A_m_phi_phantom*(1.0 - exp(-pba->alpha_m_phantom*phi)));
+              }
+              else if (pba->idm_ede_mass_form == 0) {
+                return pba->m0_idm_ede * (1 + pba->g_idm_ede * pow(phi, 2));
+              }
+              return pba->m0_idm_ede;
+}
+
+double dlnm_idm_ede_dphi(
+              struct background *pba,
+              double phi){
+                if (pba->idm_ede_mass_form == 1) {
+                  return pba->c_idm_ede;
+                }
+                else if (pba->idm_ede_mass_form == 2) {
+                  double expfac = exp(-pba->alpha_m_phantom*phi);
+                  double A = 1.0 + pba->A_m_phi_phantom*(1.0 - expfac);
+                  return pba->A_m_phi_phantom*pba->alpha_m_phantom*expfac/A;
+                }
+                else if (pba->idm_ede_mass_form == 0) {
+                  // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
+                  if(phi !=0.0) return 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2));
+                }
+                return 0.0;
+}
+
+double dlnm2_idm_ede_dphi(
+              struct background *pba,
+              double phi){
+                if (pba->idm_ede_mass_form == 1) {
+                  return 0.0;
+                }
+                else if (pba->idm_ede_mass_form == 2) {
+                  double expfac = exp(-pba->alpha_m_phantom*phi);
+                  double A = 1.0 + pba->A_m_phi_phantom*(1.0 - expfac);
+                  double Ap = pba->A_m_phi_phantom*pba->alpha_m_phantom*expfac;
+                  double App = -pba->A_m_phi_phantom*pow(pba->alpha_m_phantom,2)*expfac;
+                  return App/A - pow(Ap/A,2);
+                }
+                else if (pba->idm_ede_mass_form == 0) {
+                  // printf("in function:  %e\n", 2*pba->g_idm_ede * phi/(1 + pba->g_idm_ede * pow(phi, 2)));
+                  return 2*pba->g_idm_ede * (1 - pba->g_idm_ede * pow(phi, 2))/(pow(1 + pba->g_idm_ede * pow(phi, 2),2));
+                }
+                return 0.0;
 }

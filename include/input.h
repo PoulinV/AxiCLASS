@@ -122,14 +122,6 @@
   (((a) == _TRUE_) && ((c) == _TRUE_)) ||                                       \
   (((b) == _TRUE_) && ((c) == _TRUE_))
 
-#define class_at_least_two_of_four(a,b,c,d)                                      \
-  (((a) == _TRUE_) && ((b) == _TRUE_)) ||                                       \
-  (((a) == _TRUE_) && ((c) == _TRUE_)) ||                                       \
-  (((b) == _TRUE_) && ((c) == _TRUE_)) ||                                       \
-  (((a) == _TRUE_) && ((d) == _TRUE_)) ||                                       \
-  (((b) == _TRUE_) && ((d) == _TRUE_)) ||                                       \
-  (((c) == _TRUE_) && ((d) == _TRUE_))
-
 #define class_none_of_three(a,b,c)                                              \
   ((a) == _FALSE_) && ((b) == _FALSE_) && ((c) == _FALSE_)
 
@@ -211,10 +203,11 @@
  * For shooting method: definition of the possible targets
  */
 
-enum target_names {theta_s, theta_s_100, Neff,Omega_dcdmdr, omega_dcdmdr,
-                  Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,
-                  fraction_axion_ac, log10_axion_ac, Omega_scf_shoot_fa, log10_fraction_axion_ac_phi2n,
-                  log10_axion_ac_phi2n, a_peak_eq, sigma8, S8};
+enum target_names {theta_s, Omega_dcdmdr, omega_dcdmdr,
+                  Omega_scf, Omega_ini_dcdm, omega_ini_dcdm,Omega_ini_idm_ede,omega_ini_idm_ede,
+                  fraction_axion_ac, log10_axion_ac, log10_fraction_axion_ac_phi2n,
+                  log10_axion_ac_phi2n, a_peak_eq, sigma8,
+                  Omega_idm_ede_today, omega_idm_ede_today};
 /* Important: add one for each new target_names */
 enum computation_stage {cs_background, cs_thermodynamics, cs_perturbations,
                         cs_primordial, cs_nonlinear, cs_transfer, cs_spectra};
@@ -224,6 +217,8 @@ enum scf_pot_inp{
   pol_times_exp_inp, /** scf_potential set to pol_times_exp:V equals ((\phi-B)^\alpha + A)exp(-lambda*phi), see http://arxiv.org/abs/astro-ph/9908085.*/
   double_exp_inp, /* scf_potential set to double_exp: V equals \Lambda_1^4e^{-\lambda\phi}+\Lambda_2^4e^{-\mu\phi} */
   axion_inp, /** scf_potential set to axion: V equals m^2f^2(1-cos(phi/f)) */
+  teds_inp, /** scf_potential set to teds: V equals V0 theta^6/(1+theta^(6p))^(1/p), theta=phi/f */
+  phantom_exp_inp, /** scf_potential set to phantom_exp: V equals V0 exp(-lambda phi) */
   axionquad_inp, /* scf_potential set to axion quadratic form: V = m^2phi^2/2 */
   ax_cos_cubed_inp
 };
@@ -248,10 +243,14 @@ struct fzerofun_workspace {
   double precision_loop_over_background;
   double m_scf;
   double f_axion;
+  double V0_teds;
+  double f_teds;
+  double p_teds;
+  double V0_phantom;
+  double lambda_phantom;
   double Omega0_axion;
   double log10_axion_ac;
   int n_axion;
-  double theta_axion;
   double w_scf;
   double threshold_scf_fluid_m_over_H;
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
@@ -408,7 +407,6 @@ extern "C" {
                                     struct background * pba,
                                     struct thermodynamics * pth,
                                     struct perturbations * ppt,
-                                    struct fourier * pfo,
                                     struct distortions * psd,
                                     ErrorMsg errmsg);
 

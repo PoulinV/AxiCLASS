@@ -278,7 +278,7 @@ int input_set_root(char* input_file,
       /* No file has been found yet */
       found_filenum = _FALSE_;
       for (iextens = 0; iextens < n_extensions; ++iextens){
-        class_sprintf(tmp_file,"%s%02d_%s", outfname, filenum, output_extensions[iextens]);
+        sprintf(tmp_file,"%s%02d_%s", outfname, filenum, output_extensions[iextens]);
         if (file_exists(tmp_file) == _TRUE_){
           /* Found a file, the outer loop is forced to keep searching */
           found_filenum = _TRUE_;
@@ -296,8 +296,8 @@ int input_set_root(char* input_file,
                              pfc->filename,
                              errmsg),
                  errmsg,errmsg);
-      class_sprintf(fc_root.name[0],"root");
-      class_sprintf(fc_root.value[0],"%s%02d_",outfname,filenum);
+      sprintf(fc_root.name[0],"root");
+      sprintf(fc_root.value[0],"%s%02d_",outfname,filenum);
       fc_root.read[0] = _FALSE_;
       class_call(parser_cat(pfc,
                             &fc_root,
@@ -315,7 +315,7 @@ int input_set_root(char* input_file,
     }
     /* If root was found, set the index in the fc_input struct */
     else{
-      class_sprintf(pfc->value[index_root_in_fc_input],"%s%02d_",outfname,filenum);
+      sprintf(pfc->value[index_root_in_fc_input],"%s%02d_",outfname,filenum);
       (*ppfc_input) = pfc;
     }
   }
@@ -329,8 +329,8 @@ int input_set_root(char* input_file,
                              pfc->filename,
                              errmsg),
                  errmsg,errmsg);
-      class_sprintf(fc_root.name[0],"root");
-      class_sprintf(fc_root.value[0],"%s_",outfname);
+      sprintf(fc_root.name[0],"root");
+      sprintf(fc_root.value[0],"%s_",outfname);
       fc_root.read[0] = _FALSE_;
       class_call(parser_cat(pfc,
                             &fc_root,
@@ -348,7 +348,7 @@ int input_set_root(char* input_file,
     }
     /* If root was found, set the index in the fc_input struct */
     else{
-      class_sprintf(pfc->value[index_root_in_fc_input],"%s_",outfname);
+      sprintf(pfc->value[index_root_in_fc_input],"%s_",outfname);
       (*ppfc_input) = pfc;
     }
   }
@@ -413,9 +413,6 @@ int input_read_from_file(struct file_content * pfc,
   class_read_int("input_verbose",input_verbose);
   if (input_verbose >0) printf("Reading input parameters\n");
 
-  /** -- Special setting of parameter, before anything else: did shooting fail? */
-  pba->shooting_failed = _FALSE_;
-
   /** Find out if shooting necessary and, eventually, shoot and initialize
       read parameters */
   class_call(input_shooting(pfc,ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
@@ -425,16 +422,12 @@ int input_read_from_file(struct file_content * pfc,
              errmsg,
              errmsg);
 
-  /** Update structs with input that is potentially updated after shooting */
-  class_call(input_read_parameters(pfc,ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
-                                    errmsg),
-              errmsg,
-              errmsg);
-
-  if (has_shooting == _TRUE_ && pba->shooting_failed == _TRUE_) {
-    // Shooting failed, but error must be thrown in background in order to trigger a
-    // runtime error, so here we skip the rest and go straight to background
-    return _SUCCESS_;
+  /** If no shooting is necessary, initialize read parameters without it */
+  if (has_shooting == _FALSE_){
+    class_call(input_read_parameters(pfc,ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
+                                     errmsg),
+               errmsg,
+               errmsg);
   }
 
   /** Write info on the read/unread parameters. This is the correct place to do it,
@@ -521,7 +514,7 @@ int input_shooting(struct file_content * pfc,
   double param1, param2;
   double sigma_B = 2. * pow(_PI_,5) * pow(_k_B_,4) / 15. / pow(_h_P_,3) / pow(_c_,2);
   int counter, index_target, i;
-  double Omega_m, Omega_r, Omega0_g, Omega0_cdm,Omega0_b, T_cmb, H0, h;
+  double Omega_m, Omega_r, Omega0_g, Omega0_cdm,Omega0_idm_ede,Omega0_b, T_cmb, H0, h;
   short zc_is_zeq;
   double * unknown_parameter;
   int unknown_parameters_size;
@@ -534,22 +527,26 @@ int input_shooting(struct file_content * pfc,
   char string1[_ARGUMENT_LENGTH_MAX_];
 
   /* array of parameters passed by the user for which we need shooting (= target parameters) */
-  char * const target_namestrings[] = {"100*theta_s","theta_s_100", "Neff","Omega_dcdmdr","omega_dcdmdr",
-                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm",
-                                       "fraction_axion_ac","log10_axion_ac","Omega_scf_shoot_fa","log10_fraction_axion_ac_phi2n",
-                                       "log10_axion_ac_phi2n","a_peak_eq","sigma8","S8"};
+  char * const target_namestrings[] = {"100*theta_s","Omega_dcdmdr","omega_dcdmdr",
+                                       "Omega_scf","Omega_ini_dcdm","omega_ini_dcdm","Omega_ini_idm_ede","omega_ini_idm_ede",
+                                       "fraction_axion_ac","log10_axion_ac","log10_fraction_axion_ac_phi2n",
+                                       "log10_axion_ac_phi2n","a_peak_eq","sigma8",
+                                       "Omega_idm_ede","omega_idm_ede"};
   /* array of corresponding parameters that must be adjusted in order to meet the target (= unknown parameters) */
-  char * const unknown_namestrings[] = {"h","h","N_ur","Omega_ini_dcdm","Omega_ini_dcdm",
-                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr",
-                                        "alpha_squared","power_of_mu","log10_f_axion","phi_ini_scf",
-                                        "V0_phi2n","ac_from_aeq","A_s","A_s"};
+  char * const unknown_namestrings[] = {"h","Omega_ini_dcdm","Omega_ini_dcdm",
+                                        "scf_shooting_parameter","Omega_dcdmdr","omega_dcdmdr","Omega_idm_ede","omega_idm_ede",
+                                        "alpha_squared","power_of_mu","phi_ini_scf",
+                                        "V0_phi2n","ac_from_aeq","A_s",
+                                        "Omega_ini_idm_ede","omega_ini_idm_ede"};
   /* for each target, module up to which we need to run CLASS in order
      to compute the targetted quantities (not running the whole code
      each time to saves a lot of time) */
-     enum computation_stage target_cs[] = {cs_thermodynamics, cs_thermodynamics, cs_background,cs_background, cs_background,
+     enum computation_stage target_cs[] = {cs_thermodynamics, cs_background, cs_background,
+                                           cs_background, cs_background,
                                            cs_background, cs_background, cs_background,
                                            cs_background, cs_background, cs_background,
-                                           cs_background, cs_background, cs_background, cs_nonlinear, cs_nonlinear};
+                                           cs_background, cs_background, cs_nonlinear,
+                                           cs_background, cs_background};
 
 
   struct fzerofun_workspace fzw;
@@ -580,6 +577,7 @@ int input_shooting(struct file_content * pfc,
 
 /* VP: We can bypass the whole shooting ,useful to debug */
 fzw.do_shooting = _TRUE_; //default is always TRUE.
+// fzw.do_shooting_scf = _FALSE_;//default is always false.
 class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
              errmsg,
              errmsg);
@@ -590,6 +588,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     else {
       fzw.do_shooting = _TRUE_;
     }
+
 
     class_call(parser_read_string(pfc,"do_shooting_scf",&string1,&flag1,errmsg),
              errmsg,
@@ -607,7 +606,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
   if(fzw.do_shooting_scf == _TRUE_){
 
-    fzw.scf_parameters_size = 0;
+  fzw.scf_parameters_size = 0;
     class_call(parser_read_list_of_doubles(pfc,
                                          "scf_parameters",
                                          &(fzw.scf_parameters_size),
@@ -663,10 +662,31 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
            if (strcmp(string1,"axion") == 0) {
               fzw.scf_potential = axion;
               flag2 =_TRUE_;
+
+              class_call(parser_read_string(pfc,"theta_i_is_close_to_pi",&string1,&flag1,errmsg),
+              errmsg,
+              errmsg);
+               if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+                // if axionquad_mass_is_log10 is true it means we are running on log10_m_axion so we update it.
+                fzw.scf_parameters[0]= _PI_ - pow(10,fzw.scf_parameters[0]);
+               }
+
            }
            if (strcmp(string1,"phi_2n") == 0) {
               fzw.scf_potential = phi_2n;
               flag2 =_TRUE_;
+           }
+           if (strcmp(string1,"teds") == 0) {
+              fzw.scf_potential = teds;
+              flag2 =_TRUE_;
+           }
+           if (strcmp(string1,"phantom_exp") == 0) {
+              fzw.scf_potential = phantom_exp;
+              flag2 =_TRUE_;
+           }
+           if (strcmp(string1,"ax_cos_cubed") == 0) {
+              fzw.scf_potential = ax_cos_cubed;
+             flag2 =_TRUE_;
            }
            if (strcmp(string1,"axionquad") == 0) {
               fzw.scf_potential = axionquad;
@@ -683,7 +703,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
        class_test(flag2==_FALSE_,
                       errmsg,
-                      "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','axionquad'.");
+                      "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','teds','phantom_exp','axionquad','ax_cos_cubed'.");
 
 
 
@@ -701,7 +721,6 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
 
 
-
         if(fzw.scf_potential == axionquad){
           fzw.m_scf = fzw.scf_parameters[0];
           fzw.w_scf = 0;
@@ -709,32 +728,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
         }
         else if(fzw.scf_potential == axion){
           class_read_double("m_axion",fzw.m_scf);
-          //class_read_double("f_axion",fzw.f_axion);
-          class_call(parser_read_double(pfc,"f_axion",&param1,&flag1,errmsg),
-                      errmsg,
-                      errmsg);
-           class_call(parser_read_double(pfc,"log10_f_axion",&param2,&flag2,errmsg),
-                      errmsg,
-                      errmsg);
-          class_test((flag1 == _TRUE_) && (flag2 == _TRUE_),
-                      errmsg,
-                      "In input file, you cannot enter both log10_f_axion and f_axion, choose one");
-           if (flag1 == _TRUE_) {
-             fzw.f_axion = param1;
-           }
-           if (flag2 == _TRUE_) {
-             fzw.f_axion = pow(10,param2);
-           }
-
-          class_call(parser_read_double(pfc,"theta_axion",&param1,&flag1,errmsg),
-                   errmsg,
-                   errmsg);
-          if(flag1 == _TRUE_){
-            fzw.theta_axion = param1;
-          fzw.scf_parameters[fzw.scf_parameters_size-2] = param1;
-          }
-
-          // printf("DEBUG: f_axion=%e, phi_ini=%e\n",fzw.f_axion, fzw.scf_parameters[0]);
+          class_read_double("f_axion",fzw.f_axion);
           // fzw.Omega0_axion = 0.0;
           fzw.log10_axion_ac = 0.0;
           class_read_double("n_axion",fzw.n_axion);
@@ -791,6 +785,24 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
             if (flag2 == _TRUE_)
               Omega0_cdm = param2/h/h;
 
+            flag1 = _FALSE_;
+            flag2 = _FALSE_;
+
+
+            class_call(parser_read_double(pfc,"Omega_idm_ede",&param1,&flag1,errmsg),
+                       errmsg,
+                       errmsg);
+            class_call(parser_read_double(pfc,"omega_idm_ede",&param2,&flag2,errmsg),
+                       errmsg,
+                       errmsg);
+            class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+                       errmsg,
+                       "In input file, you can only enter one of Omega_cdm or omega_cdm, choose one");
+            if (flag1 == _TRUE_)
+              Omega0_idm_ede = param1;
+            if (flag2 == _TRUE_)
+              Omega0_idm_ede = param2/h/h;
+
 
               class_call(parser_read_double(pfc,"Omega_b",&param1,&flag1,errmsg),
                          errmsg,
@@ -814,7 +826,22 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
             Omega_r = Omega0_g * (1. + 3.046 * 7./8.*pow(4./11.,4./3.)); // assumes LambdaCDM + eventually massive neutrinos so light that they are relativistic at equality; needs to be generalised later on.
             Omega_m = Omega0_b;
             if (Omega0_cdm > 0) Omega_m += Omega0_cdm;
+            if (Omega0_idm_ede > 0) {
+              Omega_m += Omega0_idm_ede;
+
+              printf("Omega_m %e",Omega_m);
+            }
           }
+        }
+        else if(fzw.scf_potential == teds){
+          class_read_double("V0_teds",fzw.V0_teds);
+          class_read_double("f_teds",fzw.f_teds);
+          class_read_double("p_teds",fzw.p_teds);
+          fzw.w_scf = 0.5;
+        }
+        else if(fzw.scf_potential == phantom_exp){
+          class_read_double("V0_phantom",fzw.V0_phantom);
+          class_read_double("lambda_phantom",fzw.lambda_phantom);
         }
       }
         // else{
@@ -854,7 +881,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
         if(input_verbose > 10){
           printf("Found target: %s, target value =  %e\n",target_namestrings[index_target],param1);
         }
-        if(fzw.do_shooting_scf ==_FALSE_ && (target_namestrings[index_target]=="Omega_scf_shoot_fa"||target_namestrings[index_target]=="Omega_scf"|| target_namestrings[index_target]=="fraction_axion_ac" ||  target_namestrings[index_target]=="log10_fraction_axion_ac_phi2n"||  target_namestrings[index_target]=="log10_axion_ac_phi2n")){
+        if(fzw.do_shooting_scf ==_FALSE_ && (target_namestrings[index_target]=="Omega_scf"|| target_namestrings[index_target]=="fraction_axion_ac" ||  target_namestrings[index_target]=="log10_fraction_axion_ac_phi2n"||  target_namestrings[index_target]=="log10_axion_ac_phi2n")){
           // printf("I will not add it!\n");
         }else{
           target_indices[unknown_parameters_size] = index_target; /*setting up correct variable that we have defined to shoot for as an answer */
@@ -880,12 +907,19 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
     /* We need to remember that we shot so we can clean up properly */
     *has_shooting=_TRUE_;
 
+    // printf("unknown_parameters_size %d\n", unknown_parameters_size);
+
     /* Create file content structure with additional entries */
-    class_call(parser_extend(pfc, unknown_parameters_size, errmsg),
+    class_call(parser_init(&(fzw.fc),
+                           pfc->size+unknown_parameters_size,
+                           pfc->filename,
+                           errmsg),
                errmsg,errmsg);
 
-    class_call(parser_init_from_pfc(pfc, &(fzw.fc), errmsg),
-               errmsg,errmsg);
+    /* Copy input file content to the new file content structure: */
+    memcpy(fzw.fc.name, pfc->name, pfc->size*sizeof(FileArg));
+    memcpy(fzw.fc.value, pfc->value, pfc->size*sizeof(FileArg));
+    memcpy(fzw.fc.read, pfc->read, pfc->size*sizeof(short));
 
     class_alloc(unknown_parameter,
                 unknown_parameters_size*sizeof(double),
@@ -925,7 +959,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
       fzw.target_name[counter] = index_target;
       /* store target value of target parameter */
       fzw.target_value[counter] = param1;
-      fzw.unknown_parameters_index[counter]=pfc->size+counter-unknown_parameters_size;
+      fzw.unknown_parameters_index[counter]=pfc->size+counter;
       /* substitute the name of the target parameter with the name of the
          corresponding unknown parameter */
       strcpy(fzw.fc.name[fzw.unknown_parameters_index[counter]],unknown_namestrings[index_target]);
@@ -936,9 +970,10 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
       /* We can do 1 dimensional root finding */
       if (input_verbose > 0) {
-        printf("Computing unknown input parameter '%s' using input parameter '%s'\n",
-               fzw.fc.name[fzw.unknown_parameters_index[0]],
-               target_namestrings[fzw.target_name[0]]);
+        fprintf(stdout,
+                "Computing unknown input parameter '%s' using input parameter '%s'\n",
+                fzw.fc.name[fzw.unknown_parameters_index[0]],
+                target_namestrings[fzw.target_name[0]]);
       }
 
       /* If shooting fails, postpone error to background module to play nice with MontePython. */
@@ -954,7 +989,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
       /* Store xzero */
       // This needs to be done with enough accuracy. A standard double has a relative
       // precision of around 1e-16, so 1e-20 should be good enough for the shooting
-      class_sprintf(fzw.fc.value[fzw.unknown_parameters_index[0]],"%.20e",xzero);
+      sprintf(fzw.fc.value[fzw.unknown_parameters_index[0]],"%.20e",xzero);
       if (input_verbose > 0) {
         fprintf(stdout,"Computing unknown input parameters\n");
         fprintf(stdout," -> found %s = %s\n",
@@ -969,7 +1004,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
 
       /* We need to do multidimensional root finding */
       if (input_verbose > 0) {
-        printf("Computing unknown input parameters\n");
+        fprintf(stdout,"Computing unknown input parameters\n");
       }
 
       /* Allocate local variables */
@@ -1004,7 +1039,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
       // This needs to be done with enough accuracy. A standard double has a relative
       // precision of around 1e-16, so 1e-20 should be good enough for the shooting
       for (counter = 0; counter < unknown_parameters_size; counter++){
-        class_sprintf(fzw.fc.value[fzw.unknown_parameters_index[counter]],
+        sprintf(fzw.fc.value[fzw.unknown_parameters_index[counter]],
                 "%.20e",x_inout[counter]);
         if (input_verbose > 0) {
           fprintf(stdout," -> found %s = %s\n",
@@ -1019,18 +1054,35 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
       free(dxdF);
     }
 
-    if (input_verbose > 1 && shooting_failed == _FALSE_) {
-      printf("Shooting completed using %d function evaluations\n",fevals);
+    if (input_verbose > 1) {
+      fprintf(stdout,"Shooting completed using %d function evaluations\n",fevals);
     }
+
+    /** Read all parameters from the fc obtained through shooting */
+    class_call(input_read_parameters(&(fzw.fc),ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
+                                     errmsg),
+               errmsg,
+               errmsg);
 
     /** Set status of shooting */
     pba->shooting_failed = shooting_failed;
+    if (pba->shooting_failed == _TRUE_) {
+      background_free_input(pba);
+      perturbations_free_input(ppt);
+    }
 
-    parser_copy(&(fzw.fc), pfc, pfc->size - unknown_parameters_size, pfc->size);
+    /* all parameters read in fzw must be considered as read in pfc. At the same
+       time the parameters read before in pfc (like theta_s,...) must still be
+       considered as read (hence we could not do a memcopy) */
+    for (i=0; i < pfc->size; i ++) {
+      if (fzw.fc.read[i] == _TRUE_)
+        pfc->read[i] = _TRUE_;
+    }
+
+    /* Free tuned pfc */
+    parser_free(&(fzw.fc));
 
     /** Free arrays allocated */
-    class_call(parser_free(&(fzw.fc)),
-               errmsg, errmsg);
     free(unknown_parameter);
     free(fzw.unknown_parameters_index);
     free(fzw.target_name);
@@ -1046,22 +1098,20 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
   class_call(parser_read_double(pfc,"sigma8",&param1,&flag1,errmsg),
              errmsg,
              errmsg);
-  class_call(parser_read_double(pfc,"S8",&param2,&flag2,errmsg),
-             errmsg,
-             errmsg);
-  class_test((flag1 == _TRUE_) && (flag2 == _TRUE_),
-             errmsg,
-             "You can only enter one of 'sigma8' or 'S8'.");
-  if (flag1 == _TRUE_ || flag2 == _TRUE_) {
+  if (flag1 == _TRUE_){
     /* Tell the main function that shooting indeed has occured */
     *has_shooting=_TRUE_;
-
     /* Create file content structure with additional entries */
-    class_call(parser_extend(pfc, 1, errmsg),
+    class_call(parser_init(&(fzw.fc),
+                           pfc->size+1,
+                           pfc->filename,
+                           errmsg),
                errmsg,errmsg);
 
-    class_call(parser_init_from_pfc(pfc, &(fzw.fc), errmsg),
-               errmsg,errmsg);
+    /* Copy input file content to the new file content structure: */
+    memcpy(fzw.fc.name, pfc->name, pfc->size*sizeof(FileArg));
+    memcpy(fzw.fc.value, pfc->value, pfc->size*sizeof(FileArg));
+    memcpy(fzw.fc.read, pfc->read, pfc->size*sizeof(short));
 
     fzw.target_size = 1;
     class_alloc(fzw.unknown_parameters_index,
@@ -1075,62 +1125,64 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
                 errmsg);
 
     /* store name of target parameter */
-    if (flag1 == _TRUE_) {
-      fzw.target_name[0] = sigma8;
-      fzw.target_value[0] = param1;
-    }
-    else if (flag2 == _TRUE_) {
-      fzw.target_name[0] = S8;
-      fzw.target_value[0] = param2;
-    }
+    fzw.target_name[0] = sigma8;
     /* store target value of target parameter */
-    fzw.unknown_parameters_index[0]=pfc->size - 1;
+    fzw.target_value[0] = param1;
+    fzw.unknown_parameters_index[0]=pfc->size;
     fzw.required_computation_stage = cs_nonlinear;
     /* substitute the name of the target parameter with the name of the
        corresponding unknown parameter */
-    strcpy(fzw.fc.name[pfc->size - 1],"A_s");
+    strcpy(fzw.fc.name[pfc->size],"A_s");
 
     /* Print to the user */
     if (input_verbose > 0) {
-      printf("Computing unknown input parameter '%s' using input parameter '%s'\n",
-             (flag1 ==_TRUE_?"sigma8":"S8"),
-             "A_s");
+      fprintf(stdout,
+              "Computing unknown input parameter '%s' using input parameter '%s'\n",
+              "sigma8",
+              "A_s");
     }
 
-    /* Set a guess for A_s from LCDM (doesn't need to be super accurate) */
-    double A_s;
-    if (flag1 == _TRUE_) {
-      A_s = param1 * 2.43e-9/0.87659;
-    }
-    else if (flag2 == _TRUE_) {
-      A_s = param2 *2.43e-9/0.891;
-    }
-    double sigma8_or_S8;
+    /* Set a guess for A_s from LCDM */
+    double A_s = param1 * 2.43e-9/0.87659;
+    double sigma8;
 
-    /* Now run for a single time, get the value of sigma8 (or S8) for the guess*/
+    /* Now run for a single time, get the value of sigma8 for the guess*/
     class_call(input_try_unknown_parameters(&A_s,
                                             1,
                                             &fzw,
-                                            &sigma8_or_S8,
+                                            &sigma8,
                                             errmsg),
                errmsg,
                errmsg);
 
-    A_s = (fzw.target_value[0]/sigma8_or_S8) *(fzw.target_value[0]/sigma8_or_S8) * A_s; //(truesigma/sigma_for_guess)^2 *A_s_for_guess
+    A_s = (fzw.target_value[0]/sigma8) *(fzw.target_value[0]/sigma8) * A_s; //(truesigma/sigma_for_guess)^2 *A_s_for_guess
 
     /* Store the derived value with high enough accuracy */
-    class_sprintf(fzw.fc.value[pfc->size - 1],"%.20e",A_s);
+    sprintf(fzw.fc.value[pfc->size],"%.20e",A_s);
     if (input_verbose > 0) {
-      printf(" -> found '%s = %s'\n",
-             fzw.fc.name[pfc->size - 1],
-             fzw.fc.value[pfc->size - 1]);
+      fprintf(stdout," -> found '%s = %s'\n",
+              fzw.fc.name[pfc->size],
+              fzw.fc.value[pfc->size]);
     }
 
-    parser_copy(&(fzw.fc), pfc, pfc->size - 1, pfc->size);
+    /* Now read the remaining parameters from the fine tuned fzw into the individual structures */
+    class_call(input_read_parameters(&(fzw.fc),ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
+                                     errmsg),
+               errmsg,
+               errmsg);
+
+    /* all parameters read in fzw must be considered as read in pfc. At the same
+       time the parameters read before in pfc (like theta_s,...) must still be
+       considered as read (hence we could not do a memcopy) */
+    for (i=0; i < pfc->size; i ++) {
+      if (fzw.fc.read[i] == _TRUE_)
+        pfc->read[i] = _TRUE_;
+    }
+
+    /* Free tuned pfc */
+    parser_free(&(fzw.fc));
 
     /** Free arrays allocated */
-    class_call(parser_free(&(fzw.fc)),
-               errmsg, errmsg);
     free(fzw.unknown_parameters_index);
     free(fzw.target_name);
     free(fzw.target_value);
@@ -1151,7 +1203,7 @@ class_call(parser_read_string(pfc,"do_shooting",&string1,&flag1,errmsg),
  * @param pfc             Input: pointer to local structure
  * @param target_name     Input: list of possible target names
  * @param target_value    Input: list of possible target values
- * @param needs_shooting  Output: needs shooting?
+ * @param needs_shooting  [Output]: needs shooting?
  * @param errmsg          Input/Output: Error message
  * @return the error status
  */
@@ -1169,9 +1221,12 @@ int input_needs_shooting_for_target(struct file_content * pfc,
   case Omega_scf:
   case fraction_axion_ac:
   case log10_axion_ac:
-  case Omega_scf_shoot_fa:
   case Omega_ini_dcdm:
   case omega_ini_dcdm:
+  case Omega_ini_idm_ede:
+  case omega_ini_idm_ede:
+  case Omega_idm_ede_today:
+  case omega_idm_ede_today:
     /* Check that Omega's or omega's are nonzero: */
     if (target_value == 0.)
       *needs_shooting = _FALSE_;
@@ -1227,7 +1282,7 @@ int input_find_root(double *xzero,
 
   /** Then we do a linear hunt for the boundaries */
   /* Try fifteen times to go above and below the root (i.e. where shooting succeeds) */
-  for (iter=1; iter<=150; iter++){ //vp:default iter max is 15. We increase it to a large number to make sure shooting does not fail for axion.
+  for (iter=1; iter<=15; iter++){ //vp:default iter max is 15. We increase it to a large number to make sure shooting does not fail for axion.
     x2 = x1 - dx;
     /* Try three times to get a 'reasonable' value, i.e. no CLASS error */
     for (iter2=1; iter2 <= 3; iter2++) {
@@ -1251,7 +1306,7 @@ int input_find_root(double *xzero,
     x1 = x2;
     f1 = f2;
   }
-  // printf("here x1 %e x2 %e f1 %e f2 %e!!\n",x1,x2,f1,f2);
+
   /** Find root using Ridders method (Exchange for bisection if you are old-school) */
   class_call(input_fzero_ridder(input_fzerofun_1d,
                                 x1,
@@ -1264,7 +1319,6 @@ int input_find_root(double *xzero,
                                 fevals,
                                 errmsg),
              errmsg,errmsg);
-   // printf("here xzero %e!!\n",xzero);
 
   return _SUCCESS_;
 
@@ -1352,7 +1406,7 @@ int input_fzero_ridder(int (*func)(double x,
 
     *fevals = (*fevals)+2;
   }
-  if ((fl > 0.0 && fh < 0.0) || (fl < 0.0 && fh > 0.0)) {
+  if ((fl > 0.0 && fh < 0.0) || (fl < 0.0 && fh > 0.0) ) {
     xl=x1;
     xh=x2;
     ans=-1.11e11;
@@ -1405,11 +1459,15 @@ int input_fzero_ridder(int (*func)(double x,
     }
     class_stop(error_message,"zriddr exceed maximum iterations");
   }
-
-  else {
+  // else if (fl < xtol && fh < xtol){
+  //   // printf("f1 %e xtol %e\n",fl, xtol);
+  //   // if (fl < fh)return x1;
+  //   // if (fl>fh)return x2;
+  // }
+  else{
     if (fl == 0.0) return x1;
     if (fh == 0.0) return x2;
-    class_stop(error_message,"root must be bracketed in zriddr.");
+        class_stop(error_message,"root must be bracketed in zriddr.");
   }
   class_stop(error_message,"Failure in int.");
 }
@@ -1450,8 +1508,7 @@ int input_get_guess(double *xguess,
   struct output op;           /* for output files */
   int i;
   double Omega_M, a_decay, gamma, Omega0_dcdmdr=1.0;
-  double Omega_tot_ac, phi_initial,axc,fxc,p,guess,ac,fac,FF,m_ax,Omega_ax;
-  int index_ncdm; double N_nonur_guess = 0.0;
+  double Omega_tot_ac, phi_initial,axc,fxc,p,guess,ac,fac,FF;
 
   int index_guess;
   double Omega_rad, Omega_m, Omega_r, a_eq;//hardcoded for simplicity; in any case this is an approximate guess for f(zc) and zc
@@ -1462,9 +1519,6 @@ int input_get_guess(double *xguess,
   double phi_i; //units of Mpl
   /* Cheat to read only known parameters: */
   pfzw->fc.size -= pfzw->target_size;
-
-  /* Assume for now shooting did not fail */
-  ba.shooting_failed = _FALSE_;
 
   class_call(input_read_precisions(&(pfzw->fc),&pr,&ba,&th,&pt,&tr,&pm,&hr,&fo,&le,&sd,&op,
                                    errmsg),
@@ -1481,20 +1535,11 @@ int input_get_guess(double *xguess,
   for (index_guess=0; index_guess < pfzw->target_size; index_guess++) {
     switch (pfzw->target_name[index_guess]) {
       case theta_s:
-      case theta_s_100:
         xguess[index_guess] = 3.54*pow(pfzw->target_value[index_guess],2)-5.455*pfzw->target_value[index_guess]+2.548;
         dxdy[index_guess] = (7.08*pfzw->target_value[index_guess]-5.455);
-        /** Update pb to reflect guess */
+        /** - Update pb to reflect guess */
         ba.h = xguess[index_guess];
         ba.H0 = ba.h *  1.e5 / _c_;
-        break;
-      case Neff:
-        for(index_ncdm=0;index_ncdm<ba.N_ncdm;++index_ncdm){
-          N_nonur_guess += ba.deg_ncdm[index_ncdm]* 1.0132;
-        }
-        N_nonur_guess += ba.Omega0_idr/ba.Omega0_g/(7./8.)*pow(11./4.,(4./3.));
-        xguess[index_guess] = pfzw->target_value[index_guess] - N_nonur_guess;
-        dxdy[index_guess] = 1.;
         break;
       case Omega_dcdmdr:
         Omega_M = ba.Omega0_cdm+ba.Omega0_idm+ba.Omega0_dcdmdr+ba.Omega0_b;
@@ -1598,6 +1643,7 @@ int input_get_guess(double *xguess,
           Omega_m = ba.Omega0_b;
           if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
           if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+          if(ba.Omega0_idm_ede > 0) Omega_m += ba.Omega0_idm_ede;
           if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
           a_eq = Omega_r /Omega_m;
@@ -1645,44 +1691,25 @@ int input_get_guess(double *xguess,
               Omega_m = ba.Omega0_b;
               if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
               if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+              if(ba.Omega0_idm_ede > 0) Omega_m += ba.Omega0_idm_ede;
               if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
               a_eq = Omega_r /Omega_m;
            if(axc<a_eq){
              p = 1./2;
-             guess = 2.*sqrt(5.*(1.-FF)*(ba.Omega0_g+ba.Omega0_ur)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
+             guess = 2.*sqrt(5.*(1.-FF)*(Omega_r)*phi_initial*tan(phi_initial/2.)*pow(1.-cos(phi_initial),-ba.n_axion)/ba.n_axion);
              guess = pow(guess,-p)*axc;
            }else{
              p = 2./3;
              guess =
-               3.*sqrt(1.5*(1.-FF)*phi_initial*(ba.Omega0_cdm+ba.Omega0_b)*pow(1.-cos(phi_initial),-ba.n_axion)*tan(phi_initial/2.)/ba.n_axion);
+               3.*sqrt(1.5*(1.-FF)*phi_initial*(Omega_m)*pow(1.-cos(phi_initial),-ba.n_axion)*tan(phi_initial/2.)/ba.n_axion);
              guess = pow(guess,-p)*axc;
            }
            xguess[index_guess] = log10(guess/1.6);
            dxdy[index_guess] = log10(guess/1.6);
            // dxdy[index_guess] = 100;
 
-          if(pfzw->input_verbose>10)printf("get guess: axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],(ba.Omega0_cdm+ba.Omega0_b),(ba.Omega0_g+ba.Omega0_ur));
-
-           break;
-
-      case Omega_scf_shoot_fa:
-          // class_test()
-          phi_initial = ba.scf_parameters[0]; // actually theta
-          m_ax=ba.m_scf;
-          Omega_ax=pfzw->target_value[index_guess];
-          if(pfzw->input_verbose>10)printf("guess input: m_ax=%e, phi_ini (theta)=%e. Omega_ax=%e\n",m_ax, phi_initial,Omega_ax);
-
-          guess = pow(Omega_ax*pow(phi_initial/0.5,2)*pow(m_ax/1e10,0.5),0.5); // f_ax^2
-          // guess = pow(Omega_ax*pow(phi_initial/0.5,2)*pow(m_ax/1e10,0.5),0.5);
-
-         xguess[index_guess] = log10(guess)-2;
-          dxdy[index_guess] =  1;//- log10(pow(Omega_ax,0.5));
-
-          // xguess[index_guess] = guess;
-          // dxdy[index_guess] = guess*pow(Omega_ax,0.5);
-          //  if(pfzw->input_verbose>15)printf("get guess: m_ax %e \n",m_ax);
-           if(pfzw->input_verbose>15)printf("get guess: Omega_scf %e log10_f_axion %e dxdy[index_guess] %e\n",Omega_ax,xguess[index_guess],dxdy[index_guess]);
+          if(pfzw->input_verbose>10)printf("get guess: axion_ac %e power_of_mu %e dxdy[index_guess] %e Omega_m %e Omega_rad %e\n",axc,xguess[index_guess],dxdy[index_guess],Omega_m,Omega_r);
 
            break;
 
@@ -1729,7 +1756,6 @@ int input_get_guess(double *xguess,
 
         }
         else if (ba.scf_tuning_index == 0 && (ba.scf_potential == axion) ){
-          if(pfzw->input_verbose>15)printf("Guessing in scf_parameter[0]\n");
           // if(ba.scf_parameters[0]>1){
           //   xguess[index_guess] = _PI_*ba.scf_parameters[2];//set IC based on f_a.
           //   dxdy[index_guess] = 0.5*xguess[index_guess]; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
@@ -1737,45 +1763,28 @@ int input_get_guess(double *xguess,
           // else{
           // printf("here!!\n");
             // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(ba.Omega0_g+ba.Omega0_ur),0.75))*pow((ba.scf_parameters[1]),0.5)));
-            if(ba.m_scf>1e6){ //should be updated with a better matching of m_scf and z_c
-              xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(Omega_r),0.75))*pow((ba.m_scf),0.5)));
-              dxdy[index_guess] = xguess[index_guess]/ba.Omega0_scf ;
-            }else{
-              if(ba.n_axion==1){
-                Omega_m += ba.Omega0_scf;
-              }
-              xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*Omega_m)); //there should be a switch depending on the mass.
-              dxdy[index_guess] = xguess[index_guess]/ba.Omega0_scf ;
-            }
+            xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/((pow(9*(Omega_r),0.75))*pow((ba.m_scf),0.5)));
+            // xguess[index_guess] = sqrt((6.0*ba.Omega0_scf)/(9*(ba.Omega0_cdm+ba.Omega0_b))); //there should be a switch depending on the mass.
+            dxdy[index_guess] = xguess[index_guess]/ba.Omega0_scf ;
           // }
           // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
           // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
 
         }
-        else if (ba.scf_tuning_index == 2 && (ba.scf_potential == axion) ){
-         //
-         //  // class_test()
-         // if(pfzw->input_verbose>10)printf("guess input: m_ax=%e, phi_ini (theta)=%e. Omega_ax=%e\n",ba.m_scf, ba.scf_parameters[0],pfzw->target_value[index_guess]);
-         //
-         // guess = pow(pfzw->target_value[index_guess]*pow(ba.scf_parameters[0]/0.5,2)*pow(ba.m_scf/1e10,0.5),0.5); // f_ax^2
-         // // guess = pow(Omega_ax*pow(phi_initial/0.5,2)*pow(m_ax/1e10,0.5),0.5);
-         //
-         // xguess[index_guess] = log10(guess)-2;
-         // dxdy[index_guess] =  - log10(pow(pfzw->target_value[index_guess],0.5));
-         //
-         // // xguess[index_guess] = guess;
-         // // dxdy[index_guess] = guess*pow(Omega_ax,0.5);
-         //  //if(pfzw->input_verbose>10)printf("get guess: m_ax %e \n",m_ax);
-         //  if(pfzw->input_verbose>10)printf("get guess: Omega_scf %e log10_f_axion %e dxdy[index_guess] %e\n",pfzw->target_value[index_guess],xguess[index_guess],dxdy[index_guess]);
-
-
-          // OLD
-          xguess[index_guess] = 3*ba.Omega0_scf/(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)); //set f_a^2 based on Om_scf, m_scf^2 and theta_i
-          // xguess[index_guess] = ba.scf_parameters[ba.scf_tuning_index]; //set f_a^2 based on Om_scf, m_scf^2 and theta_i
-          dxdy[index_guess] = 3 /(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion));
-          // dxdy[index_guess] = xguess[index_guess]*0.1;
-          // printf("index 0, x = %g, dxdy = %g\n",xguess[index_guess],dxdy[index_guess]);
+        else if (ba.scf_tuning_index == 2 && (ba.scf_potential == ax_cos_cubed) ){
+                xguess[index_guess] = 160*ba.scf_parameters[1]; //set IC based on f_a.
+                //0.2*1e2*sqrt((6.0*ba.Omega0_scf*(pow(1.45e-42,0.5)))/((pow(ba.Omega0_g,0.75))*(pow((ba.scf_parameters[0]/1.5637e38),0.5))));
+                //xguess[index_guess] =1e-8;
+                dxdy[index_guess] = 0.1; //If this is negative, the field always move to positive values as x2 = k*f1*dxdy, even if it shouldn't
+                // printf("index 0, x = %g, dxdy = %g\n",*xguess,*dxdy);
+                // printf("Used Omega_scf = %e Omega_g = %e\n", ba.Omega0_scf, ba.Omega0_g);
         }
+        else if (ba.scf_tuning_index == 2 && (ba.scf_potential == axion) ){
+                xguess[index_guess] = 3*ba.Omega0_scf/(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)*(1-2*ba.beta_scf)); //set f_a^2 based on Om_scf, m_scf^2 and theta_i
+                dxdy[index_guess] = 3 /(ba.m_scf*ba.m_scf*pow(1-cos(ba.scf_parameters[0]),ba.n_axion)*(1-2*ba.beta_scf));
+                // printf("index 0, x = %g, dxdy = %g\n",xguess[index_guess],dxdy[index_guess]);
+        }
+
         else{
           /* Default: take the passed value as xguess and set dxdy to 1. */
           xguess[index_guess] = ba.scf_parameters[ba.scf_tuning_index];
@@ -1811,6 +1820,49 @@ int input_get_guess(double *xguess,
 
         //printf("x = Omega_ini_guess = %g, dxdy = %g\n",*xguess,*dxdy);
         break;
+      case Omega_ini_idm_ede:
+      case omega_ini_idm_ede: {
+        /* Better initial guess: account for initial mass shift m(phi_i)/m0 = 1+g*phi_i^2.
+         * Without this, the guess equals the today target, which undershoots by the full
+         * mass shift factor plus ~19% from IDM->EDE energy transfer, requiring ~10 Newton
+         * steps with dxdy=1.  Using the mass-shift correction as xguess and dxdy=2
+         * (empirical Jacobian for typical coupling parameters) converges in 2-3 steps.
+         * phi_i: for tEDS scf_parameters[0] is phi_i in Mpl; for axion it is theta_i,
+         * so phi_i = theta_i * f_axion. */
+        double phi_i_ini;
+        if (ba.scf_potential == axion)
+          phi_i_ini = ba.scf_parameters[0] * ba.f_axion;
+        else
+          phi_i_ini = ba.scf_parameters[0]; /* tEDS: phi already in Mpl */
+        double mass_shift = 1.0 + ba.g_idm_ede * phi_i_ini * phi_i_ini;
+        xguess[index_guess] = pfzw->target_value[index_guess] * mass_shift;
+        dxdy[index_guess] = 2.0;
+        if(pfzw->input_verbose>10)
+          printf("get guess: omega_ini_idm_ede target=%e phi_i=%e mass_shift=%e xguess=%e\n",
+                 pfzw->target_value[index_guess], phi_i_ini, mass_shift, xguess[index_guess]);
+        break;
+      }
+      case Omega_idm_ede_today:
+      case omega_idm_ede_today: {
+        /* Target is omega_idm_ede TODAY; unknown is omega_ini_idm_ede (initial density).
+         * IDM loses ~5-10% energy to the EDE field, so omega_ini > omega_today.
+         * xguess = target * mass_shift / 0.93 accounts for both the initial mass enhancement
+         * and energy transfer.
+         * The output is Omega0 - rho_today/H0^2 (in Omega units), the unknown in omega units.
+         * d(output)/d(omega_ini) = -c/h^2 < 0, so dxdy = -h^2/c ~ -0.5 (negative). */
+        double phi_i_ini2;
+        if (ba.scf_potential == axion)
+          phi_i_ini2 = ba.scf_parameters[0] * ba.f_axion;
+        else
+          phi_i_ini2 = ba.scf_parameters[0];
+        double mass_shift2 = 1.0 + ba.g_idm_ede * phi_i_ini2 * phi_i_ini2;
+        xguess[index_guess] = pfzw->target_value[index_guess] * mass_shift2 / 0.93;
+        dxdy[index_guess] = -0.5;
+        if(pfzw->input_verbose>10)
+          printf("get guess: omega_idm_ede_today target=%e phi_i=%e mass_shift=%e xguess=%e\n",
+                 pfzw->target_value[index_guess], phi_i_ini2, mass_shift2, xguess[index_guess]);
+        break;
+      }
       case a_peak_eq:
         Omega_M = ba.Omega0_cdm+ba.Omega0_b;
         Omega_rad = ba.Omega0_g+ba.Omega0_ur;
@@ -1826,12 +1878,6 @@ int input_get_guess(double *xguess,
         xguess[index_guess] = 2.43e-9/0.87659*pfzw->target_value[index_guess];
         dxdy[index_guess] = 2.43e-9/0.87659;
         break;
-      case S8:
-        /* Assume linear relationship between A_s and S8 and fix coefficient
-           according to vanilla LambdaCDM. Should be good enough... */
-        xguess[index_guess] = 2.43e-9/0.891*pfzw->target_value[index_guess];
-        dxdy[index_guess] = 2.43e-9/0.891;
-        break;
     }
   }
 
@@ -1841,7 +1887,6 @@ int input_get_guess(double *xguess,
 
   /** - Deallocate everything allocated by input_read_parameters */
   background_free_input(&ba);
-  thermodynamics_free_input(&th);
   perturbations_free_input(&pt);
 
   return _SUCCESS_;
@@ -1883,7 +1928,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
   struct output op;           /* for output files */
 
   int i;
-  double rho_dcdm_today, rho_dr_today;
+  double rho_dcdm_today,rho_idm_ede_today, rho_dr_today;
   struct fzerofun_workspace * pfzw;
   int input_verbose;
   int flag;
@@ -1891,15 +1936,12 @@ int input_try_unknown_parameters(double * unknown_parameter,
   double ac;
   short compute_sigma8 = _FALSE_;
 
-  /* Assume for now shooting did not fail */
-  ba.shooting_failed = _FALSE_;
-
   pfzw = (struct fzerofun_workspace *) voidpfzw;
   /** Read input parameters */
   // This needs to be done with enough accuracy. A standard double has a relative
   // precision of around 1e-16, so 1e-20 should be good enough for the shooting
   for (i=0; i < unknown_parameters_size; i++) {
-    class_sprintf(pfzw->fc.value[pfzw->unknown_parameters_index[i]],"%.20e",unknown_parameter[i]);
+    sprintf(pfzw->fc.value[pfzw->unknown_parameters_index[i]],"%.20e",unknown_parameter[i]);
   }
 
   class_call(input_read_precisions(&(pfzw->fc),&pr,&ba,&th,&pt,&tr,&pm,&hr,&fo,&le,&sd,&op,
@@ -1924,9 +1966,6 @@ int input_try_unknown_parameters(double * unknown_parameter,
   /** Optimise flags for sigma8 calculation.*/
   for (i=0; i < unknown_parameters_size; i++) {
     if (pfzw->target_name[i] == sigma8) {
-      compute_sigma8 = _TRUE_;
-    }
-    if (pfzw->target_name[i] == S8) {
       compute_sigma8 = _TRUE_;
     }
   }
@@ -1957,7 +1996,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     if (input_verbose>2)
       printf("Stage 1: background\n");
     ba.background_verbose = 0;
-    class_call_except(background_init(&pr,&ba), ba.error_message, errmsg, background_free_input(&ba);thermodynamics_free_input(&th);perturbations_free_input(&pt););
+    class_call_except(background_init(&pr,&ba), ba.error_message, errmsg, background_free_input(&ba);perturbations_free_input(&pt););
   }
 
   if (pfzw->required_computation_stage >= cs_thermodynamics){
@@ -1967,7 +2006,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     pr.thermo_Nz_log = 500;
     th.thermodynamics_verbose = 0;
     th.hyrec_verbose = 0;
-    class_call_except(thermodynamics_init(&pr,&ba,&th), th.error_message, errmsg, background_free(&ba);thermodynamics_free_input(&th);perturbations_free_input(&pt););
+    class_call_except(thermodynamics_init(&pr,&ba,&th), th.error_message, errmsg, background_free(&ba);perturbations_free_input(&pt););
   }
 
   if (pfzw->required_computation_stage >= cs_perturbations){
@@ -2009,11 +2048,8 @@ int input_try_unknown_parameters(double * unknown_parameter,
   for (i=0; i < pfzw->target_size; i++) {
     switch (pfzw->target_name[i]) {
       case theta_s:
-      case theta_s_100:
         output[i] = 100.*th.rs_rec/th.ra_rec-pfzw->target_value[i];
-        break;
-      case Neff:
-        output[i] = ba.Neff-pfzw->target_value[i];
+        if(input_verbose>10)printf(" pfzw->target_value[i] %e output[i] %e\n", pfzw->target_value[i],100.*th.rs_rec/th.ra_rec);
         break;
       case Omega_dcdmdr:
         rho_dcdm_today = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_dcdm];
@@ -2044,17 +2080,6 @@ int input_try_unknown_parameters(double * unknown_parameter,
       case log10_fraction_axion_ac_phi2n: // TLS where to print out log10_fraction_axion_ac and axion_ac
         output[i] = log10(ba.f_ede)-pfzw->target_value[i];
          // printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", log10(ba.f_ede),pfzw->target_value[i],output[i]);
-        break;
-      case Omega_scf_shoot_fa:
-         output[i] = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0)
-          -ba.Omega0_scf;
-        pfzw->target_value[i] = ba.Omega0_scf;
-        if(input_verbose>10){
-            printf("Shooting in f_a for Omega_ax \n");
-            printf("f_axion: %e\n", ba.f_axion);
-            printf("rho_ax / rho_crit: %e\n",ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0));
-            printf("distance away from target: %e\n", ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_scf]/(ba.H0*ba.H0) - ba.Omega0_scf);
-          }
         break;
       case log10_axion_ac_phi2n:
         ac = 1./(pow(10,ba.log10_z_c)+1);
@@ -2096,15 +2121,20 @@ int input_try_unknown_parameters(double * unknown_parameter,
           rho_dr_today = 0.;
         output[i] = -(rho_dcdm_today+rho_dr_today)/(ba.H0*ba.H0)+ba.Omega0_dcdmdr;
         break;
+      case Omega_ini_idm_ede:
+      case omega_ini_idm_ede:
+      case Omega_idm_ede_today:
+      case omega_idm_ede_today:
+        rho_idm_ede_today = ba.background_table[(ba.bt_size-1)*ba.bg_size+ba.index_bg_rho_idm_ede];
+        output[i] = ba.Omega0_idm_ede-(rho_idm_ede_today)/(ba.H0*ba.H0);
+        if(input_verbose>10) printf("target %e reached %e how far? %e \n", ba.Omega0_idm_ede,(rho_idm_ede_today)/(ba.H0*ba.H0),output[i]);
+        break;
       case a_peak_eq:
         output[i] = ba.a_peak-ba.a_eq;
         if(input_verbose>2) printf("a_peak from bg = %e \t a_peak - a_eq = %e\n", ba.a_peak, output[i]);
         break;
       case sigma8:
         output[i] = fo.sigma8[fo.index_pk_m];
-        break;
-      case S8:
-        output[i] = fo.sigma8[fo.index_pk_m]*sqrt(ba.Omega0_m/0.3);
         break;
     }
   }
@@ -2141,9 +2171,6 @@ int input_try_unknown_parameters(double * unknown_parameter,
   if (pfzw->required_computation_stage < cs_perturbations) {
     /** Some pointers in ppt may not be allocated if has_perturbations is _FALSE_, but this is handled in perturbations_free_input as neccessary. */
     perturbations_free_input(&pt);
-  }
-  if (pfzw->required_computation_stage < cs_thermodynamics) {
-    thermodynamics_free_input(&th);
   }
   if (pfzw->required_computation_stage < cs_background) {
     background_free_input(&ba);
@@ -2273,7 +2300,7 @@ int input_read_parameters(struct file_content * pfc,
    * This function is exclusively for those parameters, NOT
    *  related to any physical species
    * */
-  class_call(input_read_parameters_general(pfc,pba,pth,ppt,pfo,psd,
+  class_call(input_read_parameters_general(pfc,pba,pth,ppt,psd,
                                            errmsg),
              errmsg,
              errmsg);
@@ -2350,7 +2377,6 @@ int input_read_parameters(struct file_content * pfc,
  * @param pba     Input: pointer to background structure
  * @param pth     Input: pointer to thermodynamics structure
  * @param ppt     Input: pointer to perturbation structure
- * @param pfo     Input: pointer to fourier structure
  * @param psd     Input: pointer to distorsion structure
  * @param errmsg  Input: Error message
  * @return the error status
@@ -2360,7 +2386,6 @@ int input_read_parameters_general(struct file_content * pfc,
                                   struct background * pba,
                                   struct thermodynamics * pth,
                                   struct perturbations * ppt,
-                                  struct fourier * pfo,
                                   struct distortions * psd,
                                   ErrorMsg errmsg){
 
@@ -2713,12 +2738,6 @@ int input_read_parameters_general(struct file_content * pfc,
 
   }
 
-  /** 4.c) Do we want matter and baryon+CDM sources in current gauge, instead of automatic conversion to gauge-invariant variables? */
-  class_read_flag("matter_source_in_current_gauge",ppt->has_matter_source_in_current_gauge);
-
-  /** 4.d) Do we want output perturbations in current gauge, instead of automatic conversion to Newtonian variables? */
-  class_read_flag("get_perturbations_in_current_gauge",ppt->get_perturbations_in_current_gauge);
-
   /** 5) h in [-] and H_0/c in [1/Mpc = h/2997.9 = h*10^5/c] */
   /* Read */
   class_call(parser_read_double(pfc,"H0",&param1,&flag1,errmsg),
@@ -2977,15 +2996,15 @@ int input_read_parameters_species(struct file_content * pfc,
   /** Summary: */
 
   /** - Define local variables */
-  int flag1,flag2,flag3,flag4,flag5,flag6;
-  double param1, param2, param3,param4,param5,param6;
+  int flag1,flag2,flag3,flag4,flag5;
+  double param1, param2, param3,param4,param5;
   char string1[_ARGUMENT_LENGTH_MAX_];
   int fileentries;
   int N_ncdm=0, n, entries_read;
   double rho_ncdm;
   double scf_lambda;
   double fnu_factor;
-  double wn, wi,powac,Omega_tot_ac, Omega0_rad,Omega_m, Omega_r;
+  double wn, Omega_tot_ac, Omega0_rad,Omega_m, Omega_r;
   double Omega_tot;
   double sigma_B; // Stefan-Boltzmann constant
   double stat_f_idr = 7./8.;
@@ -3057,10 +3076,25 @@ int input_read_parameters_species(struct file_content * pfc,
 
 
   /** 3) Omega_0_ur (ultra-relativistic species / massless neutrino) */
+  /**
+   * We want to keep compatibility with old input files, and as such 'N_eff' is still
+   * an allowed parameter name, although it is deprecated and its use is discouraged.
+   * */
   /* Read */
   class_call(parser_read_double(pfc,"N_ur",&param1,&flag1,errmsg),
              errmsg,
              errmsg);
+  /* Compability code BEGIN */
+  class_call(parser_read_double(pfc,"N_eff",&param2,&flag2,errmsg),
+             errmsg,
+             errmsg);
+  class_test((flag1 == _TRUE_) && (flag2 == _TRUE_),
+             errmsg,
+             "You added both 'N_eff' (deprecated) and 'N_ur'. Please use solely 'N_ur'.");
+  if (flag2 == _TRUE_){
+    param1 = param2;
+    flag1 = _TRUE_;
+  }
   /* Compability code END */
   class_call(parser_read_double(pfc,"Omega_ur",&param2,&flag2,errmsg),
              errmsg,
@@ -3089,7 +3123,7 @@ int input_read_parameters_species(struct file_content * pfc,
       pba->Omega0_ur = param3/pba->h/pba->h;
     }
   }
-  class_test(pba->Omega0_ur<0,errmsg,"You cannot set the density of ultra-relativistic relics (dark radiation/neutrinos) to negative values. You might have input a total Neff smaller than what your massive neutrinos require minimally (around 1.02 * N_ncdm * deg_ncdm).");
+  class_test(pba->Omega0_ur<0,errmsg,"You cannot set the density of ultra-relativistic relics (dark radiation/neutrinos) to negative values.");
 
   /** 3.a) Case of non-standard properties */
   /* Read */
@@ -3202,17 +3236,10 @@ int input_read_parameters_species(struct file_content * pfc,
                errmsg,
                errmsg);
 
-    /** 5.d) Mass and/or Omega of each ncdm species */
+    /** 5.d) Mass or Omega of each ncdm species */
     /* Read */
     class_read_list_of_doubles_or_default("m_ncdm",pba->m_ncdm_in_eV,0.0,N_ncdm);
-    for (n=0; n<N_ncdm; n++){
-      class_test(pba->m_ncdm_in_eV[n]<0,
-                 errmsg,
-                 "You entered a negative non-CDM mass m_ncdm[%d], which makes no sense. This error was not caught in previous CLASS versions because the mass is always squared in the code, so CLASS returned the exact same results form +m_ncdm and -m_ncdm. If you want to define an 'effective negative neutrino mass' in the sense of e.g. 2405.00836 or 2407.10965, you can implement it in a python script following e.g. eq.(3) of 2407.10965",n);
-    }
-
     class_read_list_of_doubles_or_default("Omega_ncdm",pba->Omega0_ncdm,0.0,N_ncdm);
-    // the name M_ncdm is borrowed temporarily to store omega_ncdm
     class_read_list_of_doubles_or_default("omega_ncdm",pba->M_ncdm,0.0,N_ncdm);
     if (N_ncdm>0) {
       //VP add a check to run with log10mncdm
@@ -3232,11 +3259,8 @@ int input_read_parameters_species(struct file_content * pfc,
         /* Test */
         class_test(pba->Omega0_ncdm[n]!=0,errmsg,
                    "You can only enter one of 'Omega_ncdm' or 'omega_ncdm' for ncdm species %d.",n);
-        /* Complete set of parameters: if the user passed either
-           Omega_ncdm or omega_ncdm, now it's stored anyway as
-           Omega_0_ncdm */
+        /* Complete set of parameters */
         pba->Omega0_ncdm[n] = pba->M_ncdm[n]/pba->h/pba->h;
-        // the name M_ncdm is now available for its real destination
       }
       /* Set default value
          this is the right place for passing the default value of the mass
@@ -3610,12 +3634,24 @@ int input_read_parameters_species(struct file_content * pfc,
         pth->n_index_idm_dr = param3;
       }
 
+      /** 7.2.2.e) idr_nature */
+      class_call(parser_read_string(pfc,"idr_nature",&string1,&flag1,errmsg),
+                 errmsg,
+                 errmsg);
+      if (flag1 == _TRUE_) {
+        if ((strstr(string1,"free_streaming") != NULL) || (strstr(string1,"Free_Streaming") != NULL) || (strstr(string1,"Free_streaming") != NULL) || (strstr(string1,"FREE_STREAMING") != NULL)) {
+          ppt->idr_nature = idr_free_streaming;
+        }
+        if ((strstr(string1,"fluid") != NULL) || (strstr(string1,"Fluid") != NULL) || (strstr(string1,"FLUID") != NULL)) {
+          ppt->idr_nature = idr_fluid;
+        }
+      }
     }
 
-    /** 7.2.2.e) Strength of self interactions */
+    /** 7.2.2.f) Strength of self interactions */
     class_read_double_one_of_two("b_dark","b_idr",pth->b_idr);
 
-    /** 7.2.2.f) Read alpha_idm_dr or alpha_dark */
+    /** 7.2.2.g) Read alpha_idm_dr or alpha_dark */
     class_call(parser_read_list_of_doubles(pfc,"alpha_idm_dr",&entries_read,&(ppt->alpha_idm_dr),&flag1,errmsg),
                errmsg,
                errmsg);
@@ -3640,7 +3676,7 @@ int input_read_parameters_species(struct file_content * pfc,
           if (ppt->perturbations_verbose > 0) {
             printf("WARNING: only %i entries of alpha_idm_dr were provided for %i moments, filling up the rest with the last entry provided\n", entries_read, ppr->l_max_idr-1);
           }
-          class_realloc(ppt->alpha_idm_dr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
+          class_realloc(ppt->alpha_idm_dr,ppt->alpha_idm_dr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
           for (n=entries_read; n<(ppr->l_max_idr-1); n++) ppt->alpha_idm_dr[n] = ppt->alpha_idm_dr[entries_read-1];
         }
       }
@@ -3653,24 +3689,6 @@ int input_read_parameters_species(struct file_content * pfc,
     /* If we don't have perturbations, we should free the arrays again if necessary */
     else if (ppt->alpha_idm_dr != NULL) {
       free(ppt->alpha_idm_dr);
-    }
-  }
-
-  /** 7.2.2.g) idr_nature */
-  if (pba->T_idr > 0) {
-    class_call(parser_read_string(pfc,"idr_nature",&string1,&flag1,errmsg),
-               errmsg,
-               errmsg);
-    if (flag1 == _TRUE_) {
-      if ((strstr(string1,"free_streaming") != NULL) || (strstr(string1,"Free_Streaming") != NULL) || (strstr(string1,"Free_streaming") != NULL) || (strstr(string1,"FREE_STREAMING") != NULL)) {
-        ppt->idr_nature = idr_free_streaming;
-      }
-      else if ((strstr(string1,"fluid") != NULL) || (strstr(string1,"Fluid") != NULL) || (strstr(string1,"FLUID") != NULL)) {
-        ppt->idr_nature = idr_fluid;
-      }
-      else {
-        class_stop(errmsg, "idr_nature has to be either free_streaming or fluid, but you entered %s.", string1);
-      }
     }
   }
 
@@ -3701,7 +3719,7 @@ int input_read_parameters_species(struct file_content * pfc,
           if (ppt->perturbations_verbose > 0) {
             printf("WARNING: only %i entries of beta_idr were provided for %i moments, filling up the rest with the last entry provided\n", entries_read, ppr->l_max_idr-1);
           }
-          class_realloc(ppt->beta_idr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
+          class_realloc(ppt->beta_idr,ppt->beta_idr,(ppr->l_max_idr-1)*sizeof(double),errmsg);
           for (n=entries_read; n<(ppr->l_max_idr-1); n++)
             ppt->beta_idr[n] = ppt->beta_idr[entries_read-1];
         }
@@ -3788,9 +3806,113 @@ int input_read_parameters_species(struct file_content * pfc,
   /* ** ADDITIONAL SPECIES ** */
 
 
+    class_call(parser_read_double(pfc,"Omega_idm_ede",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+    class_call(parser_read_double(pfc,"omega_idm_ede",&param2,&flag2,errmsg),
+               errmsg,
+               errmsg);
+    class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+               errmsg,
+               "In input file, you can only enter one of Omega_cdm or omega_cdm, choose one");
+    if (flag1 == _TRUE_)
+      pba->Omega0_idm_ede = param1;
+    if (flag2 == _TRUE_)
+      pba->Omega0_idm_ede = param2/pba->h/pba->h;
+      // printf("param1 %e flag1 %d param2 %e flag2 %d h %e pba->Omega0_idm_ede %e\n",param1,flag1,param2,flag2,pba->h,pba->Omega0_idm_ede);
+
+
+
+    class_call(parser_read_double(pfc,"Omega_ini_idm_ede",&param1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+    class_call(parser_read_double(pfc,"omega_ini_idm_ede",&param2,&flag2,errmsg),
+               errmsg,
+               errmsg);
+
+    class_test(((flag1 == _TRUE_) && (flag2 == _TRUE_)),
+               errmsg,
+               "You can only enter one of 'Omega_ini_idm_ede' or 'omega_ini_idm_ede'.");
+
+    if (flag1 == _TRUE_)
+      pba->Omega_ini_idm_ede = param1;
+    if (flag2 == _TRUE_)
+      pba->Omega_ini_idm_ede = param2/pba->h/pba->h;
+
+
+    class_test(pba->Omega_ini_idm_ede < 0.,
+               errmsg,
+               "You cannot set the initial IDM–EDE density to negative values.");
+
+
+
+
+    if(pba->Omega0_idm_ede>0 || pba->Omega_ini_idm_ede > 0){
+      class_read_int("coupling_type",pba->coupling_type);
+
+
+      /* ---- case 3: SCF-type coupling ---- */
+      if (pba->coupling_type == 3) {
+
+        class_read_double("beta_scf",pba->beta_scf);
+        class_read_double("adjust_beta_scf",pba->adjust_beta_scf);
+      }
+      else if (pba->coupling_type == 1) {
+            pba->coupled_scf_slowroll_ic = _TRUE_;
+
+            class_call(parser_read_string(pfc,"idm_ede_mass_form",&string1,&flag1,errmsg),
+                       errmsg,
+                       errmsg);
+
+            if (flag1 == _FALSE_) {
+              pba->idm_ede_mass_form = 0;
+            }
+            else if (strcmp(string1,"exp") == 0 || strcmp(string1,"exponential") == 0) {
+              pba->idm_ede_mass_form = 1;
+            }
+            else if (strcmp(string1,"quad") == 0 || strcmp(string1,"quadratic") == 0 || strcmp(string1,"poly") == 0 || strcmp(string1,"polynomial") == 0) {
+              pba->idm_ede_mass_form = 0;
+            }
+            else if (strcmp(string1,"phantom") == 0 || strcmp(string1,"andriot") == 0 || strcmp(string1,"am") == 0) {
+              pba->idm_ede_mass_form = 2;
+            }
+            else class_stop(errmsg,"incomprehensible input '%s' for the field 'idm_ede_mass_form'",string1);
+
+
+            if (pba->idm_ede_mass_form == 1) {
+              class_read_double("c_idm_ede",pba->c_idm_ede);
+            }
+            else if (pba->idm_ede_mass_form == 0) {
+              class_read_double("g_idm_ede",pba->g_idm_ede);
+            }
+            else if (pba->idm_ede_mass_form == 2) {
+              class_read_double("alpha_m_phantom",pba->alpha_m_phantom);
+              class_read_double("A_m_phi_phantom",pba->A_m_phi_phantom);
+              class_test(pba->alpha_m_phantom == 0.0,
+                         errmsg,
+                         "alpha_m_phantom must be non-zero.");
+              class_test(1.0 + pba->A_m_phi_phantom <= 0.0,
+                         errmsg,
+                         "A_m_phi_phantom gives a non-positive asymptotic A_m.");
+            }
+      }
+    }
+
+
+
+
+    /* Checks on budget equation */
+    if (has_m_budget == _TRUE_) {
+      class_test(Omega_m_remaining < pba->Omega0_idm_ede, errmsg, "Too much energy density from massive species. At this point only %e is left for Omega_m, but requested 'Omega_idm_ede = %e'",Omega_m_remaining, pba->Omega0_idm_ede);
+      Omega_m_remaining -= pba->Omega0_idm_ede;
+    }
+
+
+
+
   /** 7.3) Final consistency checks for dark matter species */
 
-  class_test(fabs(f_cdm + f_idm - 1.) > 1e-10,
+  class_test(abs(f_cdm + f_idm - 1.) > 1e-10,
              errmsg,
              "The dark matter species do not add up to the expected value");
 
@@ -3803,7 +3925,7 @@ int input_read_parameters_species(struct file_content * pfc,
   class_test((f_idm > 0.) && (pba->Omega0_cdm == 0.),
              errmsg,
              "If you want a fraction of interacting, to be consistent, you should not set the fraction of CDM to zero");
-  class_test(fabs(f_cdm + f_idm - 1.) > ppr->tol_fraction_accuracy,
+  class_test(abs(f_cdm + f_idm - 1.) > ppr->tol_fraction_accuracy,
              errmsg,
              "The dark matter species do not add up to the expected value");
   if ( f_idm > 0. )
@@ -3870,7 +3992,6 @@ int input_read_parameters_species(struct file_content * pfc,
                     if ((strstr(string1,"tracker") != NULL) ) pba->ede_parametrization = tracker;
                     else if ((strstr(string1,"pheno_axion") != NULL)) pba->ede_parametrization = pheno_axion;
                     else if ((strstr(string1,"pheno_ADE") != NULL)) pba->ede_parametrization = pheno_ADE;
-                    else if ((strstr(string1,"EDE_is_DR") != NULL)) pba->ede_parametrization = EDE_is_DR;
                     else class_stop(errmsg,"incomprehensible input '%s' for the field 'ede_parametrization'",string1);
                   }
 
@@ -3970,6 +4091,7 @@ int input_read_parameters_species(struct file_content * pfc,
                             else {
                               class_stop(errmsg,"incomprehensible input '%s' for the field 'cs2_is_wn'",string1);
                             }
+                          }
                       }else{
                         pba->cs2_is_wn = _FALSE_;
                       }
@@ -4039,45 +4161,9 @@ int input_read_parameters_species(struct file_content * pfc,
                           else pba->w_fld_f = 1.;
                           if(input_verbose>5)printf("Read in n_pheno_axion = %e\n\tand set w_fld_f = %e\n", pba->n_pheno_axion, pba->w_fld_f);
                         }
-                        }
 
-                                                class_call(parser_read_double(pfc,"w_fld_i",&param1,&flag1,errmsg),
-                                                            errmsg,
-                                                            errmsg);
-                                                if (flag1 == _TRUE_){
-                                                  pba->w_fld_i = param1;
-                                                }
-                                                else{
-                                                  pba->w_fld_i = -1;
-                                                }
-                                                printf("pba->w_fld_i %e\n", pba->w_fld_i);
 
-                      }
                         if(pba->ede_parametrization == pheno_axion){
-
-                          class_call(parser_read_double(pfc,"w_fld_f",&param1,&flag1,errmsg),
-                                      errmsg,
-                                      errmsg);
-                          class_call(parser_read_double(pfc,"n_pheno_axion",&param2,&flag2,errmsg),
-                                      errmsg,
-                                      errmsg);
-
-                          class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"You have passed both 'w_fld_f' and 'n_pheno_axion'. Please pass only one of them.\n");
-                          // Input w_fld_f
-                          if (flag1 == _TRUE_){
-                            pba->w_fld_f = param1;
-                            if(pba->w_fld_f != 1.) pba->n_pheno_axion = (pba->w_fld_f + 1.) / (1. - pba->w_fld_f);
-                            else pba->n_pheno_axion = 1000.;
-                            if(input_verbose>5)printf("Read in w_fld_f = %e \n\tand set n_pheno_axion = %e\n", pba->w_fld_f, pba->n_pheno_axion);
-                          }
-                          // Input n_pheno_axion
-                          else if (flag2 == _TRUE_){
-                            pba->n_pheno_axion = param2;
-                            if (pba->n_cap_infinity > pba->n_pheno_axion) pba->w_fld_f = (pba->n_pheno_axion-1.)/(pba->n_pheno_axion+1.);
-                            else pba->w_fld_f = 1.;
-                            if(input_verbose>5)printf("Read in n_pheno_axion = %e\n\tand set w_fld_f = %e\n", pba->n_pheno_axion, pba->w_fld_f);
-                          }
-
                           //in the pheno axion model, cs2 is a function of the axion parameters, which will be extracted later given some values for the pheno parameters (fEDE, zc, theta_i);
                           class_call(parser_read_double(pfc,"Theta_initial_fld",&param1,&flag1,errmsg),
                                       errmsg,
@@ -4102,6 +4188,9 @@ int input_read_parameters_species(struct file_content * pfc,
                         }
 
 
+                      }
+
+
 
                         /* one can specify the EDE density in many ways */
                         class_call(parser_read_double(pfc,"omega_fld",&param1,&flag1,errmsg), // physical density of fld today
@@ -4116,9 +4205,6 @@ int input_read_parameters_species(struct file_content * pfc,
                         class_call(parser_read_double(pfc,"fraction_fld_ac",&param5,&flag5,errmsg), // fractional density at a_c
                                   errmsg,
                                   errmsg);
-                        class_call(parser_read_double(pfc,"N_eff_fld",&param6,&flag6,errmsg), // fractional density at a_c
-                                  errmsg,
-                                  errmsg);
                         // test to ensure we haven't multiply input ede density
                           class_test(flag1==_TRUE_&&flag2==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld'. Please pass only one of them.");
                           class_test(flag1==_TRUE_&&flag4==_TRUE_,errmsg,"you have passed both 'omega_fld' and 'Omega_fld_ac'. Please pass only one of them.");
@@ -4127,15 +4213,15 @@ int input_read_parameters_species(struct file_content * pfc,
                           class_test(flag2==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld' and 'fraction_fld_ac'. Please pass only one of them.");
                           class_test(flag4==_TRUE_&&flag5==_TRUE_,errmsg,"you have passed both 'Omega_fld_ac' and 'fraction_fld_ac'. Please pass only one of them.");
 
-                          wn = pba->w_fld_f;
-                          wi = pba->w_fld_i;
-                          powac=pow(pba->a_c,-3*(1+wn)/pba->nu_fld);
+
+
 
                        // If you passed omega_fld today in input
                        if (flag1 == _TRUE_){
-
+                         wn = pba->w_fld_f;
                          pba->Omega0_fld = param1/pba->h/pba->h;
-                         pba->Omega_fld_ac = pba->Omega0_fld*exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
+                         pba->Omega_fld_ac = pba->Omega0_fld*pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld ))/2 , pba->nu_fld)
+                                                               *pow(1/pba->a_c,3*(wn+1));
                        }
                        // if you passed Omega_fld in input
                        else if(flag2 == _TRUE_){
@@ -4145,15 +4231,19 @@ int input_read_parameters_species(struct file_content * pfc,
                          else{
                            pba->Omega0_fld = param2;
                          }
-
-                         pba->Omega_fld_ac = pba->Omega0_fld*exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
+                         wn = pba->w_fld_f;
+                         pba->Omega_fld_ac = pba->Omega0_fld*pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld ))/2 , pba->nu_fld)
+                                                               *pow(1/pba->a_c,3*(wn+1));
                        }
                        else if(flag4 == _TRUE_){
-
+                         wn = pba->w_fld_f;
                          pba->Omega_fld_ac = param4;
-                         pba->Omega0_fld = pba->Omega_fld_ac/exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
+                         pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
+                                         /pow(1/pba->a_c,3*(wn+1))
+                                         /pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld )) , pba->nu_fld);
                        }
                        else if(flag5 == _TRUE_){
+                         wn = pba->w_fld_f;
                          pba->Omega_fld_ac = param5;//This is the fractional contribution at a_c.
                          // Omega_tot_ac = (pba->Omega0_cdm+pba->Omega0_b)*pow(pba->a_c,-3)+(pba->Omega0_g+pba->Omega0_ur)*pow(pba->a_c,-4)+pba->Omega0_lambda;
                          //The input parameter gives us an approximate fraction. We will extract the real one in the run.
@@ -4167,16 +4257,10 @@ int input_read_parameters_species(struct file_content * pfc,
                          Omega_tot_ac = (Omega_m)*pow(pba->a_c,-3)+(Omega0_rad)*pow(pba->a_c,-4);
                          class_test(pba->Omega_fld_ac==1.0,errmsg,"you cannot have pba->Omega_fld_ac=1.0!");
                          if(pba->Omega_fld_ac!=1.0)pba->Omega_fld_ac = Omega_tot_ac*pba->Omega_fld_ac/(1-pba->Omega_fld_ac);
-                         // pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
-                         //                 /pow(1/pba->a_c,3*(wn-wi))
-                         //                 /pow((1+ pow( pba->a_c , 3*(wn-wi)/pba->nu_fld )) , pba->nu_fld);
-
-                         pba->Omega0_fld = pba->Omega_fld_ac/exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
-                       }
-                       else if(flag6 == _TRUE_){
-
-                         pba->Omega0_fld = param6*7./8.*pow(4./11.,4./3.)*pba->Omega0_g;
-                         pba->Omega_fld_ac = pba->Omega0_fld*exp(-3*(1 + wi)*log(pba->a_c) + pba->nu_fld*(wn-wi)*log(0.5*(1+powac))/(1+wn));
+                         // printf("here!\n");
+                         pba->Omega0_fld = pow(2,pba->nu_fld)*pba->Omega_fld_ac
+                                         /pow(1/pba->a_c,3*(wn+1))
+                                         /pow((1+ pow( pba->a_c , 3*(1+wn)/pba->nu_fld )) , pba->nu_fld);
                        }
                        else{
                          class_stop(errmsg,"you need to specify one of omega_fld, Omega_fld, Omega_fld_ac, fraction_fld_ac'");
@@ -4188,21 +4272,6 @@ int input_read_parameters_species(struct file_content * pfc,
 
 
                     }
-
-            if(pba->ede_parametrization==EDE_is_DR){
-              class_call(parser_read_double(pfc,"N_eff_fld",&param1,&flag1,errmsg),
-                        errmsg,
-                        errmsg);
-              if(flag1 == _TRUE_){
-                pba->Omega0_fld = param1*7./8.*pow(4./11.,4./3.)*pba->Omega0_g;
-              }
-              else{
-                class_stop(errmsg,"you are running with ede_parametrization==EDE_is_DR, you need to specify N_eff_fld'");
-              }
-
-
-            }
-
 
 
 
@@ -4218,7 +4287,6 @@ int input_read_parameters_species(struct file_content * pfc,
            if (flag1 == _TRUE_){
              if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
                ppt->use_big_theta_fld = _TRUE_;
-               class_stop(errmsg,"Big Theta is not working for now, to be debug. Please run with use_big_theta_fld = no (default).'");
              }
              else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
                ppt->use_big_theta_fld = _FALSE_;
@@ -4253,22 +4321,6 @@ int input_read_parameters_species(struct file_content * pfc,
 
       // This bracket ends reading in of EDE params
       }
-
-      class_call(parser_read_string(pfc,"use_new_fld_IC",&string1,&flag1,errmsg),
-                errmsg,
-                errmsg);
-      if (flag1 == _TRUE_){
-        if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
-          ppt->use_new_fld_IC = _TRUE_;
-        }
-        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
-          ppt->use_new_fld_IC = _FALSE_;
-        }
-        else {
-          class_stop(errmsg,"incomprehensible input '%s' for the field 'use_new_fld_IC'",string1);
-        }
-      }
-
 
 
 
@@ -4310,38 +4362,6 @@ int input_read_parameters_species(struct file_content * pfc,
           ppt->scales_like_fEDE_over_k2 = _FALSE_;
         }
       }
-      class_call(parser_read_string(pfc,
-                                    "scales_like_WZDR",
-                                    &string1,
-                                    &flag1,
-                                    errmsg),
-                  errmsg,
-                  errmsg);
-      if (flag1 == _TRUE_){
-        if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
-          ppt->scales_like_WZDR = _TRUE_;
-          class_read_double("a_pivot_DMDE_interaction",ppt->a_pivot_DMDE_interaction);
-
-           class_call(parser_read_string(pfc,
-                                         "a_pivot_DMDE_interaction_is_ac",
-                                         &string1,
-                                         &flag1,
-                                         errmsg),
-                       errmsg,
-                       errmsg);
-           if (flag1 == _TRUE_){
-             if((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)){
-               ppt->a_pivot_DMDE_interaction = pba->a_c;
-             }
-          }
-
-
-        }
-        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
-          ppt->scales_like_WZDR = _FALSE_;
-        }
-      }
-
 
 
 
@@ -4363,12 +4383,9 @@ int input_read_parameters_species(struct file_content * pfc,
 class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
            errmsg,
            errmsg);
-class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
-           errmsg,
-           errmsg);
- class_test(class_at_least_two_of_four(flag1,flag2,flag3,flag4),
+ class_test(class_at_least_two_of_three(flag1,flag2,flag3),
             errmsg,
-            "You can only enter one of 'fraction_axion_ac', 'log10_fraction_axion_ac', 'Omega_scf', or 'Omega_scf_shoot_fa'.");
+            "You can only enter one of 'fraction_axion_ac', 'log10_fraction_axion_ac' or 'Omega_scf'.");
   if(flag1==_TRUE_){
     // class_read_double("fraction_axion_ac",pba->log10_fraction_axion_ac);
     class_test(param1 < 0,errmsg,"you have pba->fraction_axion_ac negative in your input file!!");
@@ -4388,43 +4405,24 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
     //this is harmless.
   }
 
-    if(flag4 == _TRUE_){
-    pba->Omega0_scf=param4;
-    //note that the parameter Omega0_scf may be re-assigned later, when checking if Omega0_scf is used to fullfil the closure relation.
-    //this is harmless.
-  }
-
 
 
   // if(flag1 == _TRUE_ || flag2 == _TRUE_){
     class_read_double("log10_fraction_axion_ac_phi2n",pba->log10_fraction_axion_ac);
     class_read_double("log10_axion_ac",pba->log10_axion_ac);
     class_read_double("m_axion",pba->m_scf);
-    class_call(parser_read_double(pfc,"f_axion",&param1,&flag1,errmsg),
-             errmsg,
-             errmsg);
-    class_call(parser_read_double(pfc,"log10_f_axion",&param2,&flag2,errmsg),
-            errmsg,
-            errmsg);
-    class_test(flag1 == _TRUE_ && flag2 == _TRUE_,errmsg,"You can either specify 'f_axion' or 'log10_f_axion', not both");
-    if(flag1 == _TRUE_){
-      pba->f_axion=param1;
-    }
-    if(flag2 == _TRUE_){
-      pba->f_axion=pow(10,param2);
-      if (input_verbose > 5)
-      {
-        printf("Setting f_axion: %e, using log10_f_axion: %e, should be %e\n",pba->f_axion,param2,pow(10,param2));
-      }
-
-    }
+    class_read_double("f_axion",pba->f_axion);
+    class_read_double("V0_teds",pba->V0_teds);
+    class_read_double("f_teds",pba->f_teds);
+    class_read_double("p_teds",pba->p_teds);
+    class_read_double("V0_phantom",pba->V0_phantom);
+    class_read_double("lambda_phantom",pba->lambda_phantom);
 
 
     class_test(pba->m_scf == 0.0 && pba->f_axion != 0.0,errmsg,"you have pba->m_scf = 0 but pba->f_axion != 0.0. Please check your ini file! ");
     // class_test(pba->m_scf != 0.0 && pba->f_axion == 0.0,errmsg,"you have pba->m_scf != 0 but pba->f_axion = 0.0. Please check your ini file! ");
-    class_test(pba->m_scf != 0.0 && pba->f_axion == 0.0 && flag4 != _TRUE_,errmsg,"you have pba->m_scf != 0 but pba->f_axion = 0.0, and are not shooting for it. Please check your ini file! ");
 
-  if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0 || pba->Omega0_scf != 0){
+  if (pba->log10_fraction_axion_ac > -30. || pba->log10_axion_ac > -30 || pba->m_scf != 0 || pba->f_axion != 0 || pba->V0_teds != 0 || pba->f_teds != 0 || pba->V0_phantom != 0 || pba->Omega0_scf != 0){
 
     class_test(ppt->gauge==newtonian,errmsg,"the scalar field module does not work in newtonian gauge! please restart in synchronous gauge.");
     // printf("here in scf!\n");
@@ -4440,17 +4438,6 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
                                            errmsg),
                errmsg,errmsg);
 
-    class_call(parser_read_double(pfc,"theta_axion",&param1,&flag1,errmsg),
-                   errmsg,
-                   errmsg);
-          if(flag1 == _TRUE_){
-          pba->theta_axion = param1;
-          pba->scf_parameters[pba->scf_parameters_size-2] = param1;
-          }
-    if (input_verbose > 5)
-      {
-        printf("Setting phi_ini: %e\n",pba->scf_parameters[0]);
-      }
 
     /** - Assign a given scalar field potential */
     class_call(parser_read_string(pfc,"scf_has_perturbations",&string1,&flag1,errmsg),
@@ -4524,7 +4511,6 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
        }
        else if((strstr(string1,"n") != NULL) || (strstr(string1,"N") != NULL)){
          ppt->use_delta_scf_over_1plusw = _FALSE_;
-         if(input_verbose>0)printf(" [WARNING:] you have use_delta_fld_over_1plusw = no. if you run axion or EDE where w can be equal to -1 the code is often more stable when using use_delta_fld_over_1plusw = yes.\n");
        }
      }
      //default is false
@@ -4622,13 +4608,17 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
          ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
          flag1=_FALSE_;
          pba->scf_potential = axion;
+
          class_call(parser_read_double(pfc,"n_axion",&param1,&flag1,errmsg),
                     errmsg,
                     errmsg);
         if(flag1 == _TRUE_){
          pba->n_axion = param1;
-         if(pba->n_axion==1){
-           ppt->include_scf_in_delta_m = _TRUE_;
+         // if(pba->n_axion==1){
+         //   ppt->include_scf_in_delta_m = _TRUE_;
+         // }
+         if(ppt->include_scf_in_delta_m == _FALSE_ && input_verbose>0){
+           printf("Warning: you have axion-like scf in your code but you are not including scf in the computation of delta_m. Is this normal? if you want to model axion DM, then add the flag: include_scf_in_delta_m = yes. By default it is false in case you want to model DE.");
          }
         }
         else{
@@ -4640,20 +4630,12 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
         if(flag1 == _TRUE_){
          pba->f_axion = param1;
        }
-         class_call(parser_read_double(pfc,"log10_f_axion",&param1,&flag1,errmsg),
-                    errmsg,
-                    errmsg);
-        if(flag1 == _TRUE_){
-         pba->f_axion = pow(10,param1);
-       }
        class_test(pba->f_axion != 0 && pba->scf_parameters_size == 3,errmsg,"you have both f_axion defined and the third entry of scf_parameters table defined. Perhaps you are trying to shoot by adjusting f_axion. Please correct your ini file.");
          class_call(parser_read_double(pfc,"m_axion",&param1,&flag1,errmsg),
                     errmsg,
                     errmsg);
         if(flag1 == _TRUE_){
           pba->m_scf = param1;
-          // printf("m_a = %e eV \n",(pba->m_scf*pba->H0/1.5638e29));
-
         }
         if(pba->m_scf == 0.0 || pba->f_axion == 0.0 ){
           class_call(parser_read_string(pfc,
@@ -4765,6 +4747,84 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
 
 
        }
+       if (strcmp(string1,"teds") == 0) {
+         pba->scf_potential = teds;
+         flag1=_FALSE_;
+
+         class_call(parser_read_double(pfc,"V0_teds",&param1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         if(flag1 == _TRUE_){
+           pba->V0_teds = param1;
+         }
+         else{
+           class_stop(errmsg,"you must define V0_teds for scf_potential = teds.");
+         }
+
+         class_call(parser_read_double(pfc,"f_teds",&param1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         if(flag1 == _TRUE_){
+           pba->f_teds = param1;
+         }
+         else{
+           class_stop(errmsg,"you must define f_teds for scf_potential = teds.");
+         }
+
+         class_call(parser_read_double(pfc,"p_teds",&param1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         if(flag1 == _TRUE_){
+           pba->p_teds = param1;
+         }
+         else{
+           class_stop(errmsg,"you must define p_teds for scf_potential = teds.");
+         }
+
+         class_test(pba->V0_teds < 0.0,
+                    errmsg,
+                    "V0_teds must be non-negative.");
+         class_test(pba->f_teds == 0.0,
+                    errmsg,
+                    "f_teds must be non-zero.");
+         class_test(pba->p_teds <= 0.0,
+                    errmsg,
+                    "p_teds must be positive.");
+
+         pba->n_axion = 3.0;
+         pba->w_scf = 0.5;
+         flag2 =_TRUE_;
+       }
+       if (strcmp(string1,"phantom_exp") == 0) {
+         pba->scf_potential = phantom_exp;
+         flag1=_FALSE_;
+
+         class_call(parser_read_double(pfc,"V0_phantom",&param1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         if(flag1 == _TRUE_){
+           pba->V0_phantom = param1;
+         }
+         else{
+           class_stop(errmsg,"you must define V0_phantom for scf_potential = phantom_exp.");
+         }
+
+         class_call(parser_read_double(pfc,"lambda_phantom",&param1,&flag1,errmsg),
+                    errmsg,
+                    errmsg);
+         if(flag1 == _TRUE_){
+           pba->lambda_phantom = param1;
+         }
+         else{
+           class_stop(errmsg,"you must define lambda_phantom for scf_potential = phantom_exp.");
+         }
+
+         class_test(pba->V0_phantom < 0.0,
+                    errmsg,
+                    "V0_phantom must be non-negative.");
+
+         flag2 =_TRUE_;
+       }
        if (strcmp(string1,"axionquad") == 0) {
          pba->scf_potential = axionquad;
          // ppr->background_Nloga = 1e5; //increase the number of steps in background for shooting to succeed.
@@ -4780,12 +4840,15 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
             }
 
              flag2 =_TRUE_;
-         ppt->include_scf_in_delta_m = _TRUE_;//always include scf contribution if we consider axion.
 
+         // ppt->include_scf_in_delta_m = _TRUE_;//always include scf contribution if we consider axion.
+         if(ppt->include_scf_in_delta_m == _FALSE_ && input_verbose>0){
+           printf("Warning: you have axion-like scf in your code but you are not including scf in the computation of delta_m. Is this normal? if you want to model axion DM, then add the flag: include_scf_in_delta_m = yes. By default it is false in case you want to model DE.");
+         }
        }
    class_test(flag2==_FALSE_,
                   errmsg,
-                  "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','axionquad'.");
+                  "could not identify scf_potential value, check that it is one of 'pol_times_exp','double_exp','axion','phi_2n','teds','phantom_exp','axionquad','ax_cos_cubed'.");
      }
 
 
@@ -4857,31 +4920,55 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
         class_test(pba->scf_parameters_size<2,
                errmsg,
                "Since you are not using attractor initial conditions, you must specify phi and its derivative phi' as the last two entries in scf_parameters. See explanatory.ini for more details.");
-        if(pba->scf_potential == phi_2n || pba->scf_potential == axionquad){
-          pba->phi_ini_scf = pba->scf_parameters[pba->scf_parameters_size-2];//dummy: will be set later
+        if(pba->scf_potential == phi_2n){
           pba->phi_prime_ini_scf = pba->scf_parameters[pba->scf_parameters_size-1];//dummy: will be set later
         }else{
           // pba->phi_ini_scf = 0;//dummy: will be set later
-                    class_call(parser_read_double(pfc,"theta_axion",&param1,&flag1,errmsg),
-                   errmsg,
-                   errmsg);
-          if(flag1 == _TRUE_){
-            pba->theta_axion = param1;
-          pba->scf_parameters[pba->scf_parameters_size-2] = param1;
-          }
-
           pba->phi_ini_scf = pba->scf_parameters[0];
           pba->phi_prime_ini_scf = pba->scf_parameters[1];
           if(pba->f_axion == 0.0 && pba->scf_parameters_size == 3){
             // printf("here!!\n");
-            // pba->f_axion = pow(10,pba->scf_parameters[2]);//one can also use the 3rd entry of the scf_parameters table to set f_axion. Useful when shooting.
             pba->f_axion = sqrt(pba->scf_parameters[2]);//one can also use the 3rd entry of the scf_parameters table to set f_axion. Useful when shooting.
             // printf("pba->f_axion %e\n", pba->f_axion);
 
           }
+
+          class_call(parser_read_string(pfc,"theta_i_is_close_to_pi",&string1,&flag1,errmsg),
+              errmsg,
+              errmsg);
+         if ((flag1 == _TRUE_) && ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))) {
+          pba->scf_parameters[0] = _PI_ - pow(10,pba->scf_parameters[0]); //TLS
+          }
+          // printf("%e %e \n",pba->phi_ini_scf,pba->phi_prime_ini_scf );
         }
 
+
       }
+
+      class_read_double("f_ede_max_allowed",pba->f_ede_max_allowed);//VP: default is, so it is ignored.
+      class_read_double("f_axion_max_allowed",pba->f_axion_max_allowed);//VP: default is, so it is ignored.
+
+    }
+
+    class_call(parser_read_string(pfc,
+                                  "coupled_scf_slowroll_ic",
+                                  &string1,
+                                  &flag1,
+                                  errmsg),
+               errmsg,
+               errmsg);
+
+    if (flag1 == _TRUE_) {
+      if ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL)) {
+        pba->coupled_scf_slowroll_ic = _TRUE_;
+      }
+      else {
+        pba->coupled_scf_slowroll_ic = _FALSE_;
+      }
+    }
+    else if ((pba->coupling_type == 1) &&
+             ((pba->Omega0_idm_ede != 0.0) || (pba->Omega_ini_idm_ede != 0.0))) {
+      pba->coupled_scf_slowroll_ic = _TRUE_;
     }
   }
 
@@ -4926,14 +5013,11 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
        class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
                   errmsg,
                   errmsg);
-      class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
-                  errmsg,
-                  errmsg);
        /* Test */
-       class_test((flag1 == _TRUE_) && (flag2 == _TRUE_) && (((flag3 == _FALSE_) && (flag4 == _FALSE_))|| (param3 >= 0.)),
+       class_test((flag1 == _TRUE_) && (flag2 == _TRUE_) && ((flag3 == _FALSE_) || (param3 >= 0.)),
                   errmsg,
                   "'Omega_Lambda' or 'Omega_fld' must be left unspecified, except if 'Omega_scf' is set and < 0.");
-       class_test(((flag1 == _FALSE_)||(flag2 == _FALSE_)) && (((flag3 == _TRUE_) && (param3 < 0.)) || ((flag4 == _TRUE_) && (param4 < 0.))),
+       class_test(((flag1 == _FALSE_)||(flag2 == _FALSE_)) && ((flag3 == _TRUE_) && (param3 < 0.)),
                   errmsg,
                   "You have entered 'Omega_scf' < 0 , so you have to specify both 'Omega_lambda' and 'Omega_fld'.");
        /* Complete set of parameters
@@ -4955,6 +5039,7 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
   Omega_tot += pba->Omega0_ur;
   Omega_tot += pba->Omega0_cdm;
   Omega_tot += pba->Omega0_idm;
+  Omega_tot += pba->Omega0_idm_ede;
   Omega_tot += pba->Omega0_dcdmdr;
   Omega_tot += pba->Omega0_idr;
   Omega_tot += pba->Omega0_ncdm_tot;
@@ -4975,10 +5060,6 @@ class_call(parser_read_double(pfc,"Omega_scf_shoot_fa",&param4,&flag4,errmsg),
   }
   if ((flag3 == _TRUE_) && (param3 >= 0.)){
     pba->Omega0_scf = param3;
-    Omega_tot += pba->Omega0_scf;
-  }
-    if ((flag4 == _TRUE_) && (param4 >= 0.)){
-    pba->Omega0_scf = param4;
     Omega_tot += pba->Omega0_scf;
   }
   /* Step 2 */
@@ -5467,103 +5548,61 @@ int input_read_parameters_nonlinear(struct file_content * pfc,
       ppt->has_nl_corrections_based_on_delta_m = _TRUE_;
       class_read_int("extrapolation_method",pfo->extrapolation_method);
 
-      class_call(parser_read_string(pfc,"hmcode_version",&string1,&flag1,errmsg),
+      class_call(parser_read_string(pfc,
+                                    "feedback model",
+                                    &(string1),
+                                    &(flag1),
+                                    errmsg),
                  errmsg,
                  errmsg);
-      /* Compatibility code BEGIN */
-      if(flag1 == _FALSE_){
-        class_call(parser_read_string(pfc,"HMcode_version",&string1,&flag1,errmsg),
-                   errmsg,
-                   errmsg);
-      }
-      if(flag1 == _FALSE_){
-        class_call(parser_read_string(pfc,"hmcode version",&string1,&flag1,errmsg),
-                   errmsg,
-                   errmsg);
-      }
 
-      /* Compatibility code END */
       if (flag1 == _TRUE_) {
-        if ((strstr(string1,"15") != NULL)||(strstr(string1,"16") != NULL)) {
-          pfo->hm_version = hmcode_version_2015;
+
+        if (strstr(string1,"emu_dmonly") != NULL) {
+          pfo->feedback = nl_emu_dmonly;
         }
-        else if ((strstr(string1,"20baryon") != NULL) || (strstr(string1,"20_baryon") != NULL)) {
-          pfo->hm_version = hmcode_version_2020_baryonic;
+        if (strstr(string1,"owls_dmonly") != NULL) {
+          pfo->feedback = nl_owls_dmonly;
         }
-        else if ((strstr(string1,"20") != NULL)) {
-          pfo->hm_version = hmcode_version_2020;
+        if (strstr(string1,"owls_ref") != NULL) {
+          pfo->feedback = nl_owls_ref;
         }
-        else{
-          class_stop(errmsg,
-                     "You specified 'hmcode_version' = '%s'. It has to be one of {'2015','2020','2020_baryonic_feedback'}.",string1);
+        if (strstr(string1,"owls_agn") != NULL) {
+          pfo->feedback = nl_owls_agn;
+        }
+        if (strstr(string1,"owls_dblim") != NULL) {
+          pfo->feedback = nl_owls_dblim;
         }
       }
 
-      if (pfo->hm_version == hmcode_version_2015) {
+      class_call(parser_read_double(pfc,"eta_0",&param2,&flag2,errmsg),
+                 errmsg,
+                 errmsg);
+      class_call(parser_read_double(pfc,"c_min",&param3,&flag3,errmsg),
+                 errmsg,
+                 errmsg);
 
-        class_call(parser_read_string(pfc,"feedback_model",&string1,&flag1,errmsg),
-                   errmsg,
-                   errmsg);
+      class_test(((flag1 == _TRUE_) && ((flag2 == _TRUE_) || (flag3 == _TRUE_))),
+                 errmsg,
+                 "In input file, you cannot enter both a baryonic feedback model and a choice of baryonic feedback parameters, choose one of both methods");
 
-        /* Compatibility code BEGIN */
-        if (flag1 == _FALSE_) {
-          class_call(parser_read_string(pfc,"feedback model",&string1,&flag1,errmsg),
-                     errmsg,
-                     errmsg);
-        }
-        /* Compatibility code END */
-
-        if (flag1 == _TRUE_) {
-
-          if (strstr(string1,"emu_dmonly") != NULL) {
-            pfo->feedback = hmcode_emu_dmonly;
-          }
-          if (strstr(string1,"owls_dmonly") != NULL) {
-            pfo->feedback = hmcode_owls_dmonly;
-          }
-          if (strstr(string1,"owls_ref") != NULL) {
-            pfo->feedback = hmcode_owls_ref;
-          }
-          if (strstr(string1,"owls_agn") != NULL) {
-            pfo->feedback = hmcode_owls_agn;
-          }
-          if (strstr(string1,"owls_dblim") != NULL) {
-            pfo->feedback = hmcode_owls_dblim;
-          }
-        }
-
-        class_call(parser_read_double(pfc,"eta_0",&param2,&flag2,errmsg),
-                   errmsg,
-                   errmsg);
-        class_call(parser_read_double(pfc,"c_min",&param3,&flag3,errmsg),
-                   errmsg,
-                   errmsg);
-
-        class_test(((flag1 == _TRUE_) && ((flag2 == _TRUE_) || (flag3 == _TRUE_))),
-                   errmsg,
-                   "In input file, you cannot enter both a baryonic feedback model and a choice of baryonic feedback parameters, choose one of both methods");
-
-        if ((flag2 == _TRUE_) && (flag3 == _TRUE_)) {
-          pfo->feedback = hmcode_user_defined;
-          class_read_double("eta_0", pfo->eta_0);
-          class_read_double("c_min", pfo->c_min);
-        }
-        else if ((flag2 == _TRUE_) && (flag3 == _FALSE_)) {
-          pfo->feedback = hmcode_user_defined;
-          class_read_double("eta_0", pfo->eta_0);
-          pfo->c_min = (0.98 - pfo->eta_0)/0.12;
-        }
-        else if ((flag2 == _FALSE_) && (flag3 == _TRUE_)) {
-          pfo->feedback = hmcode_user_defined;
-          class_read_double("c_min", pfo->c_min);
-          pfo->eta_0 = 0.98 - 0.12*pfo->c_min;
-        }
+      if ((flag2 == _TRUE_) && (flag3 == _TRUE_)) {
+        pfo->feedback = nl_user_defined;
+        class_read_double("eta_0", pfo->eta_0);
+        class_read_double("c_min", pfo->c_min);
       }
-      else if (pfo->hm_version == hmcode_version_2020_baryonic) {
-        class_read_double("log10T_heat_hmcode",pfo->log10T_heat_hmcode);
+      else if ((flag2 == _TRUE_) && (flag3 == _FALSE_)) {
+        pfo->feedback = nl_user_defined;
+        class_read_double("eta_0", pfo->eta_0);
+        pfo->c_min = (0.98 - pfo->eta_0)/0.12;
       }
+      else if ((flag2 == _FALSE_) && (flag3 == _TRUE_)) {
+        pfo->feedback = nl_user_defined;
+        class_read_double("c_min", pfo->c_min);
+        pfo->eta_0 = 0.98 - 0.12*pfo->c_min;
+      }
+
       class_read_double("z_infinity", pfo->z_infinity);
-      class_read_int("nk_wiggle", pfo->nk_wiggle);
     }
     else if (strstr(string1,"no")!=NULL){
       pfo->method=nl_none;
@@ -5609,15 +5648,6 @@ int input_read_parameters_nonlinear(struct file_content * pfc,
         pfo->has_pk_eq = _TRUE_;
       }
     }
-  }
-
-  /** 2.a) analytic nowiggle linear spectrum */
-  class_read_flag("analytic_nowiggle", pfo->has_pk_analytic_nowiggle);
-
-  /** 2.b) numerical nowiggle linear spectrum (can be computed only if the linear power spectrum is computed) */
-
-  if (ppt->has_pk_matter == _TRUE_) {
-    class_read_flag("numerical_nowiggle", pfo->has_pk_numerical_nowiggle);
   }
 
   return _SUCCESS_;
@@ -5851,8 +5881,8 @@ int input_read_parameters_primordial(struct file_content * pfc,
   /** Summary: */
 
   /** Define local variables */
-  int flag1, flag2, flag3;
-  double param1, param2, param3;
+  int flag1, flag2;
+  double param1, param2;
   char string1[_ARGUMENT_LENGTH_MAX_];
   char string2[_ARGUMENT_LENGTH_MAX_];
   double R0,R1,R2,R3,R4;
@@ -5933,28 +5963,21 @@ int input_read_parameters_primordial(struct file_content * pfc,
         ppm->is_primordial_Pk_different = _FALSE_;
       }
 
+      ppm->calling_from_pk = _FALSE_;
       // printf("ppm->is_primordial_Pk_different %d\n", ppm->is_primordial_Pk_different);
       class_call(parser_read_double(pfc,"A_s",&param1,&flag1,errmsg),
                  errmsg,
                  errmsg);
-      class_call(parser_read_double(pfc,"ln_A_s_1e10",&param2,&flag2,errmsg),
+      class_call(parser_read_double(pfc,"ln10^{10}A_s",&param2,&flag2,errmsg),
                  errmsg,
                  errmsg);
-      /* Deprecated input parameters, read for backwards compatibility) */
-      class_call(parser_read_double(pfc,"ln10^{10}A_s",&param3,&flag3,errmsg),
+      class_test((flag1 == _TRUE_) && (flag2 == _TRUE_),
                  errmsg,
-                 errmsg);
-      class_test(class_at_least_two_of_three(flag1,flag2,flag3),
-                 errmsg,
-                 "In input file, you can only enter one of {'A_s', 'ln_A_s_1e10', or 'ln10^{10}A_s' (deprecated)}, choose one");
-      /* Complete set of parameters */
+                 "In input file, you cannot enter both A_s and ln10^{10}A_s, choose one");
       if (flag1 == _TRUE_)
         ppm->A_s = param1;
       else if (flag2 == _TRUE_)
         ppm->A_s = exp(param2)*1.e-10;
-        else if (flag3 == _TRUE_){
-          ppm->A_s = exp(param3)*1.e-10;
-        }
 
       if(ppm->is_primordial_Pk_different == _TRUE_){
         // printf("yes here\n");
@@ -5972,7 +5995,6 @@ int input_read_parameters_primordial(struct file_content * pfc,
         else if (flag2 == _TRUE_)
           ppm->A_s_pk = exp(param2)*1.e-10;
       }
-
 
 
 
@@ -6671,7 +6693,7 @@ int input_read_parameters_spectra(struct file_content * pfc,
                errmsg,
                errmsg);
     /* Complete set of parameters */
-    if (flag1 == _TRUE_) {
+    if ((flag1 == _TRUE_)) {
       if ((strstr(string1,"analytic") != NULL)){
         ptr->has_nz_analytic = _TRUE_;
       }
@@ -6686,7 +6708,7 @@ int input_read_parameters_spectra(struct file_content * pfc,
                errmsg,
                errmsg);
     /* Complete set of parameters */
-    if (flag1 == _TRUE_) {
+    if ((flag1 == _TRUE_)) {
       if ((strstr(string1,"analytic") != NULL)){
         ptr->has_nz_evo_analytic = _TRUE_;
       }
@@ -6824,8 +6846,7 @@ int input_read_parameters_spectra(struct file_content * pfc,
 
 
 /**
- * Read the parameters of perturbations, transfer and lensing
- * structures that are relevant for lensing.
+ * Read the parameters of lensing structure.
  *
  * @param pfc     Input: pointer to local structure
  * @param ppr     Input: pointer to precision structure
@@ -6898,9 +6919,6 @@ int input_read_parameters_lensing(struct file_content * pfc,
 
   }
 
-  /** 3) In general, do we want to use the full Limber scheme introduced in v3.2.2? With this full Limber scheme, the calculation of the CMB lensing potential spectrum C_l^phiphi for l > ppr->l_switch_limber is based on a new integration scheme. Compared to the previous scheme, which can be recovered by switching this parameter to _FALSE_, the new scheme uses a larger k_max and a coarser k-grid (or q-grid) than the CMB transfer function. The new scheme is used by default, because the old one is inaccurate at large l due to the too small k_max. */
-
-  class_read_flag("want_lcmb_full_limber",ppt->want_lcmb_full_limber);
 
   return _SUCCESS_;
 
@@ -7408,7 +7426,7 @@ int input_write_info(struct file_content * pfc,
 
   /* Finally, since all variables are read, we can also print the parameters.ini and unused_parameters files */
   if (flag1 == _TRUE_) {
-    class_sprintf(param_output_name,"%s%s",pop->root,"parameters.ini");
+    sprintf(param_output_name,"%s%s",pop->root,"parameters.ini");
     class_open(param_output,param_output_name,"w",errmsg);
     fprintf(param_output,"# List of input/precision parameters actually read\n");
     fprintf(param_output,"# (all other parameters set to default values)\n");
@@ -7417,7 +7435,7 @@ int input_write_info(struct file_content * pfc,
     fprintf(param_output,"# This file can be used as the input file of another run\n");
     fprintf(param_output,"#\n");
 
-    class_sprintf(param_unused_name,"%s%s",pop->root,"unused_parameters");
+    sprintf(param_unused_name,"%s%s",pop->root,"unused_parameters");
     class_open(param_unused,param_unused_name,"w",errmsg);
     fprintf(param_unused,"# List of input/precision parameters passed\n");
     fprintf(param_unused,"# but not used (just for info)\n");
@@ -7496,19 +7514,6 @@ int input_default_params(struct background *pba,
      non-linear corrections neglected */
 
   /**
-   * Default to any module: not allocated yet
-   */
-  pba->is_allocated = _FALSE_;
-  pth->is_allocated = _FALSE_;
-  ppt->is_allocated = _FALSE_;
-  pfo->is_allocated = _FALSE_;
-  ptr->is_allocated = _FALSE_;
-  phr->is_allocated = _FALSE_;
-  ppm->is_allocated = _FALSE_;
-  ple->is_allocated = _FALSE_;
-  psd->is_allocated = _FALSE_;
-
-  /**
    * Default to input_read_parameters_general
    */
 
@@ -7558,10 +7563,6 @@ int input_default_params(struct background *pba,
   ppt->gauge=synchronous;
   /** 4.b) N-body gauge */
   ppt->has_Nbody_gauge_transfers = _FALSE_;
-  /** 4.c) keep delta_m, theta_m, delta_cb, theta_cb in current gauge */
-  ppt->has_matter_source_in_current_gauge = _FALSE_;
-  /** 4.d) keep output perturbations in current gauge */
-  ppt->get_perturbations_in_current_gauge = _FALSE_;
 
   /** 5) Hubble parameter */
   pba->h = 0.67810;
@@ -7678,6 +7679,8 @@ int input_default_params(struct background *pba,
   /** 7.2) Interacting Dark Matter */
   /** 7.2.1.a) Current factional density of idm */
   pba->Omega0_idm = 0;
+  pba->Omega0_idm_ede = 0;
+  pba->Omega_ini_idm_ede = 0;
   /** 7.2.1.a) Mass of idm in eV*/
   pth->m_idm = 1.e9;
   /** 7.2.2) Current fractional density of idr */
@@ -7714,19 +7717,33 @@ int input_default_params(struct background *pba,
   pba->power_of_mu = -30; /* Scalar field defaults */
   pba->alpha_squared = -30; /* Scalar field defaults */
   pba->log10_m_axion= -30.;
-
+  pba->beta_scf = 0;//set to 0 so it is never used by default.
+  pba->adjust_beta_scf = 1;//set to 1 so it is never used by default.
+  pba->g_idm_ede = 0;
+  pba->c_idm_ede = 0;
+  pba->idm_ede_mass_form = 0;
+  pba->coupling_type = 3;
   pba->scf_potential = pol_times_exp;
   pba->V0_phi2n = 0.0;
+  pba->V0_teds = 0.0;
+  pba->f_teds = 0.0;
+  pba->p_teds = 8.0;
+  pba->V0_phantom = 0.0;
+  pba->lambda_phantom = sqrt(2.0);
+  pba->alpha_m_phantom = sqrt(2.0/3.0);
+  pba->A_m_phi_phantom = 0.125;
   pba->f_axion = 0.0;
   pba->m_scf = 0.0;
   pba->n_axion = 1;
   pba->log10_axion_ac = -30;
   pba->Omega0_axion = 0.0;
-  pba->theta_axion = 0.0;
   pba->scf_has_perturbations = _TRUE_;
   pba->threshold_scf_fluid_m_over_H = 3;
   pba->security_small_Omega_scf = -10;//set to a negative number so it is never used by default.
   pba->n_axion_security = -2.5;//set to a negative number so it is never used by default.
+  pba->f_ede_max_allowed = 1;
+  pba->f_axion_max_allowed = 1e15;
+  pba->coupled_scf_slowroll_ic = _TRUE_;
   ppt->use_big_theta_fld = _FALSE_;
 
   ppt->use_big_theta_scf = _FALSE_;
@@ -7744,16 +7761,13 @@ int input_default_params(struct background *pba,
   pba->n_cap_infinity = 500;
   pba->Omega_fld_ac = 0.;
   pba->w_fld_f = 1.;
-  pba->w_fld_i = -1.;
   pba->cs2_is_wn = _FALSE_;
 
   ppt->DMDE_interaction = 0;
   ppt->index_DMDE_interaction = 1;//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1.
-  ppt->a_pivot_DMDE_interaction = 1e-4;//corresponds to the late time DM-DE model Gamma propto a^n/rhoDM, with n=1.
   ppt->DMEDE_TCA_threshold = 1e9;
   ppt->scales_like_fEDE = _FALSE_;
   ppt->scales_like_fEDE_over_k2 = _FALSE_;
-  ppt->scales_like_WZDR = _FALSE_;
   /** - all verbose parameters */
 
 
@@ -7769,7 +7783,6 @@ int input_default_params(struct background *pba,
   pba->fluid_equation_of_state = CLP;
   pba->w0_fld = -1.;
   pba->cs2_fld = 1.;
-  ppt->use_new_fld_IC = _FALSE_;
   /** 9.a.2.1) 'CLP' case */
   pba->wa_fld = 0.;
   /** 9.a.2.2) 'EDE' case */
@@ -7784,6 +7797,8 @@ int input_default_params(struct background *pba,
   pba->phi_prime_ini_scf = 1;          //     factors of the radiation attractor values
   /** 9.b.3) Tuning parameter */
   pba->scf_tuning_index = 0;
+  /** 9.b.4) Shooting parameter */
+  pba->shooting_failed = _FALSE_;
 
   /**
    * Deafult to input_read_parameters_heating
@@ -7832,13 +7847,13 @@ int input_default_params(struct background *pba,
   /** 5) Injection efficiency */
   pin->f_eff_type = f_eff_on_the_spot;
   pin->f_eff = 1.;
-  class_sprintf(pin->f_eff_file,"external/heating/example_f_eff_file.dat");
+  sprintf(pin->f_eff_file,"/external/heating/example_f_eff_file.dat");
 
   /** 6) Deposition function */
   pin->chi_type = chi_CK;
   /** 6.1) External file */
-  class_sprintf(pin->chi_z_file,"external/heating/example_chiz_file.dat");
-  class_sprintf(pin->chi_x_file,"external/heating/example_chix_file.dat");
+  sprintf(pin->chi_z_file,"/external/heating/example_chiz_file.dat");
+  sprintf(pin->chi_x_file,"/external/heating/example_chix_file.dat");
 
   /**
    * Default to input_read_parameters_nonlinear
@@ -7849,16 +7864,8 @@ int input_default_params(struct background *pba,
   pfo->method = nl_none;
   pfo->has_pk_eq = _FALSE_;
   pfo->extrapolation_method = extrap_max_scaled;
-  pfo->feedback = hmcode_emu_dmonly;
-  pfo->hm_version = hmcode_version_2020;
+  pfo->feedback = nl_emu_dmonly;
   pfo->z_infinity = 10.;
-  pfo->has_pk_numerical_nowiggle = _FALSE_;
-  pfo->pk_l_nw_index = &(pfo->index_pk_cluster);
-
-  pfo->log10T_heat_hmcode = 7.8;
-  pfo->nk_wiggle = 512;
-
-  pfo->has_pk_analytic_nowiggle = _FALSE_;
 
   pfo->kp_km_per_s=0.009;
   pfo->zp_lya = 3;
@@ -7873,6 +7880,8 @@ int input_default_params(struct background *pba,
   ppm->k_pivot = 0.05;
 
   /** 1.b) For type 'analytic_Pk' */
+  ppm->is_primordial_Pk_different = _FALSE_;
+  ppm->calling_from_pk = _FALSE_;
   /** 1.b.1) For scalar perturbations */
   ppm->A_s = 2.100549e-09;
   /** 1.b.1.1) Adiabatic perturbations */
@@ -8015,7 +8024,6 @@ int input_default_params(struct background *pba,
   ptr->lcmb_pivot=0.1;
   ple->A_lens_TTTEEE = 1;
 
-  ppt->want_lcmb_full_limber = _TRUE_;
 
   /**
    * Default to input_read_parameters_distortions
@@ -8030,7 +8038,7 @@ int input_default_params(struct background *pba,
   /** 1.a.3) Detector name */
   psd->has_user_defined_name = _FALSE_;
   psd->has_user_defined_detector = _FALSE_;
-  class_sprintf(psd->sd_detector_name,"PIXIE");
+  sprintf(psd->sd_detector_name,"PIXIE");
   /** 1.3.a.1) Detector nu min */
   psd->sd_detector_nu_min = 30.;
   /** 1.3.a.2) Detector nu max */
@@ -8068,7 +8076,7 @@ int input_default_params(struct background *pba,
 
   /** 1) Output for external files */
   /** 1.a) File name */
-  class_sprintf(pop->root,"output/");
+  sprintf(pop->root,"output/");
   /** 1.b) Headers */
   pop->write_header = _TRUE_;
   /** 1.c) Format */

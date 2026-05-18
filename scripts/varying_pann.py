@@ -18,6 +18,17 @@ from math import pi
 # In[ ]:
 
 
+# esthetic definitions for the plots
+font = {'size'   : 16, 'family':'STIXGeneral'}
+axislabelfontsize='large'
+matplotlib.rc('font', **font)
+matplotlib.mathtext.rcParams['legend.fontsize']='medium'
+plt.rcParams["figure.figsize"] = [8.0,6.0]
+
+
+# In[ ]:
+
+
 ############################################
 #
 # Varying parameter (others fixed to default)

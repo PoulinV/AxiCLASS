@@ -1,0 +1,280 @@
+\documentclass[aps,onecolumn,prd,nofootinbib,superscriptaddress,10pt,longbibliography,floatfix]{revtex4-2}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[colorlinks=true,linkcolor=cyan,urlcolor=teal,citecolor=blue]{hyperref}
+\usepackage[capitalise]{cleveref}
+\usepackage{geometry}
+\geometry{hmargin=2cm,vmargin=2.5cm}
+\graphicspath{{figures/}}
+
+\newcommand{\mpl}{M_{\rm Pl}}
+\newcommand{\fe}{f_{\rm EDE}}
+
+\begin{document}
+
+\title{Interacting Early Dark Energy and Dark Matter in AxiCLASS}
+\author{Ad\`ele Poudou}
+\email{adele.poudou@umontpellier.fr}
+\author{Th\'eo Simon}
+\author{Thomas Montandon}
+\author{Elsa M. Teixeira}
+\author{Vivian Poulin}
+\affiliation{Laboratoire Univers \& Particules de Montpellier (LUPM), CNRS \& Universit\'e de Montpellier (UMR-5299), Place Eug\`ene Bataillon, F-34095 Montpellier Cedex 05, France}
+
+\begin{abstract}
+We study an interacting early-dark-energy (EDE) and dark-matter (DM) implementation in AxiCLASS, with emphasis on two scalar potentials: the axion-like $(1-\cos\theta)^3$ model and the tEDS plateau model. We summarize the model-building logic following the Early Dark Sector framework of Ref.~\cite{McDonough:2021}, then identify the conditions under which the DM coupling controls the release time. We also describe the initialization issue encountered in type-1 coupling runs and the corresponding code-level fix.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+Early dark energy (EDE) reduces the pre-recombination sound horizon while preserving the observed angular scale of the cosmic microwave background, thereby allowing a larger inferred value of $H_0$ than in $\Lambda$CDM. The central requirement is that the additional component be subdominant at very early times, contribute a transient fraction of the total energy density around matter-radiation equality, and then dilute rapidly. In the notation of Ref.~\cite{McDonough:2021}, one defines a scalar field whose fractional energy density
+\begin{equation}
+\fe(z) \equiv \frac{\rho_\phi(z)}{\rho_{\rm tot}(z)}
+\end{equation}
+peaks around a critical redshift $z_c \sim z_{\rm eq}$ and then dilutes rapidly.
+
+At the background level, the release criterion is governed by the competition between the effective slope and Hubble friction. The field remains overdamped while
+\begin{equation}
+\left|V_{,\phi} + 3\rho_{\rm IDM}\frac{d\ln m_{\rm IDM}}{d\phi}\right| \ll H^2,
+\end{equation}
+and it begins to roll once the effective slope becomes comparable to the Hubble scale. In the coupled system studied here, the onset of motion can therefore be controlled either by the bare potential or by the dark-sector source term.
+
+The baseline EDE realization discussed in Ref.~\cite{McDonough:2021} uses
+\begin{equation}
+V(\phi)=m^2 f^2\left[1-\cos\!\left(\frac{\phi}{f}\right)\right]^3,
+\label{eq:ede-cubic}
+\end{equation}
+where at early times Hubble friction holds the field near a hilltop, and the release is triggered when the effective restoring force becomes competitive with Hubble damping.
+
+The comparison with tEDS isolates which aspects of the background evolution are generic to DM-triggered EDE and which depend on the detailed scalar potential. The cubic axion model is close to the canonical EDE construction and provides a standard hilltop-release mechanism. The tEDS potential, by contrast, provides a broader plateau and a more direct handle on the release scale, which helps disentangle the height of the EDE bump from its timing.
+
+The same framework can be embedded in an Early Dark Sector picture where DM parameters depend on the EDE field, motivated by swampland-inspired couplings. In this implementation we focus on the type-1 coupling used in Ref.~\cite{Lin:2022teds}:
+\begin{equation}
+m_{\rm IDM}(\phi)=m_0\left(1+g\phi^2\right),
+\label{eq:poly-mass}
+\end{equation}
+which implies
+\begin{equation}
+\frac{d\ln m_{\rm IDM}}{d\phi}=\frac{2g\phi}{1+g\phi^2},\qquad
+\frac{d^2\ln m_{\rm IDM}}{d\phi^2}=\frac{2g(1-g\phi^2)}{(1+g\phi^2)^2}.
+\end{equation}
+The KG equation then contains a density-weighted extra force:
+\begin{equation}
+\ddot{\phi}+3H\dot{\phi}+V_{,\phi}+3\rho_{\rm IDM}\frac{d\ln m_{\rm IDM}}{d\phi}=0.
+\label{eq:kg-coupled}
+\end{equation}
+The relevance of this term is that it scales with $\rho_{\rm IDM}$, so the coupling can control the release time even when the bare potential parameters are moderate.
+
+\section{$(1-\cos)^3$ Potential}
+\subsection{Model and expected behavior}
+For
+\begin{equation}
+V(\phi)=m^2 f^2 \left[1-\cos(\phi/f)\right]^3,
+\end{equation}
+the hilltop initial condition $\theta_i\equiv \phi_i/f \lesssim \pi$ provides a flat region and a delayed roll. In the uncoupled case, release is mostly set by the competition between $H$ and the bare potential slope. In the coupled case, \cref{eq:kg-coupled} modifies the effective slope by a term proportional to $\rho_{\rm IDM}$.
+
+The relevant comparison is not the force by itself, but the force relative to Hubble damping. In the overdamped regime,
+\begin{equation}
+\ddot{\phi} \approx 0
+\qquad \Rightarrow \qquad
+\dot{\phi}\simeq -\frac{V_{,\phi}+3\rho_{\rm IDM}d\ln m_{\rm IDM}/d\phi}{3H}.
+\end{equation}
+This is why the release criterion is best expressed in terms of the effective slope relative to $H^2$: the field can have a nonzero force and still remain practically frozen if Hubble friction is larger. What matters for the background history is the terminal branch, not the force alone.
+
+\subsection{Coupling-dominated regime}
+For natural coupling strengths ($g\sim0.1$--$10$), the coupled model can yield nearly identical peak timing across a range of $m/H_0$ once the coupling-dominated regime is reached. In that regime, the effective source term $3\rho_{\rm IDM} d\ln m/d\phi$ dominates the bare slope $V_{,\phi}$ around release.
+
+This also clarifies the appropriate diagnostic quantity at high redshift. The field value $\theta$ may remain nearly constant while the conformal-time velocity relaxes onto the terminal branch, and the absolute kinetic density can therefore change appreciably because of the $a^{-2}$ factor. For this reason, the most informative diagnostics are $\theta(z)$, $\Omega_\phi(z)$, and the dimensionless force ratio $(V_{,\phi}+3\rho_{\rm IDM}d\ln m/d\phi)/H^2$.
+
+\section{tEDS Potential}
+\subsection{Definition}
+The tEDS implementation in this branch uses
+\begin{equation}
+V(\phi)=V_0\frac{\theta^6}{(1+\theta^{6p})^{1/p}},\qquad \theta=\phi/f_{\rm tEDS},
+\label{eq:teds}
+\end{equation}
+with parameters $(V_0,f_{\rm tEDS},p_{\rm tEDS})$.
+
+\subsection{Practical role}
+The tEDS potential provides a broad high-$\theta$ plateau and a steeper transition region, allowing delayed release without relying on the same hilltop structure as \cref{eq:ede-cubic}. This broadens the space of admissible release histories and provides a useful control case for assessing which features of the background evolution are generic to coupling-driven release.
+
+The reason tEDS is easier to control in this coupled setup is visible from the asymptotic behavior. For $\theta \gg 1$,
+\begin{equation}
+V(\phi)\to V_0,
+\qquad
+\frac{dV}{d\phi}\propto -\frac{V_0}{f_{\rm tEDS}}\theta^{-6p-1},
+\end{equation}
+so the plateau height is fixed mainly by $V_0$, while the bare slope becomes parametrically small. The release is then set mostly by when the coupling force
+\begin{equation}
+3\rho_{\rm IDM}\frac{d\ln m_{\rm IDM}}{d\phi}
+\end{equation}
+overtakes Hubble friction.
+
+This is the key point behind Eq.~\eqref{eq:terminal}: the force enters the equation of motion, but the overdamped terminal solution determines the branch followed before release. In tEDS, the plateau makes $V_{,\phi}$ small over a wide range, so Eq.~\eqref{eq:terminal} is a clean approximation and the coupling term controls the timing without fine-tuning the detailed shape of the potential. In other words, the force sets the direction, but the terminal relation sets the magnitude of the drift while the field remains effectively frozen.
+
+By contrast, the cubic axion potential is tied to a periodic hilltop. Writing $\theta=\pi-\delta$ with $\delta\ll1$,
+\begin{equation}
+1-\cos\theta \simeq 2-\frac{\delta^2}{2},
+\qquad
+V(\phi)\simeq 8m^2f^2\left(1-\frac{3}{4}\delta^2+\cdots\right),
+\end{equation}
+and the bare slope scales as
+\begin{equation}
+V_{,\phi}\simeq 12m^2f\,\delta.
+\end{equation}
+That means the release timing depends more sensitively on the initial displacement from the hilltop and on the interplay between $m$, $f$, and the coupling. The force is still the same conceptual quantity as in tEDS, but here it changes more rapidly with field value, so the overdamped branch is less universal across parameter choices. In the scans we performed, this makes the $(1-\cos)^3$ case less uniform across parameter choices than tEDS, even when the coupled trigger is doing the main work. Put differently: Eq.~\eqref{eq:terminal} remains valid in both cases, but in tEDS it is a more stable proxy for the pre-release background because the plateau keeps $V_{,\phi}$ small over a wider range. For $(1-\cos)^3$, the same relation is more sensitive to the field position relative to the hilltop, so small changes in $\theta$ shift the balance between the potential slope and the coupling more strongly.
+
+\subsection{Force budget comparison}
+Figure~\ref{fig:force-budget} makes this comparison explicit. The upper panels show the bare slope and the coupling term, both normalized by $H^2$, for one representative tEDS run and one representative $(1-\cos)^3$ run. The lower panels show the coupling fraction, defined as
+\begin{equation}
+f_{\rm coup}(z) \equiv \frac{|3\rho_{\rm IDM} d\ln m_{\rm IDM}/d\phi|}{|V_{,\phi}| + |3\rho_{\rm IDM} d\ln m_{\rm IDM}/d\phi|}.
+\end{equation}
+The point of the figure is that Eq.~\eqref{eq:terminal} is always the correct overdamped relation, but tEDS keeps the bare slope suppressed over a broader field range, so the coupling fraction approaches unity more smoothly and with less sensitivity to the exact field position.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\linewidth]{force_budget_comparison.png}
+    \caption{Force budget for representative coupled runs. Left: tEDS benchmark. Right: $(1-\cos)^3$ benchmark. Top panels show $|V_{,\phi}|/H^2$, $|3\rho_{\rm IDM} d\ln m_{\rm IDM}/d\phi|/H^2$, and their sum. Bottom panels show the coupling fraction $f_{\rm coup}(z)$.}
+    \label{fig:force-budget}
+\end{figure}
+
+\section{Numerical Results and Plots}
+\subsection{tEDS scan and Fig.~2-style reproduction}
+The tEDS trigger scan and the corresponding background-level Fig.~2-style reproduction are shown in \cref{fig:teds-fig2}. This figure is generated from the scan products in \texttt{analysis/teds\_trigger\_check}.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.82\linewidth]{figure2_reproduction.png}
+    \caption{tEDS scan reproduction used to match the trigger behavior discussed in Ref.~\cite{Lin:2022teds}. The vertical marker indicates $z_{\rm eq}\simeq 3400$.}
+    \label{fig:teds-fig2}
+\end{figure}
+
+\subsection{$(1-\cos)^3$ results for discussed $(m,f,g)$ values}
+For the natural-parameter scan ($m/H_0\in[1,100]$, $f\in[1,10]$, $g\in[0.1,10]$), representative successful runs are shown in \cref{fig:cos3-natural}. In particular, the near-equality release family with $f=1$, $g=1$, and $m/H_0\in\{1,3,10,30,100\}$ is nearly degenerate in peak timing and amplitude, indicating coupling-dominated release.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.82\linewidth]{selected_histories.png}
+    \caption{$(1-\cos)^3$ benchmark histories for the discussed parameter region. Curves show $f_{\rm EDE}$, $\Omega_{\rm idm\text{-}ede}/\Omega_{\rm tot}$, and $\theta=\phi/f$.}
+    \label{fig:cos3-natural}
+\end{figure}
+
+\subsection{$\Omega_{\rm idm\text{-}ede}$ comparison: tEDS vs $(1-\cos)^3$}
+For a direct comparison of realistic coupled solutions, \cref{fig:omega-compare} overlays one tEDS benchmark ($\theta_i=6$, $g=0.68$) with two $(1-\cos)^3$ benchmarks ($m/H_0=30$, $f=1$, $g=1$ and $g=0.3$). The top panel shows $\Omega_{\rm idm\text{-}ede}/\Omega_{\rm tot}(z)$ and the lower panel shows the corresponding $f_{\rm EDE}$.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.86\linewidth]{omega_idm_compare_teds_vs_cos3.png}
+    \caption{Comparison of coupled tEDS and $(1-\cos)^3$ models for realistic benchmark parameters. Top: $\Omega_{\rm idm\text{-}ede}/\Omega_{\rm tot}$. Bottom: $f_{\rm EDE}=\Omega_\phi$.}
+    \label{fig:omega-compare}
+\end{figure}
+
+\section{Summary}
+The interacting EDE-DM behavior in this branch is controlled by three ingredients:
+\begin{enumerate}
+\item potential shape (here $(1-\cos)^3$ or tEDS),
+\item coupling form $m_{\rm IDM}(\phi)$ and amplitude,
+\item initial-condition prescription for $\phi'$ in coupled runs.
+\end{enumerate}
+The third point is numerically important. For type-1 coupled runs, starting from $\phi'=0$ places the system off the overdamped branch and produces an unphysical initialization transient. Initializing directly on the coupled slow-roll branch removes this artifact while preserving the late-time physical evolution.
+
+\appendix
+\section{Debugging Appendix: Explicit Code-Level Changes}
+\subsection{Initialization issue}
+In type-1 coupling runs, the initial condition was previously set with $\phi'_{\rm ini}=0$, while the evolution equations already included the coupled force term. This placed the system off the overdamped branch and generated a short-lived transient in $\rho_\phi$ before the solution relaxed to the terminal trajectory.
+
+\subsection{Equations used for the fix}
+The implemented background equations (log-$a$ form) are:
+\begin{align}
+\frac{d\phi}{d\ln a} &= \frac{\phi'}{aH},\\
+\frac{d\phi'}{d\ln a} &=
+-2\phi' - \frac{a}{H}\left(V_{,\phi}+3\rho_{\rm IDM}\frac{d\ln m_{\rm IDM}}{d\phi}\right),\\
+\frac{d\rho_{\rm IDM}}{d\ln a} &=
+-3\rho_{\rm IDM}
++\frac{\phi'}{aH}\frac{d\ln m_{\rm IDM}}{d\phi}\rho_{\rm IDM}.
+\end{align}
+In the overdamped limit, the conformal-time terminal branch is
+\begin{equation}
+\phi'_{\rm term}\simeq -\frac{a}{2H}\left(V_{,\phi}+3\rho_{\rm IDM}\frac{d\ln m_{\rm IDM}}{d\phi}\right).
+\label{eq:terminal}
+\end{equation}
+This expression is used to initialize the coupled slow-roll branch.
+
+\subsection{Implementation changes}
+\paragraph{1) Initial IDM-EDE density}
+If \texttt{Omega\_ini\_idm\_ede} is zero, the code falls back to \texttt{Omega0\_idm\_ede}:
+\begin{itemize}
+\item \texttt{source/background.c} lines \texttt{2846--2851}.
+\end{itemize}
+
+\paragraph{2) Coupled slow-roll IC switch}
+A guarded initialization block sets $\phi'_{\rm ini}$ from \cref{eq:terminal}:
+\begin{itemize}
+\item \texttt{source/background.c} lines \texttt{2966--2979}.
+\end{itemize}
+
+\paragraph{3) Background flag}
+A control flag was added to the background structure:
+\begin{itemize}
+\item \texttt{include/background.h} line \texttt{220}: \texttt{short coupled\_scf\_slowroll\_ic}.
+\end{itemize}
+
+\paragraph{4) Input parsing and defaults}
+\begin{itemize}
+\item The type-1 coupling path enables this behavior by default:
+\texttt{source/input.c} line \texttt{3822}.
+\item An explicit user override can be set in the input file:
+\texttt{source/input.c} lines \texttt{4914--4933}.
+\item The global default value is set in the defaults table:
+\texttt{source/input.c} line \texttt{7707}.
+\end{itemize}
+
+\subsection{Additional implementation checks}
+The earlier type-1 trigger study (\texttt{analysis/type1\_trigger\_scan/type1\_trigger\_scan.pdf}) documented additional consistency checks used in the model validation:
+\begin{itemize}
+\item corrected type-1 DM continuity equation to include
+\[
+\frac{d\rho_{\rm idm}}{d\ln a}=-3\rho_{\rm idm}+\frac{\phi'}{aH}\partial_\phi\ln m\;\rho_{\rm idm},
+\]
+implemented in \texttt{source/background.c} lines \texttt{3386--3388};
+\item corrected type-1 KG force to use the full effective slope
+\[
+V_{,\phi}+3\rho_{\rm idm}\partial_\phi\ln m,
+\]
+implemented in \texttt{source/background.c} line \texttt{3417};
+\item corrected polynomial second derivative
+\[
+\partial_\phi^2\ln m=\frac{2g(1-g\phi^2)}{(1+g\phi^2)^2},
+\]
+implemented in \texttt{source/background.c} line \texttt{4186};
+\item corrected perturbation-level coupling source to use the actual background values of $\partial_\phi\ln m$ and $\partial_\phi^2\ln m$ (rather than hard-wired assumptions), as seen in \texttt{source/perturbations.c} lines \texttt{10383--10388} and line \texttt{10669};
+\item added an exponential coupling option (\texttt{idm\_ede\_mass\_form=exp}, parameter \texttt{c\_idm\_ede}) for scan-level comparison against polynomial saturation, implemented in \texttt{source/input.c} lines \texttt{3831--3846} and \texttt{source/background.c} lines \texttt{4142--4164}.
+\end{itemize}
+
+The coupled-IC comparison in \cref{fig:ic-compare} illustrates the effect of this change. The previous initialization with $\phi'_{\rm ini}=0$ produces a short-lived transient in the raw energy density, while the corrected coupled slow-roll IC initializes directly on the overdamped branch and removes that artifact without changing the late-time background history.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.9\linewidth]{coupled_ic_comparison_m100_f0p5_g1.png}
+    \caption{Effect of the coupled initial-condition choice for the representative run $(f,m/H_0,g)=(0.5,100,1)$. The old initialization with $\phi'_{\rm ini}=0$ produces a visible transient in $\rho_\phi$ and related quantities, whereas the coupled slow-roll IC starts directly on the overdamped branch.}
+    \label{fig:ic-compare}
+\end{figure}
+
+\subsection{Effect of the initial condition}
+For the representative run $(f,m/H_0,g)=(0.5,100,1)$:
+\begin{itemize}
+\item old IC (\texttt{phi\_prime\_ini\_scf=0}): the first stored point lies off the coupled overdamped branch, and the evolution relaxes rapidly toward the terminal solution;
+\item new coupled IC: the initial point is placed directly on the coupled slow-roll branch, removing the startup transient in the background density.
+\end{itemize}
+The late-time trajectories in $\theta(z)$ and $\Omega_\phi(z)$ are unchanged.
+
+\begin{thebibliography}{99}
+\bibitem{McDonough:2021}
+E.~McDonough, M.-X.~Lin, J.~C.~Hill, W.~Hu, and S.~Zhou,
+``The Early Dark Sector, the Hubble Tension, and the Swampland,''
+\href{https://arxiv.org/abs/2112.09128}{arXiv:2112.09128}.
+
+\bibitem{Lin:2022teds}
+M.-X.~Lin, E.~McDonough, J.~C.~Hill, and W.~Hu,
+``A Dark Matter Trigger for Early Dark Energy Coincidence,''
+\href{https://arxiv.org/abs/2212.08098}{arXiv:2212.08098}.
+\end{thebibliography}
+
+\end{document}

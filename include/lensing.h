@@ -90,8 +90,6 @@ struct lensing {
 
   ErrorMsg error_message; /**< zone for writing error messages */
 
-  short is_allocated; /**< flag is set to true if allocated */
-
   //@}
 };
 

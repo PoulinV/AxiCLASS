@@ -30,7 +30,6 @@ enum tca_idm_dr_flags {tca_idm_dr_on, tca_idm_dr_off};
 enum rsa_idr_flags {rsa_idr_off, rsa_idr_on};
 enum ufa_flags {ufa_off, ufa_on};
 enum ncdmfa_flags {ncdmfa_off, ncdmfa_on};
-enum scf_fluid_flags {scf_kg, scf_fluid};
 
 //@}
 
@@ -159,8 +158,6 @@ struct perturbations
   int l_lss_max; /**< maximum l value for LSS \f$ C_l \f$'s (density and lensing potential in  bins) */
   double k_max_for_pk; /**< maximum value of k in 1/Mpc required for the output of P(k,z) and T(k,z) */
 
-  short want_lcmb_full_limber; /**< In general, do we want to use the full Limber scheme introduced in v3.2.2? With this full Limber scheme, the calculation of the CMB lensing potential spectrum C_l^phiphi for l > ppr->l_switch_limber is based on a new integration scheme. Compared to the previous scheme, which can be recovered by switching this parameter to _FALSE_, the new scheme uses a larger k_max and a coarser k-grid (or q-grid) than the CMB transfer function. The new scheme is used by default, because the old one is inaccurate at large l due to the too small k_max. */
-
   int selection_num;                            /**< number of selection functions
                                                    (i.e. bins) for matter density \f$ C_l \f$'s */
   enum selection_type selection;                /**< type of selection functions */
@@ -182,11 +179,9 @@ struct perturbations
   double three_cvis2_ur;/**< 3 x effective viscosity parameter for the ultrarelativistic perturbations */
 
   double DMDE_interaction;   //new param to take DMDE drag term into account
-  double a_pivot_DMDE_interaction;   //new param to modulate the darg term before and after a pivot
   double index_DMDE_interaction;   //new param to control the scaling of Gamma with a; n = 0 scales like fEDE, n=3 scales like f_EDE / rho_m
   double DMEDE_TCA_threshold;   //new param to control when to assume that DM and EDE are tightly coupled. default is when Gamma_DMEDE*R > 1e9
   double scales_like_fEDE;   //new param to choose the DMDE drag scaling.
-  double scales_like_WZDR;   //new param to choose the DMDE drag scaling.
   double scales_like_fEDE_over_k2;   //new param to choose the DMDE drag scaling.
   short has_idm_scf;
   short has_idm_fld;
@@ -218,10 +213,6 @@ struct perturbations
 
   enum possible_gauges gauge; /**< gauge in which to perform this calculation */
   enum possible_gauges_output gauge_output; /**< gauge in which to output perturbation variables in this calculation */
-
-  short has_matter_source_in_current_gauge; /**< whether to keep matter and baryon+CDM sources in current gauge, instead of automatic conversion to gauge-invariant variables */
-
-  short get_perturbations_in_current_gauge; /**< whether to keep the output table of perturbations (controlled by 'store_perturbations' and 'k_output_values') in current gauge, instead of automatic conversion to Newtonian gauge */
 
   //@}
 
@@ -296,6 +287,8 @@ struct perturbations
   short has_source_eta_prime;  /**< do we need source for metric fluctuation eta'? */
   short has_source_H_T_Nb_prime; /**< do we need source for metric fluctuation H_T_Nb'? */
   short has_source_k2gamma_Nb; /**< do we need source for metric fluctuation gamma in Nbody gauge? */
+  short has_source_delta_idm_ede;/**< do we need source for delta of interacting dark matter (with ede)? */
+  short has_source_theta_idm_ede;/**< do we need source for theta of interacting dark matter (with ede)? */
 
 
   /* remember that the temperature source function includes three
@@ -312,6 +305,7 @@ struct perturbations
   int index_tp_delta_g;   /**< index value for delta of gammas */
   int index_tp_delta_b;   /**< index value for delta of baryons */
   int index_tp_delta_cdm; /**< index value for delta of cold dark matter */
+  int index_tp_delta_idr; /**< index value for delta of interacting dark radiation */
   int index_tp_delta_idm; /**< index value for delta of interacting dark matter */
   int index_tp_delta_dcdm;/**< index value for delta of DCDM */
   int index_tp_delta_fld;  /**< index value for delta of dark energy */
@@ -325,7 +319,7 @@ struct perturbations
   int index_tp_amplitude;  /**< index value for amplitude a la Baumann */
   int index_tp_delta_dr; /**< index value for delta of decay radiation */
   int index_tp_delta_ur; /**< index value for delta of ultra-relativistic neutrinos/relics */
-  int index_tp_delta_idr; /**< index value for delta of interacting dark radiation */
+  int index_tp_delta_idm_ede;/**< index value for delta of interacting dark matter (with ede)*/
   int index_tp_delta_ncdm1; /**< index value for delta of first non-cold dark matter species (e.g. massive neutrinos) */
   int index_tp_perturbed_recombination_delta_temp;		/**< Gas temperature perturbation */
   int index_tp_perturbed_recombination_delta_chi;		/**< Inionization fraction perturbation */
@@ -341,6 +335,7 @@ struct perturbations
   int index_tp_theta_scf;   /**< index value for theta of scalar field */
   int index_tp_theta_ur;    /**< index value for theta of ultra-relativistic neutrinos/relics */
   int index_tp_theta_idr;   /**< index value for theta of interacting dark radiation */
+  int index_tp_theta_idm_ede;/**< index value for theta of interacting dark matter (with ede)*/
   int index_tp_theta_idm;   /**< index value for theta of interacting dark matter */
   int index_tp_theta_dr;    /**< index value for F1 of decay radiation */
   int index_tp_theta_ncdm1; /**< index value for theta of first non-cold dark matter species (e.g. massive neutrinos) */
@@ -370,7 +365,6 @@ struct perturbations
                                 So we redefine delta_fld == delta_fld / (1+w) */
   short include_scf_in_delta_m; /* do we include scf contribution to delta_m ? default is false, unless the potential is axionquad or axion with n=1 */
   short include_scf_in_delta_cb; /* do we include scf contribution to delta_cb ? default is false*/
-  short use_new_fld_IC; /* do we use the new IC from 2302.09032? in AxiCLASS, default is true*/
 
 
   /** @name - list of k values for each mode */
@@ -440,6 +434,7 @@ struct perturbations
                                final time range required for the output of
                                Fourier transfer functions (used for interpolations) */
   int ln_tau_size;         /**< total number of values in this array */
+  int index_ln_tau_pk;     /**< first index relevant for output of P(k,z) and T(k,z) */
 
   double *** late_sources; /**< Pointer towards the source interpolation table
                               late_sources[index_md]
@@ -488,8 +483,6 @@ struct perturbations
 
   ErrorMsg error_message; /**< zone for writing error messages */
 
-  short is_allocated; /**< flag is set to true if allocated */
-
   //@}
 
 };
@@ -517,6 +510,9 @@ struct perturbations_vector
   int index_pt_theta_b;   /**< baryon velocity */
   int index_pt_delta_cdm; /**< cdm density */
   int index_pt_theta_cdm; /**< cdm velocity */
+
+  int index_pt_delta_idm_ede;/**< idm_ede density */
+  int index_pt_theta_idm_ede;/**< idm_ede velocity */
   int index_pt_delta_idm; /**< idm density */
   int index_pt_theta_idm; /**< idm velocity */
   int index_pt_delta_dcdm; /**< dcdm density */
@@ -688,7 +684,6 @@ struct perturbations_workspace
   int index_ap_rsa_idr; /**< index for dark radiation streaming approximation */
   int index_ap_ufa; /**< index for ur fluid approximation */
   int index_ap_ncdmfa; /**< index for ncdm fluid approximation */
-  int index_ap_scf; /**< index for scalar-field KG-to-fluid approximation */
   int ap_size;      /**< number of relevant approximations for a given mode */
 
   int * approx;     /**< array of approximation flags holding at a given time: approx[index_ap] */

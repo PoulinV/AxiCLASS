@@ -81,8 +81,6 @@ int distortions_init(struct precision * ppr,
              psd->error_message,
              psd->error_message);
 
-  psd->is_allocated = _TRUE_;
-
   return _SUCCESS_;
 }
 
@@ -133,7 +131,6 @@ int distortions_free(struct distortions * psd) {
     /** Delete total distortion */
     free(psd->DI);
   }
-  psd->is_allocated = _FALSE_;
 
   return _SUCCESS_;
 }
@@ -164,8 +161,8 @@ int distortions_constants(struct precision * ppr,
     pow(pba->Omega0_b*pow(pba->h,2.)/0.02225,-2./5.)*
     pow(pba->T_cmb/2.726,1./5.);
 
-  class_sprintf(psd->sd_PCA_file_generator,"%s/%s",ppr->sd_external_path,"generate_PCA_files.py");
-  class_sprintf(psd->sd_detector_list_file,"%s/%s",ppr->sd_external_path,"detectors_list.dat");
+  sprintf(psd->sd_PCA_file_generator,"%s/%s",ppr->sd_external_path,"generate_PCA_files.py");
+  sprintf(psd->sd_detector_list_file,"%s/%s",ppr->sd_external_path,"detectors_list.dat");
 
   return _SUCCESS_;
 }
@@ -226,12 +223,12 @@ int distortions_set_detector(struct precision * ppr,
     else {
       /* Generate a custom name for this custom detector, so we can check if it has already been defined */
       if (psd->has_detector_file == _TRUE_) {
-        class_sprintf(psd->sd_detector_name,
+        sprintf(psd->sd_detector_name,
                 "Custom__%.80s__Detector",
                 psd->sd_detector_file_name);
       }
       else {
-        class_sprintf(psd->sd_detector_name,
+        sprintf(psd->sd_detector_name,
                 "Custom__%7.2e_%7.2e_%7.2e_%i_%7.2e__Detector",
                 psd->sd_detector_nu_min,psd->sd_detector_nu_max,psd->sd_detector_nu_delta,psd->sd_detector_bin_number,psd->sd_detector_delta_Ic);
       }
@@ -285,7 +282,7 @@ int distortions_set_detector(struct precision * ppr,
                      psd->error_message,
                      "Detector property type disagrees between stored detector '%s' and input  ->  Userdefined (input) vs Noisefile (stored)",
                      detector_name);
-          class_sprintf(psd->sd_detector_file_name, "%s", detector_noise_file_name);
+          sprintf(psd->sd_detector_file_name, "%s", detector_noise_file_name);
           psd->has_detector_file = has_detector_noise_file;
         }
         else {
@@ -307,7 +304,7 @@ int distortions_set_detector(struct precision * ppr,
                        psd->error_message,
                        "Delta frequency (sd_detector_nu_delta) disagrees between stored detector '%s' and input ->  %.10e (input) vs %.10e (stored)",
                        detector_name,psd->sd_detector_nu_delta,nu_delta);
-            class_test(abs(psd->sd_detector_bin_number-N_bins)>ppr->tol_sd_detector,
+            class_test(fabs(psd->sd_detector_bin_number-N_bins)>ppr->tol_sd_detector,
                        psd->error_message,
                        "Number of bins (sd_detector_bin_number) disagrees between stored detector '%s' and input ->  %i (input) vs %i (stored)",
                        detector_name,psd->sd_detector_bin_number,N_bins);
@@ -394,7 +391,7 @@ int distortions_generate_detector(struct precision * ppr,
   }
 
   if (psd->has_detector_file == _TRUE_) {
-    class_sprintf(temporary_string,"python %s %s %s %s %.10e %.10e %i %i %.10e %.10e %.10e",
+    sprintf(temporary_string,"python %s %s %s %s %.10e %.10e %i %i %.10e %.10e %.10e",
             psd->sd_PCA_file_generator,
             psd->sd_detector_name,
             ppr->sd_external_path,
@@ -409,7 +406,7 @@ int distortions_generate_detector(struct precision * ppr,
 
   }
   else {
-    class_sprintf(temporary_string,"python %s %s %.10e %.10e %.10e  %i %.10e %.10e %i %.10e %i %.10e %.10e %.10e",
+    sprintf(temporary_string,"python %s %s %.10e %.10e %.10e  %i %.10e %.10e %i %.10e %i %.10e %.10e %.10e",
             psd->sd_PCA_file_generator,
             psd->sd_detector_name,
             psd->sd_detector_nu_min,
@@ -455,7 +452,7 @@ int distortions_read_detector_noisefile(struct precision * ppr,
   int numcols;
 
   /** Open file */
-  class_sprintf(psd->sd_detector_noise_file,"%s/%s",ppr->sd_external_path,psd->sd_detector_file_name);
+  sprintf(psd->sd_detector_noise_file,"%s/%s",ppr->sd_external_path,psd->sd_detector_file_name);
   class_open(infile, psd->sd_detector_noise_file, "r", psd->error_message);
 
   /** Read header */
@@ -1421,7 +1418,7 @@ int distortions_read_br_data(struct precision * ppr,
   int headlines = 0;
 
   /** Open file */
-  class_sprintf(br_file,"%s/%s_branching_ratios.dat", ppr->sd_external_path, psd->sd_detector_name);
+  sprintf(br_file,"%s/%s_branching_ratios.dat", ppr->sd_external_path, psd->sd_detector_name);
   class_open(infile, br_file, "r", psd->error_message);
 
   /** Read header */
@@ -1654,7 +1651,7 @@ int distortions_read_sd_data(struct precision * ppr,
   int index_x,index_k;
 
   /** Open file */
-  class_sprintf(sd_file,"%s/%s_distortions_shapes.dat",ppr->sd_external_path, psd->sd_detector_name);
+  sprintf(sd_file,"%s/%s_distortions_shapes.dat",ppr->sd_external_path, psd->sd_detector_name);
   class_open(infile, sd_file, "r", psd->error_message);
 
   /** Read header */
@@ -1934,16 +1931,16 @@ int distortions_output_sd_titles(struct distortions * psd,
   class_store_columntitle(titles,"SD_tot",_TRUE_);
   for (index_type=0;index_type<psd->type_size;++index_type){
     if (index_type==psd->index_type_g) {
-      class_sprintf(temp_title,"SD[g]");
+      sprintf(temp_title,"SD[g]");
     }
     if (index_type==psd->index_type_y) {
-      class_sprintf(temp_title,"SD[y]");
+      sprintf(temp_title,"SD[y]");
     }
     if (index_type==psd->index_type_mu) {
-      class_sprintf(temp_title,"SD[mu]");
+      sprintf(temp_title,"SD[mu]");
     }
     if (index_type>=psd->index_type_PCA) {
-      class_sprintf(temp_title,"SD[e_%i]",(index_type-psd->index_type_PCA));
+      sprintf(temp_title,"SD[e_%i]",(index_type-psd->index_type_PCA));
     }
     class_store_columntitle(titles,temp_title,_TRUE_);
   }

@@ -39,7 +39,7 @@ static double gsl_sf_gamma(double z) {
         x += p[n] / (z + 1.*n);
     // double complex t = z + 7.5;
     double t = z + 7.5;
-    return sqrt(2*_PI_) * pow(t, z+0.5) * exp(-t) * x;
+    return sqrt(2*M_PI) * pow(t, z+0.5) * exp(-t) * x;
 }
 
 
@@ -54,7 +54,7 @@ enum spatial_curvature {flat,open,closed};
 /** list of possible parametrisations of the DE equation of state */
 
 enum equation_of_state {CLP,EDE};
-enum ede_parametrization {tracker,pheno_axion,pheno_ADE,EDE_is_DR};
+enum ede_parametrization {tracker,pheno_axion,pheno_ADE};
 
 
 /** list of possible parametrizations of the varying fundamental constants */
@@ -86,7 +86,10 @@ enum scf_pot{
   double_exp, /** scf_potential set to double_exp: V equals \Lambda_1^4e^{-\lambda\phi}+\Lambda_2^4e^{-\mu\phi} */
   axion, /** scf_potential set to axion: V equals m^2f^2(1-cos(phi/f)) */
   phi_2n, /** scf_potential set to axion: V equals V0((phi)^2n) */
-  axionquad /* scf_potential set to axion quadratic form: V = m^2phi^2/2 */
+  teds, /** scf_potential set to teds: V equals V0 theta^6/(1+theta^(6p))^(1/p), theta=phi/f */
+  phantom_exp, /** scf_potential set to phantom_exp: V equals V0 exp(-lambda phi), arXiv:2505.10410 eq. 3.6 */
+  axionquad, /* scf_potential set to axion quadratic form: V = m^2phi^2/2 */
+  ax_cos_cubed
 };
 struct background
 {
@@ -133,7 +136,6 @@ struct background
   double Omega_fld_ac; /**< fractional energy density of EDE at a_c */
   double n_cap_infinity; /**< n_fld higher than this is assumed to be infinite. Helps set w_fld_final = 1 */
   double w_fld_f; /**< Final eq of state of EDE */
-  double w_fld_i; /**< Initial eq of state of EDE */
   double log10_a_c; /**< log10(a_c) to set a_c */
   double a_peak; /**< scale factor when EDE energy density peaks */
   double f_ede_peak; /**< maximum fractional energy density of EDE */
@@ -152,6 +154,16 @@ struct background
 
   double Omega0_idr; /**< \f$ \Omega_{0 idr} \f$: interacting dark radiation */
   double T_idr;      /**< \f$ T_{idr} \f$: current temperature of interacting dark radiation in Kelvins */
+
+  double Omega0_idm_ede; /**< \f$ \Omega_{0 idm_ede} \f$: dark matter interacting with ede */
+  double Omega_ini_idm_ede;    /**< \f$ \Omega_{ini,dcdm} \f$: rescaled initial value for dcdm density (see 1407.2418 for definitions) */
+
+
+  /* idm_ede mass function and coupling */
+  double m0_idm_ede;      /* bare mass*/
+  double g_idm_ede;    /* coupling constant */
+  double c_idm_ede;    /* exponential coupling constant */
+  int idm_ede_mass_form; /* 0: polynomial, 1: exponential, 2: phantom A_m */
 
 
   double Omega0_dcdmdr; /**< \f$ \Omega_{0 dcdm}+\Omega_{0 dr} \f$: decaying cold dark matter (dcdm) decaying to dark radiation (dr) */
@@ -173,8 +185,9 @@ struct background
   double * scf_parameters;  /**< list of parameters describing the scalar field potential */
   int scf_parameters_size;  /**< size of scf_parameters */
   int scf_tuning_index;     /**< index in scf_parameters used for tuning */
-  double theta_axion;
+  int coupling_type;
   double beta_scf;
+    double adjust_beta_scf;
   double m_scf;
   double f_axion;
   double alpha_squared;
@@ -183,6 +196,13 @@ struct background
   double log10_m_axion;
   double log10_axion_ac;
   double V0_phi2n;
+  double V0_teds;
+  double f_teds;
+  double p_teds;
+  double V0_phantom;
+  double lambda_phantom;
+  double alpha_m_phantom;
+  double A_m_phi_phantom;
   double a_c;
   double log10_fraction_axion_ac;
   double adptative_stepsize;
@@ -191,14 +211,16 @@ struct background
   double log10_z_c; //
   double zc_is_zeq; //enforce zc=zeq, with zeq=(Omega0_b+Omega0_cdm)/(Omega0_g+Omega0_ur);
   double f_ede; // TK added doubles to fill with values of the exact z_c and fraction_ede eventually
+  double f_ede_max_allowed; // VP: security if fEDE is too large the code may crash. default is 1 (i.e. ignored), but can be adjusted if necessary by the user.
+  double f_axion_max_allowed; // TLS: to ensure quantum gravity constraints because I, Prof. Tristan L. Smith, really care about quantum gravity
   double phi_scf_c; // Added for debugging. Trying to see whether the value of phi at z_c is really 7/8 phi_ini
   double n_axion;
   double w_scf;
   double cs2_scf;
+  short coupled_scf_slowroll_ic; /**< initialize type-1 coupled scf on the overdamped branch */
 
   double n_axion_security;
   short scf_kg_eq;    /**< evolve scalar field with KG equations */
-  short kg_fld_switch;    /**< evolve scalar field with KG equations */
   short scf_fluid_eq;    /**< evolve scalar field with KG equations */
   short scf_evolve_like_axionCAMB; /**< evolve scalar field perturbations like axionCAMB */
   short scf_has_perturbations; /** do scalar field perts */
@@ -292,14 +314,21 @@ struct background
   int index_bg_w_fld;         /**< fluid equation of state */
   int index_bg_Omega_fld;     /**< fluid fractional energy density Omega_fld / Omega_tot as a function of a, needed to calculate the "peak" of pheno_axion EDE type fluid */
   int index_bg_rho_ur;        /**< relativistic neutrinos/relics density */
+  int index_bg_rho_idm_ede;    /**< density of dark matter interacting with ede */
   int index_bg_rho_idr;       /**< density of interacting dark radiation */
   int index_bg_rho_dcdm;      /**< dcdm density */
   int index_bg_rho_dr;        /**< dr density */
 
   int index_bg_phi_scf;       /**< scalar field value */
   int index_bg_phi_prime_scf; /**< scalar field derivative wrt conformal time */
+  int index_bg_phi_prime_prime_scf; /**< scalar field second derivative wrt conformal time */
+  int index_bg_dlnm_idm_ede_dphi; /**< coupling term */
+  int index_bg_dlnm2_idm_ede_dphi; /**< coupling term */
   int index_bg_V_scf;         /**< scalar field potential V */
   int index_bg_dV_scf;        /**< scalar field potential derivative V' */
+  int index_bg_dVadd_contribution; /**< coupling term */
+  int index_bg_first; /**< coupling term */
+  int index_bg_second; /**< coupling term */
   int index_bg_ddV_scf;       /**< scalar field potential second derivative V'' */
   int index_bg_rho_scf;       /**< scalar field energy density */
   int index_bg_Omega_scf;       /**< scalar field fractional energy density */
@@ -377,7 +406,7 @@ struct background
    */
 
   //@{
-
+  int index_bi_rho_idm_ede;/**< {B} idmede density */
   int index_bi_rho_dcdm;/**< {B} dcdm density */
   int index_bi_rho_dr;  /**< {B} dr density */
   int index_bi_rho_fld; /**< {B} fluid density */
@@ -416,6 +445,7 @@ struct background
   short has_fld;       /**< presence of fluid with constant w and cs2? */
   short has_ur;        /**< presence of ultra-relativistic neutrinos/relics? */
   short has_idr;       /**< presence of interacting dark radiation? */
+  short has_idm_ede;    /**< presence of dark matter interacting with ede? */
   short has_curvature; /**< presence of global spatial curvature? */
   short has_varconst;  /**< presence of varying fundamental constants? */
 
@@ -451,7 +481,6 @@ struct background
 
   ErrorMsg error_message; /**< zone for writing error messages */
 
-  short is_allocated; /**< flag is set to true if allocated */
   //@}
 };
 
@@ -695,7 +724,21 @@ extern "C" {
                double phi,
                double phi_prime
                );
+   /** idm_ede mass, coupling between scalar field and cdm **/
+   double m_idm_ede(
+                struct background *pba,
+                double phi
+                );
 
+   double dlnm_idm_ede_dphi(
+               struct background *pba,
+               double phi
+                );
+                
+  double dlnm2_idm_ede_dphi(
+               struct background *pba,
+               double phi
+                );
 #ifdef __cplusplus
 }
 #endif
