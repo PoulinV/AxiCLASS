@@ -1123,16 +1123,16 @@ int perturbations_free(
     free(ppt->sources);
 
     if(ppt->has_scf == _TRUE_ && ppt->scf_has_perturbations == _TRUE_){
-      free(ppt->scf_kg_eq[ppt->index_md_scalars]);
-      free(ppt->scf_kg_eq);
+      if (ppt->has_scalars == _TRUE_) {
+        free(ppt->scf_kg_eq[ppt->index_md_scalars]);
+      }
       if (ppt->has_vectors == _TRUE_) {
         free(ppt->scf_kg_eq[ppt->index_md_vectors]);
-        free(ppt->scf_kg_eq);
-    }
+      }
       if (ppt->has_tensors == _TRUE_) {
         free(ppt->scf_kg_eq[ppt->index_md_tensors]);
-        free(ppt->scf_kg_eq);
-    }
+      }
+      free(ppt->scf_kg_eq);
     }
     free(ppt->late_sources);
     free(ppt->ddlate_sources);
