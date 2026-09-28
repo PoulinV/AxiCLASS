@@ -1611,6 +1611,7 @@ int input_get_guess(double *xguess,
           Omega_m = ba.Omega0_b;
           if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
           if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+          if(ba.Omega0_idm_ede > 0) Omega_m += ba.Omega0_idm_ede;
           if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
           a_eq = Omega_r /Omega_m;
@@ -1620,6 +1621,7 @@ int input_get_guess(double *xguess,
           } else {
               guess = 2./3.*fxc*ba.n_axion*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)/((1.-FF)*phi_initial*(3.*(pow(1.-cos(FF*phi_initial),ba.n_axion))+(1.-FF)*ba.n_axion*phi_initial*pow(1.-cos(phi_initial),ba.n_axion)/tan(phi_initial/2.)));
           }
+          guess /= (1.-2.*ba.beta_scf); /* f^2 scales as f_EDE/K with K = 1-2 beta at fixed (a_c, theta_i) */
           xguess[index_guess] = log10(guess);
           dxdy[index_guess] = log10(guess);
 
