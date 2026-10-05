@@ -2454,6 +2454,7 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
   }
   /* -> scale-invariant growth rate today */
   D_today = pvecback_integration[pba->index_bi_D];
+  int index_loga_fede_max = -1;
   if(pba->has_scf == _TRUE_){
     pba->f_ede = 0.0;
   }
@@ -2481,6 +2482,7 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
        pba->log10_z_c = log10(z_c_new);
        // pba->axion_ac = 1/z_c_new-1;
        pba->f_ede = f_ede_new;
+       index_loga_fede_max = index_loga;
        pba->phi_scf_c = pba->background_table[index_loga*pba->bg_size+pba->index_bg_phi_scf];
        // printf("z %e pba->f_ede %e\n", pba->z_table[i],pba->f_ede);
      }else{
@@ -2519,6 +2521,28 @@ class_call(background_initial_conditions(ppr,pba,pvecback,pvecback_integration,&
     pba->background_table[index_loga*pba->bg_size+pba->index_bg_ang_distance] = comoving_radius/(1.+pba->z_table[index_loga]);
     pba->background_table[index_loga*pba->bg_size+pba->index_bg_lum_distance] = comoving_radius*(1.+pba->z_table[index_loga]);
   }
+
+  /* 2026-10-05: refine the scalar-field peak by a parabola through the discrete maximum and its two
+     neighbours in (ln a, Omega_scf); keeps (f_ede, z_c) continuous in the shooting parameters */
+  if((pba->scf_potential == axion || pba->scf_potential == phi_2n) && index_loga_fede_max > 0 && index_loga_fede_max < pba->bt_size-1){
+    double x0 = pba->loga_table[index_loga_fede_max-1], x1 = pba->loga_table[index_loga_fede_max], x2 = pba->loga_table[index_loga_fede_max+1];
+    double y0 = pba->background_table[(index_loga_fede_max-1)*pba->bg_size+pba->index_bg_Omega_scf];
+    double y1 = pba->background_table[index_loga_fede_max*pba->bg_size+pba->index_bg_Omega_scf];
+    double y2 = pba->background_table[(index_loga_fede_max+1)*pba->bg_size+pba->index_bg_Omega_scf];
+    double den = (x0-x1)*(x0-x2)*(x1-x2);
+    double A = (x2*(y1-y0) + x1*(y0-y2) + x0*(y2-y1))/den;
+    double B = (x2*x2*(y0-y1) + x1*x1*(y2-y0) + x0*x0*(y1-y2))/den;
+    double C = (x1*x2*(x1-x2)*y0 + x2*x0*(x2-x0)*y1 + x0*x1*(x0-x1)*y2)/den;
+    if (A < 0.) {
+      double xs = -B/(2.*A);
+      if (xs > x0 && xs < x2) {
+        double as = exp(xs);
+        pba->f_ede = C - B*B/(4.*A);
+        if (as < 1.) pba->log10_z_c = log10(1./as - 1.);
+      }
+    }
+  }
+
 
 
     class_test(pba->f_ede > pba->f_ede_max_allowed,

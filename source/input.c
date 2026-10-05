@@ -1660,6 +1660,7 @@ int input_get_guess(double *xguess,
               Omega_m = ba.Omega0_b;
               if(ba.Omega0_cdm > 0) Omega_m += ba.Omega0_cdm;
               if(ba.Omega0_idm > 0) Omega_m += ba.Omega0_idm;
+              if(ba.Omega0_idm_ede > 0) Omega_m += ba.Omega0_idm_ede; /* interacting CDM is matter (as in the fraction guess) */
               if(ba.Omega0_dcdm > 0) Omega_m += ba.Omega0_dcdm;
 
               a_eq = Omega_r /Omega_m;
@@ -1672,6 +1673,12 @@ int input_get_guess(double *xguess,
              guess =
                3.*sqrt(1.5*(1.-FF)*phi_initial*(Omega_m)*pow(1.-cos(phi_initial),-ba.n_axion)*tan(phi_initial/2.)/ba.n_axion);
              guess = pow(guess,-p)*axc;
+             /* late release: the matter-era formula gives guess ~ H(a_c)^(-2/3) with H = H0 sqrt(Omega_m) a_c^(-3/2);
+                correct H(a_c) for the cosmological constant (Omega_Lambda ~ 1 - Omega_m - Omega_r at this stage) */
+             {
+               double OL = 1. - Omega_m - Omega_r;
+               if (OL > 0.) guess *= pow(Omega_m*pow(axc,-3)/(Omega_m*pow(axc,-3) + OL), 1./3.);
+             }
            }
            xguess[index_guess] = log10(guess/1.6);
            dxdy[index_guess] = log10(guess/1.6);
@@ -1994,7 +2001,12 @@ int input_try_unknown_parameters(double * unknown_parameter,
         break;
       case fraction_axion_ac: // TLS where to print out log10_fraction_axion_ac and axion_ac
         // output[i] = log10(ba.f_ede)-pfzw->target_value[i];
-        output[i] = ba.f_ede-pfzw->target_value[i];
+        /* relative residual: fzero_Newton stops when the summed |output| < tol_shooting_deltaF (1e-6), which is
+           meaningless in absolute terms for f_EDE << 1e-6 (low-fraction regime) */
+        if (pfzw->target_value[i] > 0.)
+          output[i] = (ba.f_ede-pfzw->target_value[i])/pfzw->target_value[i];
+        else
+          output[i] = ba.f_ede-pfzw->target_value[i];
         if(input_verbose>10)printf("ba.f_ede %e  pfzw->target_value[i] %e output[i] %e\n", ba.f_ede,pfzw->target_value[i],output[i]);
         break;
       case log10_axion_ac:
