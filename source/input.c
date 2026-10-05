@@ -6670,6 +6670,26 @@ int input_read_parameters_lensing(struct file_content * pfc,
 
   }
 
+  /** 3) Optional L-dependent rescaling of C_l^{phiphi} applied inside the
+      lensing module only (before computing the lensed TT/TE/EE/BB), read
+      from a two-column file "L f(L)". Like A_lens_TTTEEE, this does not
+      change the unlensed C_l^{phiphi} returned by the harmonic module. */
+  /* Read */
+  class_call(parser_read_string(pfc,"lensing_pp_rescale_file",&string1,&flag1,errmsg),
+             errmsg,
+             errmsg);
+  /* Complete set of parameters */
+  if (flag1 == _TRUE_) {
+    class_test(ple->has_lensed_cls == _FALSE_,
+               errmsg,
+               "you passed 'lensing_pp_rescale_file' but did not ask for lensed CMB spectra ('lensing = yes' plus tCl/pCl and lCl in 'output')");
+    class_test(strlen(string1) >= _FILENAMESIZE_,
+               errmsg,
+               "the path given in 'lensing_pp_rescale_file' is too long (max %d characters)",_FILENAMESIZE_-1);
+    strcpy(ple->pp_rescale_file,string1);
+    ple->has_pp_rescale = _TRUE_;
+  }
+
 
   return _SUCCESS_;
 
@@ -7761,6 +7781,12 @@ int input_default_params(struct background *pba,
   ptr->lcmb_tilt=0.;
   ptr->lcmb_pivot=0.1;
   ple->A_lens_TTTEEE = 1;
+  /** 3) Optional L-dependent rescaling of C_l^{phiphi} in the lensing module (from file) */
+  ple->has_pp_rescale = _FALSE_;
+  ple->pp_rescale_file[0] = '\0';
+  ple->pp_rescale_size = 0;
+  ple->pp_rescale_l = NULL;
+  ple->pp_rescale_f = NULL;
 
 
   /**

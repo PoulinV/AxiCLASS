@@ -91,6 +91,21 @@ struct lensing {
   ErrorMsg error_message; /**< zone for writing error messages */
 
   //@}
+
+  /** @name - optional L-dependent rescaling of the unlensed C_l^{phiphi}
+   *  used by THIS module only (input 'lensing_pp_rescale_file'). The
+   *  harmonic (unlensed) spectra are left untouched. Fields appended at
+   *  the end of the structure on purpose (python wrapper layout). */
+
+  //@{
+
+  short has_pp_rescale;                 /**< multiply the lensing potential spectrum by a tabulated f(L) before lensing the CMB spectra? */
+  char pp_rescale_file[_FILENAMESIZE_]; /**< path of the file with two columns "L f(L)" (increasing L, lines starting with # ignored) */
+  int pp_rescale_size;                  /**< number of tabulated (L,f) rows */
+  double * pp_rescale_l;                /**< tabulated L values (increasing) */
+  double * pp_rescale_f;                /**< tabulated factors f(L) */
+
+  //@}
 };
 
 /*************************************************************************************************************/
@@ -119,6 +134,17 @@ extern "C" {
   int lensing_free(
                    struct lensing * ple
                    );
+
+  int lensing_pp_rescale_read(
+                              struct lensing * ple
+                              );
+
+  int lensing_pp_rescale_at_l(
+                              struct lensing * ple,
+                              double l,
+                              int * last_index,
+                              double * factor
+                              );
 
   int lensing_indices(
                       struct precision * ppr,

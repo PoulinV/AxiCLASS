@@ -139,6 +139,8 @@ int lensing_init(
   double * cl_ee = NULL; /* unlensed  cl, to be filled to avoid repeated calls to harmonic_cl_at_l */
   double * cl_bb = NULL; /* unlensed  cl, to be filled to avoid repeated calls to harmonic_cl_at_l */
   double * cl_pp; /* potential cl, to be filled to avoid repeated calls to harmonic_cl_at_l */
+  double pp_fac;  /* optional L-dependent rescaling factor of cl_pp (from 'lensing_pp_rescale_file') */
+  int last_index_pp;
 
   double res,resX,lens;
   double resp, resm, lensp, lensm;
@@ -176,6 +178,15 @@ int lensing_init(
       else
         printf("(fast mode)\n");
     }
+  }
+
+  /** - read the optional table f(L) rescaling the lensing potential
+      spectrum inside this module (input 'lensing_pp_rescale_file') */
+
+  if (ple->has_pp_rescale == _TRUE_) {
+    class_call(lensing_pp_rescale_read(ple),
+               ple->error_message,
+               ple->error_message);
   }
 
   /** - initialize indices and allocate some of the arrays in the
@@ -492,6 +503,21 @@ int lensing_init(
 
   free(cl_md_ic);
   free(cl_md);
+
+  /** - Optionally rescale the LOCAL copy of \f$ C_l^{\phi\phi}\f$ by the
+      tabulated f(l) (linear interpolation in l inside the table, constant
+      outside). Only the lensing kernels below see this; the harmonic
+      module and the unlensed pp copied in ple->cl_lens are untouched. **/
+
+  if (ple->has_pp_rescale == _TRUE_) {
+    last_index_pp = 0;
+    for (l=2; l<=ple->l_unlensed_max; l++) {
+      class_call(lensing_pp_rescale_at_l(ple,(double)l,&last_index_pp,&pp_fac),
+                 ple->error_message,
+                 ple->error_message);
+      cl_pp[l] *= pp_fac;
+    }
+  }
 
   /** - Compute sigma2\f$(\mu)\f$ and Cgl2(\f$\mu\f$) **/
 
@@ -816,6 +842,145 @@ int lensing_free(
     free(ple->l_max_lt);
 
   }
+
+  if (ple->has_pp_rescale == _TRUE_) {
+    if (ple->pp_rescale_l != NULL) {
+      free(ple->pp_rescale_l);
+      ple->pp_rescale_l = NULL;
+    }
+    if (ple->pp_rescale_f != NULL) {
+      free(ple->pp_rescale_f);
+      ple->pp_rescale_f = NULL;
+    }
+    ple->pp_rescale_size = 0;
+  }
+
+  return _SUCCESS_;
+
+}
+
+/**
+ * Read the optional table f(L) used to rescale the lensing potential
+ * spectrum inside the lensing module (input 'lensing_pp_rescale_file').
+ *
+ * File format: plain text, two columns "L f(L)" on an increasing grid
+ * of L; blank lines and lines starting with '#' are ignored.
+ *
+ * @param ple Input/output: pointer to lensing structure (table stored in ple->pp_rescale_*)
+ * @return the error status
+ */
+
+int lensing_pp_rescale_read(
+                            struct lensing * ple
+                            ) {
+
+  FILE * input_file;
+  char line[_LINE_LENGTH_MAX_];
+  char * left;
+  double tmp_l,tmp_f;
+  int n_rows,row,n_read;
+
+  input_file = fopen(ple->pp_rescale_file,"r");
+  class_test(input_file == NULL,
+             ple->error_message,
+             "Could not open 'lensing_pp_rescale_file' %s",ple->pp_rescale_file);
+
+  /* first pass: count the data rows */
+  n_rows = 0;
+  while (fgets(line,_LINE_LENGTH_MAX_,input_file) != NULL) {
+    left = line;
+    while (left[0]==' ' || left[0]=='\t') left++;
+    if (left[0]=='#' || left[0]=='\n' || left[0]=='\r' || left[0]=='\0') continue;
+    n_rows++;
+  }
+  class_test(n_rows < 1,
+             ple->error_message,
+             "no data row found in 'lensing_pp_rescale_file' %s",ple->pp_rescale_file);
+  rewind(input_file);
+
+  ple->pp_rescale_size = n_rows;
+  class_alloc(ple->pp_rescale_l,n_rows*sizeof(double),ple->error_message);
+  class_alloc(ple->pp_rescale_f,n_rows*sizeof(double),ple->error_message);
+
+  /* second pass: fill the table */
+  row = 0;
+  while ((fgets(line,_LINE_LENGTH_MAX_,input_file) != NULL) && (row < n_rows)) {
+    left = line;
+    while (left[0]==' ' || left[0]=='\t') left++;
+    if (left[0]=='#' || left[0]=='\n' || left[0]=='\r' || left[0]=='\0') continue;
+    n_read = sscanf(left,"%lf %lf",&tmp_l,&tmp_f);
+    class_test(n_read != 2,
+               ple->error_message,
+               "could not read two columns 'L factor' at data row %d of 'lensing_pp_rescale_file' %s (line: %s)",row+1,ple->pp_rescale_file,left);
+    class_test((row > 0) && (tmp_l <= ple->pp_rescale_l[row-1]),
+               ple->error_message,
+               "the L column of 'lensing_pp_rescale_file' %s must be strictly increasing (row %d: L=%g after L=%g)",ple->pp_rescale_file,row+1,tmp_l,ple->pp_rescale_l[row-1]);
+    class_test(tmp_f < 0.,
+               ple->error_message,
+               "negative factor f(L=%g)=%g at data row %d of 'lensing_pp_rescale_file' %s",tmp_l,tmp_f,row+1,ple->pp_rescale_file);
+    ple->pp_rescale_l[row] = tmp_l;
+    ple->pp_rescale_f[row] = tmp_f;
+    row++;
+  }
+  fclose(input_file);
+
+  class_test(row != n_rows,
+             ple->error_message,
+             "inconsistent number of rows (%d vs %d) while reading 'lensing_pp_rescale_file' %s",row,n_rows,ple->pp_rescale_file);
+
+  if (ple->lensing_verbose > 0)
+    printf(" -> rescaling C_l^phiphi inside the lensing module by f(l) from %s (%d rows, L in [%g,%g], f in [%g,%g] at the edges)\n",
+           ple->pp_rescale_file,n_rows,ple->pp_rescale_l[0],ple->pp_rescale_l[n_rows-1],ple->pp_rescale_f[0],ple->pp_rescale_f[n_rows-1]);
+
+  return _SUCCESS_;
+
+}
+
+/**
+ * Evaluate the rescaling factor f(l) of the lensing potential spectrum:
+ * linear interpolation in l inside the tabulated range, constant (first /
+ * last tabulated value) outside of it.
+ *
+ * @param ple        Input: pointer to lensing structure (table ple->pp_rescale_*)
+ * @param l          Input: multipole
+ * @param last_index Input/output: index of the last interval used (speeds up sequential calls, must start at 0)
+ * @param factor     Output: f(l)
+ * @return the error status
+ */
+
+int lensing_pp_rescale_at_l(
+                            struct lensing * ple,
+                            double l,
+                            int * last_index,
+                            double * factor
+                            ) {
+
+  int n = ple->pp_rescale_size;
+  int i;
+
+  class_test((ple->has_pp_rescale == _FALSE_) || (n < 1) || (ple->pp_rescale_l == NULL) || (ple->pp_rescale_f == NULL),
+             ple->error_message,
+             "lensing_pp_rescale_at_l called without a loaded rescaling table");
+
+  if (l <= ple->pp_rescale_l[0]) {
+    *factor = ple->pp_rescale_f[0];
+    return _SUCCESS_;
+  }
+  if (l >= ple->pp_rescale_l[n-1]) {
+    *factor = ple->pp_rescale_f[n-1];
+    return _SUCCESS_;
+  }
+
+  /* here n >= 2 and pp_rescale_l[0] < l < pp_rescale_l[n-1] */
+  i = *last_index;
+  if ((i < 0) || (i > n-2)) i = 0;
+  while ((i > 0) && (ple->pp_rescale_l[i] > l)) i--;
+  while ((i < n-2) && (ple->pp_rescale_l[i+1] < l)) i++;
+  *last_index = i;
+
+  *factor = ple->pp_rescale_f[i]
+    + (ple->pp_rescale_f[i+1]-ple->pp_rescale_f[i])
+    * (l-ple->pp_rescale_l[i])/(ple->pp_rescale_l[i+1]-ple->pp_rescale_l[i]);
 
   return _SUCCESS_;
 
